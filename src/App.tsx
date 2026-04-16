@@ -67,7 +67,7 @@ function useData<T>(coleccion: string, inicial: T) {
 type Invitado  = { id:number; nombre:string; tipo:"adulto"|"niño"; mesa:number; confirmado:"si"|"no"|"pendiente"; dieta?:string; notas?:string; };
 type Proveedor = { id:number; categoria:string; nombre:string; descripcion:string; costo:number; extras:{desc:string;monto:number}[]; estado:"confirmado"|"pendiente"|"descartado"; contacto?:string; notas?:string; };
 type GastoExtra= { id:number; nombre:string; categoria:string; monto:number; pagado:boolean; };
-type Cancion   = { id:number; titulo:string; artista:string; momento:string; };
+type Cancion   = { id:number; titulo:string; artista:string; momento:string; link?:string; };
 type Regalo    = { id:number; nombre:string; precio:number; prioridad:"alta"|"media"|"baja"; recibido:boolean; link?:string; };
 type LunaItem  = { id:number; categoria:string; descripcion:string; monto:number; confirmado:boolean; notas?:string; };
 type MesaPos   = { id:number; numero:number; x:number; y:number; forma:"circular"|"rectangular"|"cuadrada"; };
@@ -214,7 +214,7 @@ function Dashboard({ invitados, proveedores, gastos }: { invitados:{invitados:In
 // ════════════════════════════════════════════════════════════════
 // PROVEEDORES
 // ════════════════════════════════════════════════════════════════
-const CATS_PROV = ["Fotografía","Animación","Lugar","Catering","Música","Decoración","Cabina Fotos","Torta","Transporte","Otro"];
+const CATS_PROV = ["Fotografía","Animador","Animación","Lugar","Catering","Música","Decoración","Cabina Fotos","Torta","Transporte","Otro"];
 const PROVEEDORES_INICIALES: Proveedor[] = [
   { id:1, categoria:"Fotografía", nombre:"Pancho Jorquez", descripcion:"Fotógrafo profesional", costo:650000, extras:[{desc:"Traslado",monto:40000}], estado:"confirmado", contacto:"", notas:"" },
 ];
@@ -293,16 +293,23 @@ function Invitados({ data, setData }: { data:{invitados:Invitado[]}; setData:(d:
   const lista = data.invitados || [];
   const [form, setForm] = useState<Partial<Invitado>>({ tipo:"adulto", confirmado:"pendiente" });
   const [show, setShow] = useState(false);
+  const [editId, setEditId] = useState<number|null>(null);
   const [filtro, setFiltro] = useState("todos");
   const [buscar, setBuscar] = useState("");
 
   const guardar = () => {
     if (!form.nombre) return;
-    const nuevo: Invitado = { id:Date.now(), nombre:form.nombre!, tipo:form.tipo||"adulto", mesa:form.mesa||0, confirmado:form.confirmado||"pendiente", dieta:form.dieta||"", notas:form.notas||"" };
-    setData({invitados:[...lista,nuevo]}); setForm({tipo:"adulto",confirmado:"pendiente"}); setShow(false);
+    if (editId !== null) {
+      setData({invitados:lista.map(i=>i.id===editId?{...i,...form} as Invitado:i)});
+    } else {
+      const nuevo: Invitado = { id:Date.now(), nombre:form.nombre!, tipo:form.tipo||"adulto", mesa:form.mesa||0, confirmado:form.confirmado||"pendiente", dieta:form.dieta||"", notas:form.notas||"" };
+      setData({invitados:[...lista,nuevo]});
+    }
+    setForm({tipo:"adulto",confirmado:"pendiente"}); setEditId(null); setShow(false);
   };
-  const cambiar = (id:number, v:"si"|"no"|"pendiente") => setData({invitados:lista.map(i=>i.id===id?{...i,confirmado:v}:i)});
-  const eliminar= (id:number) => setData({invitados:lista.filter(i=>i.id!==id)});
+  const editar   = (i:Invitado) => { setForm(i); setEditId(i.id); setShow(true); };
+  const cambiar  = (id:number, v:"si"|"no"|"pendiente") => setData({invitados:lista.map(i=>i.id===id?{...i,confirmado:v}:i)});
+  const eliminar = (id:number) => { setData({invitados:lista.filter(i=>i.id!==id)}); if(editId===id){setShow(false);setEditId(null);setForm({tipo:"adulto",confirmado:"pendiente"});} };
   const colorC  = (c:string)  => c==="si"?"#6aaa96":c==="no"?"#e07070":"#c9956a";
   const filtrados = lista.filter(i=>filtro==="todos"||i.confirmado===filtro||i.tipo===filtro).filter(i=>i.nombre.toLowerCase().includes(buscar.toLowerCase()));
 
@@ -319,17 +326,18 @@ function Invitados({ data, setData }: { data:{invitados:Invitado[]}; setData:(d:
       </div>
       {show && (
         <Card style={{ marginBottom:16, border:"2px solid #e8d5c4" }}>
-          <div style={{ fontSize:14, fontWeight:700, color:"#5c3d2e", marginBottom:14 }}>Nuevo invitado</div>
+          <div style={{ fontSize:14, fontWeight:700, color:"#5c3d2e", marginBottom:14 }}>{editId?"Editar":"Nuevo"} invitado</div>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             <Inp value={form.nombre||""} onChange={v=>setForm({...form,nombre:v})} placeholder="Nombre completo"/>
             <Sel value={form.tipo||"adulto"} onChange={v=>setForm({...form,tipo:v as any})} options={[{value:"adulto",label:"👤 Adulto ($75.000)"},{value:"niño",label:"👶 Niño ($35.000)"}]}/>
             <Sel value={form.confirmado||"pendiente"} onChange={v=>setForm({...form,confirmado:v as any})} options={[{value:"pendiente",label:"⏳ Pendiente"},{value:"si",label:"✅ Confirmado"},{value:"no",label:"❌ No viene"}]}/>
             <Inp value={form.mesa?.toString()||""} onChange={v=>setForm({...form,mesa:Number(v)})} placeholder="Mesa Nº" type="number"/>
             <Inp value={form.dieta||""} onChange={v=>setForm({...form,dieta:v})} placeholder="Restricción dietética (opcional)"/>
+            <Inp value={form.notas||""} onChange={v=>setForm({...form,notas:v})} placeholder="Notas (opcional)"/>
           </div>
           <div style={{ display:"flex", gap:8, marginTop:14 }}>
             <Btn onClick={guardar}>Guardar</Btn>
-            <Btn onClick={()=>{setShow(false);setForm({tipo:"adulto",confirmado:"pendiente"});}} outline>Cancelar</Btn>
+            <Btn onClick={()=>{setShow(false);setForm({tipo:"adulto",confirmado:"pendiente"});setEditId(null);}} outline>Cancelar</Btn>
           </div>
         </Card>
       )}
@@ -356,6 +364,7 @@ function Invitados({ data, setData }: { data:{invitados:Invitado[]}; setData:(d:
                 {(["si","no","pendiente"] as const).map(v=>(
                   <button key={v} onClick={()=>cambiar(i.id,v)} style={{ background:i.confirmado===v?colorC(v)+"33":"none", border:`1px solid ${colorC(v)}44`, borderRadius:5, padding:"2px 6px", fontSize:10, color:colorC(v), cursor:"pointer", fontFamily:"inherit" }}>{v==="si"?"✓":v==="no"?"✗":"?"}</button>
                 ))}
+                <button onClick={()=>editar(i)} style={{ background:"none", border:"1px solid #c9956a44", borderRadius:5, padding:"2px 6px", fontSize:10, color:"#c9956a", cursor:"pointer" }}>✏️</button>
                 <button onClick={()=>eliminar(i.id)} style={{ background:"none", border:"1px solid #e0c0c0", borderRadius:5, padding:"2px 6px", fontSize:10, color:"#e07070", cursor:"pointer" }}>🗑</button>
               </div>
             </div>
@@ -720,9 +729,10 @@ function Programa({ canciones, setCanciones }: { canciones:{canciones:Cancion[]}
   const [show, setShow] = useState(false);
   const guardar = () => {
     if (!form.titulo) return;
-    setCanciones({canciones:[...lista,{id:Date.now(),titulo:form.titulo!,artista:form.artista||"",momento:form.momento||"Baile general"}]});
+    setCanciones({canciones:[...lista,{id:Date.now(),titulo:form.titulo!,artista:form.artista||"",momento:form.momento||"Baile general",link:form.link||""}]});
     setForm({momento:"Baile general"}); setShow(false);
   };
+  const linkIcon = (url:string) => url.includes("spotify")?"🎧":url.includes("youtube")||url.includes("youtu.be")?"▶️":"🔗";
   const eliminar = (id:number) => setCanciones({canciones:lista.filter(c=>c.id!==id)});
 
   return (
@@ -741,6 +751,7 @@ function Programa({ canciones, setCanciones }: { canciones:{canciones:Cancion[]}
             <Inp value={form.titulo||""} onChange={v=>setForm({...form,titulo:v})} placeholder="Título o actividad"/>
             <Inp value={form.artista||""} onChange={v=>setForm({...form,artista:v})} placeholder="Artista (opcional)"/>
             <Sel value={form.momento||"Baile general"} onChange={v=>setForm({...form,momento:v})} options={MOMENTOS_DIA.map(m=>({value:m,label:m}))}/>
+            <Inp value={form.link||""} onChange={v=>setForm({...form,link:v})} placeholder="🔗 Link Spotify / YouTube (opcional)"/>
           </div>
           <div style={{ display:"flex", gap:8, marginTop:14 }}>
             <Btn onClick={guardar}>Guardar</Btn>
@@ -758,8 +769,16 @@ function Programa({ canciones, setCanciones }: { canciones:{canciones:Cancion[]}
               <div style={{ fontSize:13, fontWeight:700, color:"#9b7bb5", marginBottom:10 }}>🎵 {m}</div>
               {items.map(c=>(
                 <div key={c.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 0", borderBottom:"1px solid #f5e8dc" }}>
-                  <div><div style={{ fontSize:13, color:"#5c3d2e" }}>{c.titulo}</div>{c.artista&&<div style={{ fontSize:11, color:"#a07855" }}>{c.artista}</div>}</div>
-                  <button onClick={()=>eliminar(c.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:13, color:"#5c3d2e" }}>{c.titulo}</div>
+                    {c.artista&&<div style={{ fontSize:11, color:"#a07855" }}>{c.artista}</div>}
+                  </div>
+                  <div style={{ display:"flex", gap:6, alignItems:"center", flexShrink:0 }}>
+                    {c.link && (
+                      <a href={c.link} target="_blank" rel="noreferrer" style={{ background:"#f5e8dc", border:"1px solid #e8d5c4", borderRadius:8, padding:"4px 10px", fontSize:16, textDecoration:"none", display:"flex", alignItems:"center" }}>{linkIcon(c.link)}</a>
+                    )}
+                    <button onClick={()=>eliminar(c.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
+                  </div>
                 </div>
               ))}
             </Card>
