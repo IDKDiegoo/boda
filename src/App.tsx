@@ -25,6 +25,26 @@ const FOTOS_PIN    = "BODA27";
 const fmt = (n: number) => "$" + n.toLocaleString("es-CL");
 const diasFaltantes = () => Math.ceil((BODA_FECHA.getTime() - Date.now()) / 86400000);
 
+function useCuentaRegresiva() {
+  const [tiempo, setTiempo] = useState({ dias:0, horas:0, minutos:0, segundos:0 });
+  useEffect(() => {
+    const calc = () => {
+      const diff = BODA_FECHA.getTime() - Date.now();
+      if (diff <= 0) { setTiempo({ dias:0, horas:0, minutos:0, segundos:0 }); return; }
+      setTiempo({
+        dias:     Math.floor(diff / 86400000),
+        horas:    Math.floor((diff % 86400000) / 3600000),
+        minutos:  Math.floor((diff % 3600000) / 60000),
+        segundos: Math.floor((diff % 60000) / 1000),
+      });
+    };
+    calc();
+    const id = setInterval(calc, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return tiempo;
+}
+
 function useData<T>(coleccion: string, inicial: T) {
   const [data, setData] = useState<T>(inicial);
 
@@ -100,7 +120,7 @@ function PantallaLogin({ onLogin }: { onLogin:(tipo:"admin"|"fotos")=>void }) {
     <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#fff5ee 0%,#fde8d8 50%,#f8d5c2 100%)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
       <S/>
       <div style={{ animation:"float 3s ease-in-out infinite", marginBottom:24 }}>
-        <img src="/logo.jpg" alt="Boda" style={{ width:100, height:100, borderRadius:"50%", objectFit:"cover", border:"4px solid #c9956a", boxShadow:"0 8px 32px rgba(201,149,106,.3)" }}/>
+        <img src="/pareja.jpg" alt="Boda" style={{ width:100, height:100, borderRadius:"50%", objectFit:"cover", border:"4px solid #c9956a", boxShadow:"0 8px 32px rgba(201,149,106,.3)" }}/>
       </div>
       <div style={{ textAlign:"center", marginBottom:32, animation:"fadeUp .6s ease" }}>
         <div style={{ fontSize:12, letterSpacing:"0.2em", color:"#c9956a", marginBottom:8, textTransform:"uppercase" }}>💍 27 · Noviembre · 2027 💍</div>
@@ -122,7 +142,6 @@ function PantallaLogin({ onLogin }: { onLogin:(tipo:"admin"|"fotos")=>void }) {
 // DASHBOARD
 // ════════════════════════════════════════════════════════════════
 function Dashboard({ invitados, proveedores, gastos }: { invitados:{invitados:Invitado[]}; proveedores:{proveedores:Proveedor[]}; gastos:{gastos:GastoExtra[]} }) {
-  const dias  = diasFaltantes();
   const inv   = invitados.invitados   || [];
   const prov  = proveedores.proveedores || [];
   const gsts  = gastos.gastos         || [];
@@ -134,14 +153,25 @@ function Dashboard({ invitados, proveedores, gastos }: { invitados:{invitados:In
   const gran_total  = costoInv + totalProv + totalGastos;
   const confirmados = inv.filter(i=>i.confirmado==="si").length;
 
+  const cr = useCuentaRegresiva();
+
   return (
     <div style={{ animation:"fadeUp .3s ease" }}>
       <Title icon="💍" title="Nuestra Boda"/>
-      <Card style={{ background:"linear-gradient(135deg,#c9956a,#a07040)", marginBottom:16, textAlign:"center" }}>
-        <div style={{ fontSize:11, color:"#ffe8d4", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:4 }}>Faltan</div>
-        <div style={{ fontSize:60, fontWeight:400, color:"#fff", lineHeight:1 }}>{dias}</div>
-        <div style={{ fontSize:14, color:"#ffe8d4", marginTop:4 }}>días para el gran día 💍</div>
-        <div style={{ fontSize:12, color:"#ffd4b8", marginTop:8 }}>Diego & Camila · 27 de Noviembre 2027</div>
+      <Card style={{ background:"linear-gradient(135deg,#c9956a,#a07040)", marginBottom:16, overflow:"hidden", position:"relative" }}>
+        <img src="/pareja.jpg" alt="Diego & Camila" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.25 }}/>
+        <div style={{ position:"relative", textAlign:"center", padding:"8px 0" }}>
+          <div style={{ fontSize:11, color:"#ffe8d4", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:12 }}>Faltan</div>
+          <div style={{ display:"flex", justifyContent:"center", gap:12, marginBottom:12 }}>
+            {[{v:cr.dias,l:"días"},{v:cr.horas,l:"horas"},{v:cr.minutos,l:"min"},{v:cr.segundos,l:"seg"}].map(({v,l})=>(
+              <div key={l} style={{ textAlign:"center" }}>
+                <div style={{ fontSize:36, fontWeight:700, color:"#fff", lineHeight:1, fontVariantNumeric:"tabular-nums", minWidth:48 }}>{String(v).padStart(2,"0")}</div>
+                <div style={{ fontSize:10, color:"#ffd4b8", marginTop:3, letterSpacing:"0.05em" }}>{l}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize:13, color:"#ffe8d4" }}>Diego & Camila · 27 de Noviembre 2027 💍</div>
+        </div>
       </Card>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>
         {[
@@ -786,7 +816,7 @@ export default function App() {
       <S/>
       <div style={{ maxWidth:480, margin:"0 auto" }}>
         <div style={{ textAlign:"center", marginBottom:24 }}>
-          <img src="/logo.jpg" alt="Boda" style={{ width:70, height:70, borderRadius:"50%", objectFit:"cover", border:"3px solid #c9956a" }}/>
+          <img src="/pareja.jpg" alt="Boda" style={{ width:70, height:70, borderRadius:"50%", objectFit:"cover", border:"3px solid #c9956a" }}/>
           <div style={{ fontSize:18, color:"#5c3d2e", marginTop:10 }}>Diego & Camila 💍</div>
         </div>
         <Fotos esAdmin={false}/>
@@ -815,7 +845,7 @@ export default function App() {
       {/* Header */}
       <div style={{ background:"#fff", borderBottom:"1px solid #f0e0d0", padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0, boxShadow:"0 2px 12px rgba(180,130,100,.08)" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <img src="/logo.jpg" alt="Diego & Camila" style={{ width:38, height:38, borderRadius:"50%", objectFit:"cover", border:"2px solid #e8d5c4" }}/>
+          <img src="/pareja.jpg" alt="Diego & Camila" style={{ width:38, height:38, borderRadius:"50%", objectFit:"cover", border:"2px solid #e8d5c4" }}/>
           <div>
             <div style={{ fontSize:15, fontWeight:700, color:"#5c3d2e" }}>Diego & Camila</div>
             <div style={{ fontSize:9, color:"#c4a882", letterSpacing:"0.06em" }}>💍 27 · NOV · 2027 · {diasFaltantes()}d</div>
