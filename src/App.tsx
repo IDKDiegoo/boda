@@ -70,7 +70,7 @@ type GastoExtra= { id:number; nombre:string; categoria:string; monto:number; pag
 type Cancion   = { id:number; titulo:string; artista:string; momento:string; };
 type Regalo    = { id:number; nombre:string; precio:number; prioridad:"alta"|"media"|"baja"; recibido:boolean; link?:string; };
 type LunaItem  = { id:number; categoria:string; descripcion:string; monto:number; confirmado:boolean; notas?:string; };
-type MesaPos   = { id:number; numero:number; x:number; y:number; };
+type MesaPos   = { id:number; numero:number; x:number; y:number; forma:"circular"|"rectangular"|"cuadrada"; };
 type Foto      = { url:string; nombre:string; };
 
 // ── Estilos globales ─────────────────────────────────────────────
@@ -380,14 +380,21 @@ function Mesas({ invitados, setInvitados, mesasData, setMesasData }: {
   const dragRef = useRef<{id:number;startX:number;startY:number;origX:number;origY:number;moved:boolean}|null>(null);
   const roomRef = useRef<HTMLDivElement>(null);
 
-  const TR    = 36;  // radio tabla
+  const TR    = 36;
   const RoomH = 320;
+  const [formaAgregar, setFormaAgregar] = useState<"circular"|"rectangular"|"cuadrada">("circular");
 
   useEffect(() => { setLocalMesas(mesasData.mesas || []); }, [mesasData]);
 
   const sinMesa    = lista.filter(i=>!i.mesa||i.mesa===0);
   const invDeMesa  = (num:number) => lista.filter(i=>i.mesa===num);
   const mesaActual = localMesas.find(m=>m.numero===seleccionada);
+
+  const cambiarForma = (id:number, forma:"circular"|"rectangular"|"cuadrada") => {
+    const nuevas = localMesas.map(m=>m.id===id?{...m,forma}:m);
+    setLocalMesas(nuevas);
+    setMesasData({ mesas: nuevas });
+  };
 
   const addMesa = () => {
     const nums    = localMesas.map(m=>m.numero);
@@ -399,7 +406,7 @@ function Mesas({ invitados, setInvitados, mesasData, setMesasData }: {
     const spacing = 110;
     const x       = 60 + col * spacing;
     const y       = 60 + row * spacing;
-    const nuevo   = { id:Date.now(), numero:next, x, y };
+    const nuevo: MesaPos = { id:Date.now(), numero:next, x, y, forma:formaAgregar };
     const nuevas  = [...localMesas, nuevo];
     setLocalMesas(nuevas);
     setMesasData({ mesas: nuevas });
@@ -472,9 +479,14 @@ function Mesas({ invitados, setInvitados, mesasData, setMesasData }: {
 
       {/* Sala — plano visual */}
       <Card style={{ padding:8, marginBottom:14 }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8, paddingLeft:4 }}>
-          <span style={{ fontSize:11, color:"#a07855" }}>Arrastra las mesas · Toca para asignar invitados</span>
-          <Btn onClick={addMesa} style={{ padding:"6px 14px", fontSize:12 }}>+ Mesa</Btn>
+        <div style={{ marginBottom:8 }}>
+          <div style={{ fontSize:11, color:"#a07855", marginBottom:8 }}>Arrastra las mesas · Toca para asignar invitados</div>
+          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+            {([["circular","⬤ Redonda"],["rectangular","▬ Rectangular"],["cuadrada","■ Cuadrada"]] as const).map(([f,l])=>(
+              <button key={f} onClick={()=>setFormaAgregar(f)} style={{ flex:1, background:formaAgregar===f?"#c9956a":"#f5e8dc", border:`2px solid ${formaAgregar===f?"#c9956a":"#e8d5c4"}`, borderRadius:8, padding:"6px 4px", fontSize:10, fontWeight:700, color:formaAgregar===f?"#fff":"#a07855", cursor:"pointer", fontFamily:"inherit" }}>{l}</button>
+            ))}
+            <Btn onClick={addMesa} style={{ padding:"6px 14px", fontSize:12, whiteSpace:"nowrap" }}>+ Agregar</Btn>
+          </div>
         </div>
         <div
           ref={roomRef}
@@ -496,9 +508,14 @@ function Mesas({ invitados, setInvitados, mesasData, setMesasData }: {
           <div style={{ position:"absolute", bottom:6, left:"50%", transform:"translateX(-50%)", fontSize:9, color:"#c4a882", background:"#fff", border:"1px solid #e8d5c4", borderRadius:4, padding:"2px 8px" }}>🚪 ENTRADA</div>
 
           {localMesas.map(mesa=>{
-            const inv     = invDeMesa(mesa.numero);
-            const isSel   = seleccionada===mesa.numero;
-            const isDrag  = dragRef.current?.id===mesa.id;
+            const inv    = invDeMesa(mesa.numero);
+            const isSel  = seleccionada===mesa.numero;
+            const isDrag = dragRef.current?.id===mesa.id;
+            const forma  = mesa.forma || "circular";
+            const W = forma==="rectangular" ? TR*2+20 : TR*2;
+            const H = forma==="rectangular" ? TR*1.2  : TR*2;
+            const radius = forma==="circular" ? "50%" : forma==="cuadrada" ? "10px" : "8px";
+            const bgSel  = "linear-gradient(135deg,#c9956a,#a07040)";
             return (
               <div
                 key={mesa.id}
@@ -508,10 +525,10 @@ function Mesas({ invitados, setInvitados, mesasData, setMesasData }: {
                 onMouseUp={()=>endDrag(mesa)}
                 style={{
                   position:"absolute",
-                  left:mesa.x-TR, top:mesa.y-TR,
-                  width:TR*2, height:TR*2,
-                  borderRadius:"50%",
-                  background:isSel?"linear-gradient(135deg,#c9956a,#a07040)":"#fff",
+                  left:mesa.x-W/2, top:mesa.y-H/2,
+                  width:W, height:H,
+                  borderRadius:radius,
+                  background:isSel?bgSel:"#fff",
                   border:`3px solid ${isSel?"#a07040":"#e8d5c4"}`,
                   display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
                   cursor:"grab", touchAction:"none",
@@ -520,7 +537,7 @@ function Mesas({ invitados, setInvitados, mesasData, setMesasData }: {
                   transition: isDrag?"none":"box-shadow .15s",
                 }}
               >
-                <div style={{ fontSize:16, fontWeight:800, color:isSel?"#fff":"#5c3d2e", lineHeight:1 }}>{mesa.numero}</div>
+                <div style={{ fontSize:15, fontWeight:800, color:isSel?"#fff":"#5c3d2e", lineHeight:1 }}>{mesa.numero}</div>
                 <div style={{ fontSize:9, color:isSel?"#ffe8d4":"#a07855", marginTop:2 }}>{inv.length} pers.</div>
                 {inv.length>0 && (
                   <div style={{ position:"absolute", top:-6, right:-6, width:16, height:16, borderRadius:"50%", background:"#6aaa96", border:"2px solid #fff", fontSize:8, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}>{inv.length}</div>
@@ -549,6 +566,12 @@ function Mesas({ invitados, setInvitados, mesasData, setMesasData }: {
               <button onClick={()=>eliminarMesa(seleccionada)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:12, fontFamily:"inherit" }}>🗑 Eliminar</button>
               <button onClick={()=>setSeleccionada(null)} style={{ background:"none", border:"none", color:"#a07855", cursor:"pointer", fontSize:18 }}>✕</button>
             </div>
+          </div>
+          {/* Cambiar forma */}
+          <div style={{ display:"flex", gap:5, marginBottom:12 }}>
+            {([["circular","⬤"],["rectangular","▬"],["cuadrada","■"]] as const).map(([f,l])=>(
+              <button key={f} onClick={()=>cambiarForma(mesaActual.id,f)} style={{ flex:1, background:(mesaActual.forma||"circular")===f?"#c9956a":"#f5e8dc", border:`1.5px solid ${(mesaActual.forma||"circular")===f?"#c9956a":"#e8d5c4"}`, borderRadius:7, padding:"5px 4px", fontSize:12, color:(mesaActual.forma||"circular")===f?"#fff":"#a07855", cursor:"pointer", fontFamily:"inherit" }}>{l}</button>
+            ))}
           </div>
           <div style={{ fontSize:11, color:"#a07855", marginBottom:10 }}>Toca un invitado para asignar / quitar:</div>
           <div style={{ display:"flex", flexDirection:"column", gap:5, maxHeight:260, overflowY:"auto" }}>
