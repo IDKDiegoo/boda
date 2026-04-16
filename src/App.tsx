@@ -5,12 +5,12 @@ import { getStorage, ref, uploadBytes, getDownloadURL, listAll } from "firebase/
 
 // ── Firebase ────────────────────────────────────────────────────
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyPlaceholderKeyReplaceThis",
-  authDomain: "boda-diego-camila.firebaseapp.com",
-  projectId: "boda-diego-camila",
-  storageBucket: "boda-diego-camila.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:placeholder"
+  apiKey:            "AIzaSyAc0WdoLmTjfR-ucxAON1Lr9abcQAeHM-4",
+  authDomain:        "arain-database.firebaseapp.com",
+  projectId:         "arain-database",
+  storageBucket:     "arain-database.firebasestorage.app",
+  messagingSenderId: "541671718502",
+  appId:             "1:541671718502:web:ed236770ea20bd34cf37a7"
 };
 const app  = initializeApp(FIREBASE_CONFIG);
 const db   = getFirestore(app);
