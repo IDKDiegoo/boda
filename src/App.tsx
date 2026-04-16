@@ -917,6 +917,7 @@ function Fotos({ esAdmin }: { esAdmin:boolean }) {
   const [subiendo, setSubiendo] = useState(false);
   const [progreso, setProgreso] = useState("");
   const [preview, setPreview]   = useState<string|null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const cargar = async () => {
     try {
@@ -948,10 +949,8 @@ function Fotos({ esAdmin }: { esAdmin:boolean }) {
         <div style={{ fontSize:36, marginBottom:8 }}>📸</div>
         <div style={{ fontSize:14, color:"#5c3d2e", fontWeight:700, marginBottom:4 }}>{esAdmin?"Agregar fotos a la galería":"Comparte tus fotos de la boda"}</div>
         <div style={{ fontSize:12, color:"#a07855", marginBottom:16 }}>Selecciona una o varias fotos desde tu teléfono</div>
-        <label style={{ cursor:"pointer" }}>
-          <Btn color="#c9956a" style={{ pointerEvents:"none" }}>{subiendo?progreso||"Subiendo...":"📁 Elegir fotos"}</Btn>
-          <input type="file" accept="image/*" multiple onChange={e=>subir(e.target.files)} style={{ display:"none" }} disabled={subiendo}/>
-        </label>
+        <Btn color="#c9956a" onClick={()=>!subiendo&&fileRef.current?.click()}>{subiendo?progreso||"Subiendo...":"📁 Elegir fotos"}</Btn>
+        <input ref={fileRef} type="file" accept="image/*" multiple onChange={e=>subir(e.target.files)} style={{ display:"none" }} disabled={subiendo}/>
         {progreso && <div style={{ marginTop:12, fontSize:13, color:"#6aaa96", fontWeight:700 }}>{progreso}</div>}
       </Card>
       {esAdmin && (
