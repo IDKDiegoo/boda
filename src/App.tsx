@@ -727,13 +727,24 @@ function Programa({ canciones, setCanciones }: { canciones:{canciones:Cancion[]}
   const lista = canciones.canciones || [];
   const [form, setForm] = useState<Partial<Cancion>>({ momento:"Baile general" });
   const [show, setShow] = useState(false);
+  const [playerUrl, setPlayerUrl] = useState<string|null>(null);
   const guardar = () => {
     if (!form.titulo) return;
     setCanciones({canciones:[...lista,{id:Date.now(),titulo:form.titulo!,artista:form.artista||"",momento:form.momento||"Baile general",link:form.link||""}]});
     setForm({momento:"Baile general"}); setShow(false);
   };
-  const linkIcon = (url:string) => url.includes("spotify")?"🎧":url.includes("youtube")||url.includes("youtu.be")?"▶️":"🔗";
   const eliminar = (id:number) => setCanciones({canciones:lista.filter(c=>c.id!==id)});
+
+  const toEmbedUrl = (url:string): string|null => {
+    // YouTube
+    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
+    // Spotify track/album/playlist/artist
+    const spMatch = url.match(/open\.spotify\.com\/(track|album|playlist|artist)\/([a-zA-Z0-9]+)/);
+    if (spMatch) return `https://open.spotify.com/embed/${spMatch[1]}/${spMatch[2]}`;
+    return null;
+  };
+  const linkIcon = (url:string) => url.includes("spotify")?"🎧":url.includes("youtube")||url.includes("youtu.be")?"▶️":"🔗";
 
   return (
     <div style={{ animation:"fadeUp .3s ease" }}>
@@ -775,7 +786,7 @@ function Programa({ canciones, setCanciones }: { canciones:{canciones:Cancion[]}
                   </div>
                   <div style={{ display:"flex", gap:6, alignItems:"center", flexShrink:0 }}>
                     {c.link && (
-                      <a href={c.link} target="_blank" rel="noreferrer" style={{ background:"#f5e8dc", border:"1px solid #e8d5c4", borderRadius:8, padding:"4px 10px", fontSize:16, textDecoration:"none", display:"flex", alignItems:"center" }}>{linkIcon(c.link)}</a>
+                      <button onClick={()=>{ const e=toEmbedUrl(c.link!); e?setPlayerUrl(e):window.open(c.link,"_blank"); }} style={{ background:"#f5e8dc", border:"1px solid #e8d5c4", borderRadius:8, padding:"4px 10px", fontSize:16, cursor:"pointer" }}>{linkIcon(c.link)}</button>
                     )}
                     <button onClick={()=>eliminar(c.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
                   </div>
@@ -786,6 +797,26 @@ function Programa({ canciones, setCanciones }: { canciones:{canciones:Cancion[]}
         })}
         {lista.length===0 && <div style={{ textAlign:"center", color:"#c4a882", padding:32 }}>Agrega canciones y actividades para el gran día</div>}
       </div>
+
+      {/* Reproductor embebido */}
+      {playerUrl && (
+        <div onClick={()=>setPlayerUrl(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.75)", zIndex:999, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:20 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ width:"100%", maxWidth:480, background:"#1a1a1a", borderRadius:16, overflow:"hidden", boxShadow:"0 8px 40px rgba(0,0,0,.5)" }}>
+            <div style={{ display:"flex", justifyContent:"flex-end", padding:"8px 12px", background:"#111" }}>
+              <button onClick={()=>setPlayerUrl(null)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer", lineHeight:1 }}>✕</button>
+            </div>
+            <iframe
+              src={playerUrl}
+              width="100%"
+              height={playerUrl.includes("spotify")?152:280}
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              style={{ border:"none", display:"block" }}
+              title="Reproductor"
+            />
+          </div>
+          <div style={{ marginTop:12, fontSize:12, color:"rgba(255,255,255,.5)" }}>Toca fuera para cerrar</div>
+        </div>
+      )}
     </div>
   );
 }
