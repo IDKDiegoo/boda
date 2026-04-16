@@ -919,15 +919,27 @@ function Fotos({ esAdmin }: { esAdmin:boolean }) {
   const [preview, setPreview]   = useState<string|null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [cargando, setCargando] = useState(false);
+
   const cargar = async () => {
+    setCargando(true);
     try {
       const r = await listAll(ref(stor, "fotos-boda"));
       const urls = await Promise.all(r.items.map(async it=>({ url:await getDownloadURL(it), nombre:it.name })));
       setFotos(urls.reverse());
-    } catch(e){ console.error(e); }
+    } catch(e:any) {
+      console.error(e);
+      setProgreso(`❌ Error al cargar: ${e?.message||"sin acceso"}`);
+      setTimeout(()=>setProgreso(""),5000);
+    } finally {
+      setCargando(false);
+    }
   };
 
   useEffect(() => { if (esAdmin) cargar(); }, [esAdmin]);
+
+  const withTimeout = <T,>(p: Promise<T>, ms=30000): Promise<T> =>
+    Promise.race([p, new Promise<T>((_,reject)=>setTimeout(()=>reject(new Error(`Tiempo agotado — revisa las reglas de Firebase Storage`)),ms))]);
 
   const subir = async (files:FileList|null) => {
     if (!files||!files.length) return;
@@ -936,14 +948,14 @@ function Fotos({ esAdmin }: { esAdmin:boolean }) {
       let n=0;
       for (const f of Array.from(files)) {
         setProgreso(`Subiendo ${++n}/${files.length}...`);
-        await uploadBytes(ref(stor,`fotos-boda/${Date.now()}_${f.name}`), f);
+        await withTimeout(uploadBytes(ref(stor,`fotos-boda/${Date.now()}_${f.name}`), f));
       }
       setProgreso("¡Fotos subidas! 🎉");
       if (esAdmin) await cargar();
       setTimeout(()=>setProgreso(""),3000);
     } catch(e:any) {
-      setProgreso(`❌ Error: ${e?.message||"No se pudo subir"}`);
-      setTimeout(()=>setProgreso(""),5000);
+      setProgreso(`❌ ${e?.message||"No se pudo subir"}`);
+      setTimeout(()=>setProgreso(""),6000);
     } finally {
       setSubiendo(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -965,7 +977,7 @@ function Fotos({ esAdmin }: { esAdmin:boolean }) {
         <>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
             <div style={{ fontSize:13, color:"#a07855" }}>{fotos.length} fotos</div>
-            <button onClick={cargar} style={{ background:"none", border:"none", color:"#c9956a", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>🔄 Actualizar</button>
+            <button onClick={cargar} disabled={cargando} style={{ background:"none", border:"none", color:"#c9956a", fontSize:12, cursor:"pointer", fontFamily:"inherit", opacity:cargando?.5:1 }}>{cargando?"⏳ Cargando...":"🔄 Actualizar"}</button>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6 }}>
             {fotos.map(f=>(
