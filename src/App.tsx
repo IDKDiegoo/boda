@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL, listAll, deleteObject } from "firebase/storage";
 
 // ── Firebase ────────────────────────────────────────────────────
 const FIREBASE_CONFIG = {
@@ -981,12 +981,32 @@ function Fotos({ esAdmin }: { esAdmin:boolean }) {
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6 }}>
             {fotos.map(f=>(
-              <div key={f.nombre} onClick={()=>setPreview(f.url)} style={{ cursor:"pointer", borderRadius:10, overflow:"hidden", aspectRatio:"1", border:"2px solid #f0e0d0" }}>
-                <img src={f.url} alt={f.nombre} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+              <div key={f.nombre} style={{ position:"relative", borderRadius:10, overflow:"hidden", aspectRatio:"1", border:"2px solid #f0e0d0" }}>
+                <img src={f.url} alt={f.nombre} onClick={()=>setPreview(f.url)} style={{ width:"100%", height:"100%", objectFit:"cover", cursor:"pointer", display:"block" }}/>
+                <button
+                  onClick={async()=>{
+                    if (!window.confirm("¿Eliminar esta foto?")) return;
+                    try {
+                      await deleteObject(ref(stor, `fotos-boda/${f.nombre}`));
+                      setFotos(prev=>prev.filter(x=>x.nombre!==f.nombre));
+                    } catch(e:any){ alert("Error al eliminar: "+e.message); }
+                  }}
+                  style={{ position:"absolute", top:4, right:4, background:"rgba(0,0,0,.55)", border:"none", borderRadius:6, color:"#fff", fontSize:13, cursor:"pointer", padding:"2px 6px", lineHeight:1.4 }}
+                >🗑</button>
               </div>
             ))}
           </div>
           {fotos.length===0 && <div style={{ textAlign:"center", color:"#c4a882", padding:32 }}>Aún no hay fotos. ¡Comparte el QR!</div>}
+
+          {/* QR integrado para admin */}
+          <Card style={{ marginTop:16, textAlign:"center", background:"#fdf8f3" }}>
+            <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:8 }}>📱 QR para invitados</div>
+            <div style={{ fontSize:11, color:"#a07855", marginBottom:12 }}>Muestra este QR en la boda para que los invitados suban fotos</div>
+            <div style={{ background:"#fff", border:"6px solid #f5e8dc", borderRadius:14, padding:16, display:"inline-block", marginBottom:10 }}>
+              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(window.location.origin+"?fotos=1")}&bgcolor=ffffff&color=5c3d2e`} alt="QR" style={{ width:180, height:180, display:"block" }}/>
+            </div>
+            <div style={{ fontSize:11, color:"#c4a882" }}>Código: <strong style={{ color:"#c9956a" }}>{FOTOS_PIN}</strong></div>
+          </Card>
         </>
       )}
       {preview && (
