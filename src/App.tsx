@@ -736,12 +736,13 @@ function Programa({ canciones, setCanciones }: { canciones:{canciones:Cancion[]}
   const eliminar = (id:number) => setCanciones({canciones:lista.filter(c=>c.id!==id)});
 
   const toEmbedUrl = (url:string): string|null => {
+    const u = url.trim();
     // YouTube
-    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    const ytMatch = u.match(/(?:youtube\.com\/watch\?(?:.*&)?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
-    // Spotify track/album/playlist/artist
-    const spMatch = url.match(/open\.spotify\.com\/(track|album|playlist|artist)\/([a-zA-Z0-9]+)/);
-    if (spMatch) return `https://open.spotify.com/embed/${spMatch[1]}/${spMatch[2]}`;
+    // Spotify — acepta cualquier variante de open.spotify.com
+    const spMatch = u.match(/spotify\.com\/(?:intl-[a-z]+\/)?(track|album|playlist|artist)\/([a-zA-Z0-9]+)/);
+    if (spMatch) return `https://open.spotify.com/embed/${spMatch[1]}/${spMatch[2]}?utm_source=generator`;
     return null;
   };
   const linkIcon = (url:string) => url.includes("spotify")?"🎧":url.includes("youtube")||url.includes("youtu.be")?"▶️":"🔗";
@@ -786,7 +787,7 @@ function Programa({ canciones, setCanciones }: { canciones:{canciones:Cancion[]}
                   </div>
                   <div style={{ display:"flex", gap:6, alignItems:"center", flexShrink:0 }}>
                     {c.link && (
-                      <button onClick={()=>{ const e=toEmbedUrl(c.link!); e?setPlayerUrl(e):window.open(c.link,"_blank"); }} style={{ background:"#f5e8dc", border:"1px solid #e8d5c4", borderRadius:8, padding:"4px 10px", fontSize:16, cursor:"pointer" }}>{linkIcon(c.link)}</button>
+                      <button onClick={()=>{ const e=toEmbedUrl(c.link!); if(e){setPlayerUrl(e);}else{window.open(c.link,"_blank");} }} style={{ background: toEmbedUrl(c.link)?"#f5e8dc":"#fdf0e8", border:`1px solid ${toEmbedUrl(c.link)?"#e8d5c4":"#f0c080"}`, borderRadius:8, padding:"4px 10px", fontSize:16, cursor:"pointer" }} title={toEmbedUrl(c.link)?"Reproducir en la app":"Abrir en navegador"}>{linkIcon(c.link)}</button>
                     )}
                     <button onClick={()=>eliminar(c.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
                   </div>
