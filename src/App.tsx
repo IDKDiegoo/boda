@@ -932,14 +932,22 @@ function Fotos({ esAdmin }: { esAdmin:boolean }) {
   const subir = async (files:FileList|null) => {
     if (!files||!files.length) return;
     setSubiendo(true);
-    let n=0;
-    for (const f of Array.from(files)) {
-      setProgreso(`Subiendo ${++n}/${files.length}...`);
-      await uploadBytes(ref(stor,`fotos-boda/${Date.now()}_${f.name}`), f);
+    try {
+      let n=0;
+      for (const f of Array.from(files)) {
+        setProgreso(`Subiendo ${++n}/${files.length}...`);
+        await uploadBytes(ref(stor,`fotos-boda/${Date.now()}_${f.name}`), f);
+      }
+      setProgreso("¡Fotos subidas! 🎉");
+      if (esAdmin) await cargar();
+      setTimeout(()=>setProgreso(""),3000);
+    } catch(e:any) {
+      setProgreso(`❌ Error: ${e?.message||"No se pudo subir"}`);
+      setTimeout(()=>setProgreso(""),5000);
+    } finally {
+      setSubiendo(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
-    setProgreso("¡Fotos subidas! 🎉"); setSubiendo(false);
-    if (esAdmin) await cargar();
-    setTimeout(()=>setProgreso(""),3000);
   };
 
   return (
