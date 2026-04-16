@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
@@ -70,6 +70,7 @@ type GastoExtra= { id:number; nombre:string; categoria:string; monto:number; pag
 type Cancion   = { id:number; titulo:string; artista:string; momento:string; };
 type Regalo    = { id:number; nombre:string; precio:number; prioridad:"alta"|"media"|"baja"; recibido:boolean; link?:string; };
 type LunaItem  = { id:number; categoria:string; descripcion:string; monto:number; confirmado:boolean; notas?:string; };
+type MesaPos   = { id:number; numero:number; x:number; y:number; };
 type Foto      = { url:string; nombre:string; };
 
 // ── Estilos globales ─────────────────────────────────────────────
@@ -369,126 +370,232 @@ function Invitados({ data, setData }: { data:{invitados:Invitado[]}; setData:(d:
 // ════════════════════════════════════════════════════════════════
 // MESAS
 // ════════════════════════════════════════════════════════════════
-function Mesas({ invitados, setInvitados }: { invitados:{invitados:Invitado[]}; setInvitados:(d:any)=>void }) {
-  const lista = invitados.invitados || [];
-  const [nuevaMesa, setNuevaMesa] = useState("");
-  const [mesasCreadas, setMesasCreadas] = useState<number[]>([]);
-  const [asignando, setAsignando] = useState<number|null>(null);
+function Mesas({ invitados, setInvitados, mesasData, setMesasData }: {
+  invitados:{invitados:Invitado[]}; setInvitados:(d:any)=>void;
+  mesasData:{mesas:MesaPos[]}; setMesasData:(d:any)=>void;
+}) {
+  const lista  = invitados.invitados || [];
+  const [localMesas, setLocalMesas] = useState<MesaPos[]>([]);
+  const [seleccionada, setSeleccionada] = useState<number|null>(null);
+  const dragRef = useRef<{id:number;startX:number;startY:number;origX:number;origY:number;moved:boolean}|null>(null);
+  const roomRef = useRef<HTMLDivElement>(null);
 
-  // Recopilar números de mesa usados + mesas creadas manualmente
-  const mesasUsadas = Array.from(new Set(lista.map(i=>i.mesa||0).filter(m=>m>0)));
-  const todasMesas  = Array.from(new Set([...mesasCreadas, ...mesasUsadas])).sort((a,b)=>a-b);
+  const TR    = 36;  // radio tabla
+  const RoomH = 320;
 
-  const sinMesa = lista.filter(i=>!i.mesa||i.mesa===0);
-  const colorC  = (c:string) => c==="si"?"#6aaa96":c==="no"?"#e07070":"#c9956a";
+  useEffect(() => { setLocalMesas(mesasData.mesas || []); }, [mesasData]);
 
-  const crearMesa = () => {
-    const n = parseInt(nuevaMesa);
-    if (!n || n <= 0 || todasMesas.includes(n)) return;
-    setMesasCreadas(prev => [...prev, n]);
-    setNuevaMesa("");
+  const sinMesa    = lista.filter(i=>!i.mesa||i.mesa===0);
+  const invDeMesa  = (num:number) => lista.filter(i=>i.mesa===num);
+  const mesaActual = localMesas.find(m=>m.numero===seleccionada);
+
+  const addMesa = () => {
+    const nums    = localMesas.map(m=>m.numero);
+    const next    = nums.length ? Math.max(...nums)+1 : 1;
+    const cols    = 3;
+    const idx     = localMesas.length;
+    const col     = idx % cols;
+    const row     = Math.floor(idx / cols);
+    const spacing = 110;
+    const x       = 60 + col * spacing;
+    const y       = 60 + row * spacing;
+    const nuevo   = { id:Date.now(), numero:next, x, y };
+    const nuevas  = [...localMesas, nuevo];
+    setLocalMesas(nuevas);
+    setMesasData({ mesas: nuevas });
   };
 
-  const asignarInvitado = (invId: number, mesa: number) => {
-    setInvitados({ invitados: lista.map(i => i.id === invId ? { ...i, mesa } : i) });
-    setAsignando(null);
+  const eliminarMesa = (num:number) => {
+    setInvitados({ invitados: lista.map(i=>i.mesa===num?{...i,mesa:0}:i) });
+    const nuevas = localMesas.filter(m=>m.numero!==num);
+    setLocalMesas(nuevas);
+    setMesasData({ mesas: nuevas });
+    setSeleccionada(null);
   };
 
-  const quitarDeMesa = (invId: number) => {
-    setInvitados({ invitados: lista.map(i => i.id === invId ? { ...i, mesa: 0 } : i) });
+  const toggleInvitado = (invId:number, mesaNum:number) => {
+    const inv = lista.find(i=>i.id===invId);
+    if (!inv) return;
+    const newMesa = inv.mesa===mesaNum ? 0 : mesaNum;
+    setInvitados({ invitados: lista.map(i=>i.id===invId?{...i,mesa:newMesa}:i) });
   };
 
-  const eliminarMesa = (num: number) => {
-    // Quitar todos los invitados de esa mesa
-    setInvitados({ invitados: lista.map(i => i.mesa === num ? { ...i, mesa: 0 } : i) });
-    setMesasCreadas(prev => prev.filter(m => m !== num));
+  // ── Drag (touch + mouse) ───────────────────────────────────────
+  const startDrag = (e:React.TouchEvent|React.MouseEvent, mesa:MesaPos) => {
+    e.stopPropagation();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    dragRef.current = { id:mesa.id, startX:clientX, startY:clientY, origX:mesa.x, origY:mesa.y, moved:false };
+  };
+
+  const moveDrag = (e:React.TouchEvent|React.MouseEvent) => {
+    if (!dragRef.current||!roomRef.current) return;
+    if ("touches" in e) e.preventDefault();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    const dx = clientX - dragRef.current.startX;
+    const dy = clientY - dragRef.current.startY;
+    if (Math.abs(dx)>5||Math.abs(dy)>5) dragRef.current.moved = true;
+    const roomW = roomRef.current.offsetWidth;
+    const newX  = Math.max(TR, Math.min(roomW-TR, dragRef.current.origX+dx));
+    const newY  = Math.max(TR, Math.min(RoomH-TR, dragRef.current.origY+dy));
+    setLocalMesas(prev=>prev.map(m=>m.id===dragRef.current!.id?{...m,x:newX,y:newY}:m));
+  };
+
+  const endDrag = (mesa:MesaPos) => {
+    if (!dragRef.current) return;
+    if (!dragRef.current.moved) {
+      setSeleccionada(prev=>prev===mesa.numero?null:mesa.numero);
+    } else {
+      setMesasData({ mesas: localMesas });
+    }
+    dragRef.current = null;
   };
 
   return (
     <div style={{ animation:"fadeUp .3s ease" }}>
-      <Title icon="🪑" title="Organización de Mesas"/>
+      <Title icon="🪑" title="Plano de Mesas"/>
 
       {/* Stats */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:16 }}>
-        <Card style={{ padding:14, textAlign:"center" }}>
-          <div style={{ fontSize:22, fontWeight:700, color:"#c9956a" }}>{todasMesas.length}</div>
-          <div style={{ fontSize:10, color:"#a07855" }}>Mesas</div>
-        </Card>
-        <Card style={{ padding:14, textAlign:"center" }}>
-          <div style={{ fontSize:22, fontWeight:700, color:"#6aaa96" }}>{lista.length - sinMesa.length}</div>
-          <div style={{ fontSize:10, color:"#a07855" }}>Asignados</div>
-        </Card>
-        <Card style={{ padding:14, textAlign:"center" }}>
-          <div style={{ fontSize:22, fontWeight:700, color:"#e07070" }}>{sinMesa.length}</div>
-          <div style={{ fontSize:10, color:"#a07855" }}>Sin mesa</div>
-        </Card>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:14 }}>
+        {[
+          {l:"Mesas",     v:localMesas.length,          c:"#c9956a"},
+          {l:"Asignados", v:lista.length-sinMesa.length, c:"#6aaa96"},
+          {l:"Sin mesa",  v:sinMesa.length,              c:"#e07070"},
+        ].map(s=>(
+          <Card key={s.l} style={{ padding:12, textAlign:"center" }}>
+            <div style={{ fontSize:20, fontWeight:700, color:s.c }}>{s.v}</div>
+            <div style={{ fontSize:10, color:"#a07855" }}>{s.l}</div>
+          </Card>
+        ))}
       </div>
 
-      {/* Crear mesa */}
-      <Card style={{ marginBottom:16 }}>
-        <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:10 }}>+ Nueva mesa</div>
-        <div style={{ display:"flex", gap:8 }}>
-          <Inp value={nuevaMesa} onChange={setNuevaMesa} placeholder="Número de mesa (ej: 1)" type="number" style={{ flex:1 }}/>
-          <Btn onClick={crearMesa}>Crear</Btn>
+      {/* Sala — plano visual */}
+      <Card style={{ padding:8, marginBottom:14 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8, paddingLeft:4 }}>
+          <span style={{ fontSize:11, color:"#a07855" }}>Arrastra las mesas · Toca para asignar invitados</span>
+          <Btn onClick={addMesa} style={{ padding:"6px 14px", fontSize:12 }}>+ Mesa</Btn>
+        </div>
+        <div
+          ref={roomRef}
+          onTouchMove={moveDrag as any}
+          onMouseMove={moveDrag as any}
+          onTouchEnd={()=>{ if(dragRef.current) setMesasData({mesas:localMesas}); dragRef.current=null; }}
+          onMouseUp={()=>{ if(dragRef.current) setMesasData({mesas:localMesas}); dragRef.current=null; }}
+          style={{
+            width:"100%", height:RoomH,
+            background:"#fdf8f3",
+            backgroundImage:"radial-gradient(#e8d5c4 1px, transparent 1px)",
+            backgroundSize:"22px 22px",
+            border:"2px solid #e8d5c4", borderRadius:12,
+            position:"relative", overflow:"hidden",
+            touchAction:"none", userSelect:"none",
+          }}
+        >
+          {/* Etiqueta entrada */}
+          <div style={{ position:"absolute", bottom:6, left:"50%", transform:"translateX(-50%)", fontSize:9, color:"#c4a882", background:"#fff", border:"1px solid #e8d5c4", borderRadius:4, padding:"2px 8px" }}>🚪 ENTRADA</div>
+
+          {localMesas.map(mesa=>{
+            const inv     = invDeMesa(mesa.numero);
+            const isSel   = seleccionada===mesa.numero;
+            const isDrag  = dragRef.current?.id===mesa.id;
+            return (
+              <div
+                key={mesa.id}
+                onTouchStart={e=>startDrag(e,mesa)}
+                onMouseDown={e=>startDrag(e,mesa)}
+                onTouchEnd={()=>endDrag(mesa)}
+                onMouseUp={()=>endDrag(mesa)}
+                style={{
+                  position:"absolute",
+                  left:mesa.x-TR, top:mesa.y-TR,
+                  width:TR*2, height:TR*2,
+                  borderRadius:"50%",
+                  background:isSel?"linear-gradient(135deg,#c9956a,#a07040)":"#fff",
+                  border:`3px solid ${isSel?"#a07040":"#e8d5c4"}`,
+                  display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                  cursor:"grab", touchAction:"none",
+                  boxShadow: isDrag?"0 8px 24px rgba(180,130,100,.5)":isSel?"0 4px 16px rgba(180,130,100,.3)":"0 2px 8px rgba(180,130,100,.15)",
+                  zIndex:isDrag?10:isSel?5:1,
+                  transition: isDrag?"none":"box-shadow .15s",
+                }}
+              >
+                <div style={{ fontSize:16, fontWeight:800, color:isSel?"#fff":"#5c3d2e", lineHeight:1 }}>{mesa.numero}</div>
+                <div style={{ fontSize:9, color:isSel?"#ffe8d4":"#a07855", marginTop:2 }}>{inv.length} pers.</div>
+                {inv.length>0 && (
+                  <div style={{ position:"absolute", top:-6, right:-6, width:16, height:16, borderRadius:"50%", background:"#6aaa96", border:"2px solid #fff", fontSize:8, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}>{inv.length}</div>
+                )}
+              </div>
+            );
+          })}
+          {localMesas.length===0 && (
+            <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", color:"#c4a882", fontSize:13, flexDirection:"column", gap:8 }}>
+              <span style={{ fontSize:32 }}>🪑</span>
+              <span>Toca "+ Mesa" para agregar</span>
+            </div>
+          )}
         </div>
       </Card>
 
-      {/* Sin mesa */}
-      {sinMesa.length > 0 && (
-        <Card style={{ marginBottom:16, border:"2px dashed #e8d5c4" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:"#e07070", marginBottom:10 }}>⚠️ Sin mesa asignada ({sinMesa.length})</div>
-          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-            {sinMesa.map(i=>(
-              <div key={i.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 0", borderBottom:"1px solid #f5e8dc" }}>
-                <span style={{ fontSize:12, color:"#5c3d2e" }}>{i.tipo==="adulto"?"👤":"👶"} {i.nombre}</span>
-                {todasMesas.length > 0 && (
-                  <div style={{ display:"flex", gap:4, alignItems:"center" }}>
-                    {asignando === i.id ? (
-                      <div style={{ display:"flex", gap:4, flexWrap:"wrap", justifyContent:"flex-end" }}>
-                        {todasMesas.map(m=>(
-                          <button key={m} onClick={()=>asignarInvitado(i.id, m)} style={{ background:"#f5e8dc", border:"1px solid #e8d5c4", borderRadius:6, padding:"3px 8px", fontSize:11, color:"#c9956a", cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>Mesa {m}</button>
-                        ))}
-                        <button onClick={()=>setAsignando(null)} style={{ background:"none", border:"none", color:"#a07855", cursor:"pointer", fontSize:11, fontFamily:"inherit" }}>✕</button>
-                      </div>
-                    ) : (
-                      <button onClick={()=>setAsignando(i.id)} style={{ background:"#c9956a", border:"none", borderRadius:6, padding:"4px 10px", fontSize:11, color:"#fff", cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>Asignar →</button>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
+      {/* Panel de la mesa seleccionada */}
+      {seleccionada!==null && mesaActual && (
+        <Card style={{ border:"2px solid #c9956a", marginBottom:14 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+            <div>
+              <div style={{ fontSize:15, fontWeight:700, color:"#5c3d2e" }}>Mesa {seleccionada}</div>
+              <div style={{ fontSize:11, color:"#a07855" }}>{invDeMesa(seleccionada).length} personas asignadas</div>
+            </div>
+            <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+              <button onClick={()=>eliminarMesa(seleccionada)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:12, fontFamily:"inherit" }}>🗑 Eliminar</button>
+              <button onClick={()=>setSeleccionada(null)} style={{ background:"none", border:"none", color:"#a07855", cursor:"pointer", fontSize:18 }}>✕</button>
+            </div>
+          </div>
+          <div style={{ fontSize:11, color:"#a07855", marginBottom:10 }}>Toca un invitado para asignar / quitar:</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:5, maxHeight:260, overflowY:"auto" }}>
+            {lista.map(inv=>{
+              const enEsta   = inv.mesa===seleccionada;
+              const enOtra   = inv.mesa&&inv.mesa!==seleccionada;
+              return (
+                <div
+                  key={inv.id}
+                  onClick={()=>{ if(!enOtra) toggleInvitado(inv.id, seleccionada); }}
+                  style={{
+                    display:"flex", justifyContent:"space-between", alignItems:"center",
+                    padding:"8px 12px", borderRadius:9,
+                    background: enEsta?"#f5e8dc":"#fdf8f3",
+                    border:`1px solid ${enEsta?"#c9956a":"#f0e0d0"}`,
+                    cursor: enOtra?"default":"pointer",
+                    opacity: enOtra?.4:1,
+                  }}
+                >
+                  <span style={{ fontSize:12, color:"#5c3d2e" }}>{inv.tipo==="adulto"?"👤":"👶"} {inv.nombre}</span>
+                  {enEsta && <span style={{ fontSize:11, color:"#c9956a", fontWeight:700 }}>✓ Aquí</span>}
+                  {enOtra && <span style={{ fontSize:10, color:"#a07855" }}>Mesa {inv.mesa}</span>}
+                </div>
+              );
+            })}
           </div>
         </Card>
       )}
 
-      {/* Mesas */}
-      <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-        {todasMesas.map(num => {
-          const inv = lista.filter(i=>i.mesa===num);
-          return (
-            <Card key={num}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-                <div style={{ fontSize:15, fontWeight:700, color:"#5c3d2e" }}>Mesa {num}</div>
-                <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+      {/* Resumen por mesa */}
+      {localMesas.length>0 && (
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:"#5c3d2e", marginBottom:4 }}>Resumen</div>
+          {localMesas.slice().sort((a,b)=>a.numero-b.numero).map(m=>{
+            const inv = invDeMesa(m.numero);
+            return (
+              <div key={m.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 14px", background:"#fff", borderRadius:10, border:"1px solid #f0e0d0" }}>
+                <span style={{ fontSize:13, fontWeight:700, color:"#5c3d2e" }}>Mesa {m.numero}</span>
+                <div style={{ display:"flex", gap:6, alignItems:"center" }}>
                   <Badge text={`${inv.length} personas`} color="#c9956a"/>
-                  <button onClick={()=>eliminarMesa(num)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:13 }}>🗑</button>
+                  <button onClick={()=>setSeleccionada(m.numero)} style={{ background:"none", border:"1px solid #e8d5c4", borderRadius:6, padding:"3px 8px", fontSize:11, color:"#a07855", cursor:"pointer", fontFamily:"inherit" }}>Ver</button>
                 </div>
               </div>
-              {inv.length === 0 && <div style={{ fontSize:12, color:"#c4a882", padding:"8px 0" }}>Mesa vacía — asigna invitados desde arriba</div>}
-              {inv.map(i=>(
-                <div key={i.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", fontSize:12, padding:"6px 0", borderBottom:"1px solid #f5e8dc" }}>
-                  <span style={{ color:"#5c3d2e" }}>{i.tipo==="adulto"?"👤":"👶"} {i.nombre}</span>
-                  <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-                    <Badge text={i.confirmado==="si"?"✓":i.confirmado==="no"?"✗":"?"} color={colorC(i.confirmado)}/>
-                    <button onClick={()=>quitarDeMesa(i.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:12 }}>✕</button>
-                  </div>
-                </div>
-              ))}
-            </Card>
-          );
-        })}
-        {todasMesas.length === 0 && <div style={{ textAlign:"center", color:"#c4a882", padding:32 }}>Crea tu primera mesa arriba 🪑</div>}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -889,6 +996,7 @@ export default function App() {
   const [canciones,   setCanciones]   = useData<{canciones:Cancion[]}>("canciones",     {canciones:[]});
   const [regalos,     setRegalos]     = useData<{regalos:Regalo[]}>("regalos",          {regalos:[]});
   const [luna,        setLuna]        = useData<{items:LunaItem[]}>("luna",              {items:[]});
+  const [mesasPosData,setMesasPosData]= useData<{mesas:MesaPos[]}>("mesaspos",           {mesas:[]});
 
   const login = (tipo:"admin"|"fotos") => {
     setAcceso(tipo);
@@ -969,7 +1077,7 @@ export default function App() {
       <div style={{ flex:1, overflow:"auto", padding:"16px 16px 84px" }}>
         {tab==="dashboard"   && <Dashboard invitados={invitados} proveedores={proveedores} gastos={gastos}/>}
         {tab==="invitados"   && <Invitados data={invitados} setData={setInvitados}/>}
-        {tab==="mesas"       && <Mesas invitados={invitados} setInvitados={setInvitados}/>}
+        {tab==="mesas"       && <Mesas invitados={invitados} setInvitados={setInvitados} mesasData={mesasPosData} setMesasData={setMesasPosData}/>}
         {tab==="presupuesto" && <Presupuesto gastos={gastos} setGastos={setGastos} proveedores={proveedores} invitados={invitados}/>}
         {tab==="proveedores" && <Proveedores data={proveedores} setData={setProveedores}/>}
         {tab==="programa"    && <Programa canciones={canciones} setCanciones={setCanciones}/>}
