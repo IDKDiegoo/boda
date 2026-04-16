@@ -962,20 +962,27 @@ function Fotos({ esAdmin }: { esAdmin:boolean }) {
 
   const comprimir = (file: File): Promise<Blob> => new Promise((resolve, reject) => {
     const img = new Image();
-    const url = URL.createObjectURL(file);
     img.onload = () => {
-      URL.revokeObjectURL(url);
-      const MAX = 1600;
-      const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
-      const w = Math.round(img.width * ratio);
-      const h = Math.round(img.height * ratio);
+      const MAX = 1280;
+      const ratio = Math.min(MAX / img.naturalWidth, MAX / img.naturalHeight, 1);
+      const w = Math.max(1, Math.round(img.naturalWidth * ratio));
+      const h = Math.max(1, Math.round(img.naturalHeight * ratio));
       const canvas = document.createElement("canvas");
       canvas.width = w; canvas.height = h;
-      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
-      canvas.toBlob(b => b ? resolve(b) : reject(new Error("Error al comprimir")), "image/jpeg", 0.82);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("Canvas no disponible")); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(b => {
+        if (b) {
+          console.log(`Compresión: ${(file.size/1024/1024).toFixed(2)}MB → ${(b.size/1024/1024).toFixed(2)}MB (${w}x${h})`);
+          resolve(b);
+        } else {
+          reject(new Error("toBlob falló"));
+        }
+      }, "image/jpeg", 0.78);
     };
-    img.onerror = reject;
-    img.src = url;
+    img.onerror = () => reject(new Error("No se pudo cargar la imagen"));
+    img.src = URL.createObjectURL(file);
   });
 
   const subir = async (files:FileList|null) => {
@@ -986,7 +993,9 @@ function Fotos({ esAdmin }: { esAdmin:boolean }) {
       for (const f of Array.from(files)) {
         setProgreso(`Comprimiendo ${++n}/${files.length}...`);
         const blob = await comprimir(f);
-        setProgreso(`Subiendo ${n}/${files.length}... (${(blob.size/1024/1024).toFixed(1)}MB)`);
+        const orig = (f.size/1024/1024).toFixed(1);
+        const comp = (blob.size/1024/1024).toFixed(1);
+        setProgreso(`Subiendo ${n}/${files.length}... ${orig}MB → ${comp}MB`);
         const nombre = `${Date.now()}_${f.name.replace(/\.[^.]+$/, "")}.jpg`;
         await withTimeout(uploadBytes(ref(stor,`fotos-boda/${nombre}`), blob, { contentType:"image/jpeg" }));
       }
