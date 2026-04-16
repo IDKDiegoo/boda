@@ -369,37 +369,125 @@ function Invitados({ data, setData }: { data:{invitados:Invitado[]}; setData:(d:
 // ════════════════════════════════════════════════════════════════
 // MESAS
 // ════════════════════════════════════════════════════════════════
-function Mesas({ invitados }: { invitados:{invitados:Invitado[]} }) {
+function Mesas({ invitados, setInvitados }: { invitados:{invitados:Invitado[]}; setInvitados:(d:any)=>void }) {
   const lista = invitados.invitados || [];
-  const mesas: Record<number,Invitado[]> = {};
-  lista.forEach(i=>{ const m=i.mesa||0; if(!mesas[m])mesas[m]=[]; mesas[m].push(i); });
-  const colorC = (c:string) => c==="si"?"#6aaa96":c==="no"?"#e07070":"#c9956a";
+  const [nuevaMesa, setNuevaMesa] = useState("");
+  const [mesasCreadas, setMesasCreadas] = useState<number[]>([]);
+  const [asignando, setAsignando] = useState<number|null>(null);
+
+  // Recopilar números de mesa usados + mesas creadas manualmente
+  const mesasUsadas = Array.from(new Set(lista.map(i=>i.mesa||0).filter(m=>m>0)));
+  const todasMesas  = Array.from(new Set([...mesasCreadas, ...mesasUsadas])).sort((a,b)=>a-b);
+
+  const sinMesa = lista.filter(i=>!i.mesa||i.mesa===0);
+  const colorC  = (c:string) => c==="si"?"#6aaa96":c==="no"?"#e07070":"#c9956a";
+
+  const crearMesa = () => {
+    const n = parseInt(nuevaMesa);
+    if (!n || n <= 0 || todasMesas.includes(n)) return;
+    setMesasCreadas(prev => [...prev, n]);
+    setNuevaMesa("");
+  };
+
+  const asignarInvitado = (invId: number, mesa: number) => {
+    setInvitados({ invitados: lista.map(i => i.id === invId ? { ...i, mesa } : i) });
+    setAsignando(null);
+  };
+
+  const quitarDeMesa = (invId: number) => {
+    setInvitados({ invitados: lista.map(i => i.id === invId ? { ...i, mesa: 0 } : i) });
+  };
+
+  const eliminarMesa = (num: number) => {
+    // Quitar todos los invitados de esa mesa
+    setInvitados({ invitados: lista.map(i => i.mesa === num ? { ...i, mesa: 0 } : i) });
+    setMesasCreadas(prev => prev.filter(m => m !== num));
+  };
 
   return (
     <div style={{ animation:"fadeUp .3s ease" }}>
       <Title icon="🪑" title="Organización de Mesas"/>
-      <div style={{ fontSize:12, color:"#a07855", marginBottom:16 }}>Asigna mesa a cada invitado desde la sección Invitados</div>
-      {mesas[0] && (
-        <Card style={{ marginBottom:16, border:"2px dashed #e8d5c4" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:"#e07070", marginBottom:8 }}>⚠️ Sin mesa ({mesas[0].length})</div>
-          {mesas[0].map(i=><div key={i.id} style={{ fontSize:12, color:"#a07855", padding:"3px 0" }}>• {i.nombre}</div>)}
+
+      {/* Stats */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:16 }}>
+        <Card style={{ padding:14, textAlign:"center" }}>
+          <div style={{ fontSize:22, fontWeight:700, color:"#c9956a" }}>{todasMesas.length}</div>
+          <div style={{ fontSize:10, color:"#a07855" }}>Mesas</div>
         </Card>
-      )}
-      <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-        {Object.entries(mesas).filter(([k])=>k!=="0").sort(([a],[b])=>Number(a)-Number(b)).map(([num,inv])=>(
-          <Card key={num}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-              <div style={{ fontSize:15, fontWeight:700, color:"#5c3d2e" }}>Mesa {num}</div>
-              <Badge text={`${inv.length} personas`} color="#c9956a"/>
-            </div>
-            {inv.map(i=>(
-              <div key={i.id} style={{ display:"flex", justifyContent:"space-between", fontSize:12, padding:"4px 0", borderBottom:"1px solid #f5e8dc" }}>
-                <span style={{ color:"#5c3d2e" }}>{i.tipo==="adulto"?"👤":"👶"} {i.nombre}</span>
-                <Badge text={i.confirmado==="si"?"✓":i.confirmado==="no"?"✗":"?"} color={colorC(i.confirmado)}/>
+        <Card style={{ padding:14, textAlign:"center" }}>
+          <div style={{ fontSize:22, fontWeight:700, color:"#6aaa96" }}>{lista.length - sinMesa.length}</div>
+          <div style={{ fontSize:10, color:"#a07855" }}>Asignados</div>
+        </Card>
+        <Card style={{ padding:14, textAlign:"center" }}>
+          <div style={{ fontSize:22, fontWeight:700, color:"#e07070" }}>{sinMesa.length}</div>
+          <div style={{ fontSize:10, color:"#a07855" }}>Sin mesa</div>
+        </Card>
+      </div>
+
+      {/* Crear mesa */}
+      <Card style={{ marginBottom:16 }}>
+        <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:10 }}>+ Nueva mesa</div>
+        <div style={{ display:"flex", gap:8 }}>
+          <Inp value={nuevaMesa} onChange={setNuevaMesa} placeholder="Número de mesa (ej: 1)" type="number" style={{ flex:1 }}/>
+          <Btn onClick={crearMesa}>Crear</Btn>
+        </div>
+      </Card>
+
+      {/* Sin mesa */}
+      {sinMesa.length > 0 && (
+        <Card style={{ marginBottom:16, border:"2px dashed #e8d5c4" }}>
+          <div style={{ fontSize:13, fontWeight:700, color:"#e07070", marginBottom:10 }}>⚠️ Sin mesa asignada ({sinMesa.length})</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            {sinMesa.map(i=>(
+              <div key={i.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 0", borderBottom:"1px solid #f5e8dc" }}>
+                <span style={{ fontSize:12, color:"#5c3d2e" }}>{i.tipo==="adulto"?"👤":"👶"} {i.nombre}</span>
+                {todasMesas.length > 0 && (
+                  <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+                    {asignando === i.id ? (
+                      <div style={{ display:"flex", gap:4, flexWrap:"wrap", justifyContent:"flex-end" }}>
+                        {todasMesas.map(m=>(
+                          <button key={m} onClick={()=>asignarInvitado(i.id, m)} style={{ background:"#f5e8dc", border:"1px solid #e8d5c4", borderRadius:6, padding:"3px 8px", fontSize:11, color:"#c9956a", cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>Mesa {m}</button>
+                        ))}
+                        <button onClick={()=>setAsignando(null)} style={{ background:"none", border:"none", color:"#a07855", cursor:"pointer", fontSize:11, fontFamily:"inherit" }}>✕</button>
+                      </div>
+                    ) : (
+                      <button onClick={()=>setAsignando(i.id)} style={{ background:"#c9956a", border:"none", borderRadius:6, padding:"4px 10px", fontSize:11, color:"#fff", cursor:"pointer", fontWeight:700, fontFamily:"inherit" }}>Asignar →</button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
-          </Card>
-        ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Mesas */}
+      <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+        {todasMesas.map(num => {
+          const inv = lista.filter(i=>i.mesa===num);
+          return (
+            <Card key={num}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                <div style={{ fontSize:15, fontWeight:700, color:"#5c3d2e" }}>Mesa {num}</div>
+                <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                  <Badge text={`${inv.length} personas`} color="#c9956a"/>
+                  <button onClick={()=>eliminarMesa(num)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:13 }}>🗑</button>
+                </div>
+              </div>
+              {inv.length === 0 && <div style={{ fontSize:12, color:"#c4a882", padding:"8px 0" }}>Mesa vacía — asigna invitados desde arriba</div>}
+              {inv.map(i=>(
+                <div key={i.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", fontSize:12, padding:"6px 0", borderBottom:"1px solid #f5e8dc" }}>
+                  <span style={{ color:"#5c3d2e" }}>{i.tipo==="adulto"?"👤":"👶"} {i.nombre}</span>
+                  <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                    <Badge text={i.confirmado==="si"?"✓":i.confirmado==="no"?"✗":"?"} color={colorC(i.confirmado)}/>
+                    <button onClick={()=>quitarDeMesa(i.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:12 }}>✕</button>
+                  </div>
+                </div>
+              ))}
+            </Card>
+          );
+        })}
+        {todasMesas.length === 0 && <div style={{ textAlign:"center", color:"#c4a882", padding:32 }}>Crea tu primera mesa arriba 🪑</div>}
       </div>
     </div>
   );
@@ -881,7 +969,7 @@ export default function App() {
       <div style={{ flex:1, overflow:"auto", padding:"16px 16px 84px" }}>
         {tab==="dashboard"   && <Dashboard invitados={invitados} proveedores={proveedores} gastos={gastos}/>}
         {tab==="invitados"   && <Invitados data={invitados} setData={setInvitados}/>}
-        {tab==="mesas"       && <Mesas invitados={invitados}/>}
+        {tab==="mesas"       && <Mesas invitados={invitados} setInvitados={setInvitados}/>}
         {tab==="presupuesto" && <Presupuesto gastos={gastos} setGastos={setGastos} proveedores={proveedores} invitados={invitados}/>}
         {tab==="proveedores" && <Proveedores data={proveedores} setData={setProveedores}/>}
         {tab==="programa"    && <Programa canciones={canciones} setCanciones={setCanciones}/>}
