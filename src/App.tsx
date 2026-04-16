@@ -960,14 +960,35 @@ function Fotos({ esAdmin }: { esAdmin:boolean }) {
   const withTimeout = <T,>(p: Promise<T>, ms=30000): Promise<T> =>
     Promise.race([p, new Promise<T>((_,reject)=>setTimeout(()=>reject(new Error(`Tiempo agotado — revisa las reglas de Firebase Storage`)),ms))]);
 
+  const comprimir = (file: File): Promise<Blob> => new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 1600;
+      const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+      const w = Math.round(img.width * ratio);
+      const h = Math.round(img.height * ratio);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error("Error al comprimir")), "image/jpeg", 0.82);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+
   const subir = async (files:FileList|null) => {
     if (!files||!files.length) return;
     setSubiendo(true);
     try {
       let n=0;
       for (const f of Array.from(files)) {
-        setProgreso(`Subiendo ${++n}/${files.length}...`);
-        await withTimeout(uploadBytes(ref(stor,`fotos-boda/${Date.now()}_${f.name}`), f));
+        setProgreso(`Comprimiendo ${++n}/${files.length}...`);
+        const blob = await comprimir(f);
+        setProgreso(`Subiendo ${n}/${files.length}... (${(blob.size/1024/1024).toFixed(1)}MB)`);
+        const nombre = `${Date.now()}_${f.name.replace(/\.[^.]+$/, "")}.jpg`;
+        await withTimeout(uploadBytes(ref(stor,`fotos-boda/${nombre}`), blob, { contentType:"image/jpeg" }));
       }
       setProgreso("¡Fotos subidas! 🎉");
       if (esAdmin) await cargar();
