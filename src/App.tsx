@@ -380,8 +380,10 @@ function Mesas({ invitados, setInvitados, mesasData, setMesasData }: {
   const dragRef = useRef<{id:number;startX:number;startY:number;origX:number;origY:number;moved:boolean}|null>(null);
   const roomRef = useRef<HTMLDivElement>(null);
 
-  const TR    = 36;
-  const RoomH = 320;
+  const TR      = 36;
+  const cols    = 3;
+  const spacing = 110;
+  const RoomH   = Math.max(320, 60 + Math.ceil((localMesas.length + 1) / cols) * spacing + TR);
   const [formaAgregar, setFormaAgregar] = useState<"circular"|"rectangular"|"cuadrada">("circular");
 
   useEffect(() => { setLocalMesas(mesasData.mesas || []); }, [mesasData]);
@@ -399,11 +401,9 @@ function Mesas({ invitados, setInvitados, mesasData, setMesasData }: {
   const addMesa = () => {
     const nums    = localMesas.map(m=>m.numero);
     const next    = nums.length ? Math.max(...nums)+1 : 1;
-    const cols    = 3;
     const idx     = localMesas.length;
     const col     = idx % cols;
     const row     = Math.floor(idx / cols);
-    const spacing = 110;
     const x       = 60 + col * spacing;
     const y       = 60 + row * spacing;
     const nuevo: MesaPos = { id:Date.now(), numero:next, x, y, forma:formaAgregar };
