@@ -742,7 +742,7 @@ function Programa({ canciones, setCanciones }: { canciones:{canciones:Cancion[]}
     if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
     // Spotify — acepta cualquier variante de open.spotify.com
     const spMatch = u.match(/spotify\.com\/(?:intl-[a-z]+\/)?(track|album|playlist|artist)\/([a-zA-Z0-9]+)/);
-    if (spMatch) return `https://open.spotify.com/embed/${spMatch[1]}/${spMatch[2]}?utm_source=generator`;
+    if (spMatch) return `https://open.spotify.com/embed/${spMatch[1]}/${spMatch[2]}?utm_source=generator&nd=1`;
     return null;
   };
   const linkIcon = (url:string) => url.includes("spotify")?"🎧":url.includes("youtube")||url.includes("youtu.be")?"▶️":"🔗";
@@ -809,8 +809,10 @@ function Programa({ canciones, setCanciones }: { canciones:{canciones:Cancion[]}
             <iframe
               src={playerUrl}
               width="100%"
-              height={playerUrl.includes("spotify")?152:280}
+              height={playerUrl.includes("spotify") ? 352 : 280}
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              allowFullScreen
+              loading="lazy"
               style={{ border:"none", display:"block" }}
               title="Reproductor"
             />
