@@ -439,23 +439,29 @@ function Mesas({ invitados, setInvitados, mesasData, setMesasData }: {
   // ── Drag (touch + mouse) ───────────────────────────────────────
   const startDrag = (e:React.TouchEvent|React.MouseEvent, mesa:MesaPos) => {
     e.stopPropagation();
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    const touch = "touches" in e ? e.touches[0] : null;
+    if ("touches" in e && !touch) return;
+    const clientX = touch ? touch.clientX : (e as React.MouseEvent).clientX;
+    const clientY = touch ? touch.clientY : (e as React.MouseEvent).clientY;
     dragRef.current = { id:mesa.id, startX:clientX, startY:clientY, origX:mesa.x, origY:mesa.y, moved:false };
   };
 
   const moveDrag = (e:React.TouchEvent|React.MouseEvent) => {
     if (!dragRef.current||!roomRef.current) return;
+    const touch = "touches" in e ? e.touches[0] : null;
+    if ("touches" in e && !touch) return;
     if ("touches" in e) e.preventDefault();
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-    const dx = clientX - dragRef.current.startX;
-    const dy = clientY - dragRef.current.startY;
-    if (Math.abs(dx)>5||Math.abs(dy)>5) dragRef.current.moved = true;
+    const clientX = touch ? touch.clientX : (e as React.MouseEvent).clientX;
+    const clientY = touch ? touch.clientY : (e as React.MouseEvent).clientY;
+    const drag = dragRef.current;
+    const dx = clientX - drag.startX;
+    const dy = clientY - drag.startY;
+    if (Math.abs(dx)>5||Math.abs(dy)>5) drag.moved = true;
     const roomW = roomRef.current.offsetWidth;
-    const newX  = Math.max(TR, Math.min(roomW-TR, dragRef.current.origX+dx));
-    const newY  = Math.max(TR, Math.min(RoomH-TR, dragRef.current.origY+dy));
-    setLocalMesas(prev=>prev.map(m=>m.id===dragRef.current!.id?{...m,x:newX,y:newY}:m));
+    const newX  = Math.max(TR, Math.min(roomW-TR, drag.origX+dx));
+    const newY  = Math.max(TR, Math.min(RoomH-TR, drag.origY+dy));
+    const dragId = drag.id;
+    setLocalMesas(prev=>prev.map(m=>m.id===dragId?{...m,x:newX,y:newY}:m));
   };
 
   const endDrag = (mesa:MesaPos) => {
