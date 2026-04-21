@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL, listAll, deleteObject } from "firebase/storage";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 // ── Firebase ────────────────────────────────────────────────────
 const FIREBASE_CONFIG = {
@@ -12,9 +13,32 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "541671718502",
   appId:             "1:541671718502:web:ed236770ea20bd34cf37a7"
 };
-const app  = initializeApp(FIREBASE_CONFIG);
-const db   = getFirestore(app);
-const stor = getStorage(app);
+const app       = initializeApp(FIREBASE_CONFIG);
+const db        = getFirestore(app);
+const stor      = getStorage(app);
+const messaging = getMessaging(app);
+
+const VAPID_KEY = "BF8iV0eX06sZu_rJyPrTFeGZtB1d8qWoqrM_zFsU62CEUM6XXnwrL7ylpQzKMiCYrVF6pUPrVxJUyHfvR8keRZg";
+
+async function initFCM() {
+  try {
+    if (!("Notification" in window)) return;
+    if ("serviceWorker" in navigator) {
+      await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return;
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+    if (!token) return;
+    // Guardar token en Firestore (array de tokens para que llegue a ambos teléfonos)
+    const docRef = doc(db, "boda", "notif");
+    const snap   = await import("firebase/firestore").then(m => m.getDoc(docRef));
+    const tokens: string[] = snap.exists() ? (snap.data().tokens || []) : [];
+    if (!tokens.includes(token)) {
+      await setDoc(docRef, { tokens: [...tokens, token] }, { merge: true });
+    }
+  } catch(e) { console.error("FCM boda:", e); }
+}
 
 // ── Constantes ──────────────────────────────────────────────────
 const BODA_FECHA   = new Date("2027-11-27T19:00:00");
@@ -1319,9 +1343,20 @@ export default function App() {
 
   const login = (tipo:"admin"|"fotos") => {
     setAcceso(tipo);
-    if (tipo==="admin") localStorage.setItem("boda_acceso","admin");
+    if (tipo==="admin") { localStorage.setItem("boda_acceso","admin"); initFCM(); }
     if (tipo==="fotos") setTab("fotos");
   };
+
+  // Notificaciones en primer plano
+  useEffect(() => {
+    if (acceso !== "admin") return;
+    const unsub = onMessage(messaging, payload => {
+      const title = payload.notification?.title || "💍 Boda";
+      const body  = payload.notification?.body  || "";
+      alert(`${title}\n${body}`);
+    });
+    return unsub;
+  }, [acceso]);
   const logout = () => { localStorage.removeItem("boda_acceso"); setAcceso(null); };
 
   if (!acceso) return <PantallaLogin onLogin={login}/>;
