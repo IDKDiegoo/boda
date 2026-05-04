@@ -50,14 +50,17 @@ const FOTOS_PIN    = "BODA27";
 const fmt = (n: number) => "$" + n.toLocaleString("es-CL");
 const diasFaltantes = () => Math.ceil((BODA_FECHA.getTime() - Date.now()) / 86400000);
 
-function getVideoEmbed(url: string): string | null {
+type VideoInfo = { tipo: "youtube" | "tiktok" | "otro"; id?: string; url: string };
+
+function getVideoInfo(url: string): VideoInfo | null {
   if (!url) return null;
   // YouTube: youtu.be/ID, youtube.com/watch?v=ID, youtube.com/shorts/ID
   const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([a-zA-Z0-9_-]{11})/);
-  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
-  // TikTok: tiktok.com/@user/video/ID
-  const tt = url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
-  if (tt) return `https://www.tiktok.com/embed/v2/${tt[1]}`;
+  if (yt) return { tipo:"youtube", id:yt[1], url };
+  // TikTok
+  if (url.includes("tiktok.com")) return { tipo:"tiktok", url };
+  // Otro link genérico
+  if (url.startsWith("http")) return { tipo:"otro", url };
   return null;
 }
 
@@ -1223,7 +1226,6 @@ function Decoraciones({ data, setData }: { data:{items:DecoItem[]}; setData:(d:a
           <div key={cat} style={{ marginBottom:20 }}>
             <div style={{ fontSize:11, fontWeight:700, color:"#c9956a", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>{cat}</div>
             {items.map(item => {
-              const embedUrl = getVideoEmbed(item.videoUrl || "");
               return (
                 <Card key={item.id} style={{ marginBottom:10, opacity:item.comprado?.7:1, borderLeft:`3px solid ${item.comprado?"#6aaa96":"#e8d5c4"}` }}>
                   {/* Foto */}
@@ -1231,13 +1233,32 @@ function Decoraciones({ data, setData }: { data:{items:DecoItem[]}; setData:(d:a
                     <img src={item.foto} alt={item.nombre} onClick={()=>setPreview(item.foto!)}
                       style={{ width:"100%", maxHeight:200, objectFit:"cover", borderRadius:10, marginBottom:10, cursor:"pointer", display:"block" }}/>
                   )}
-                  {/* Video embed */}
-                  {embedUrl && (
-                    <div style={{ position:"relative", paddingBottom:"56.25%", height:0, borderRadius:10, overflow:"hidden", marginBottom:10, background:"#000" }}>
-                      <iframe src={embedUrl} title={item.nombre} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", border:"none" }}/>
-                    </div>
-                  )}
+                  {/* Video preview */}
+                  {(()=>{
+                    const vi = getVideoInfo(item.videoUrl || "");
+                    if (!vi) return null;
+                    if (vi.tipo === "youtube" && vi.id) return (
+                      <a href={vi.url} target="_blank" rel="noreferrer" style={{ display:"block", position:"relative", marginBottom:10, borderRadius:10, overflow:"hidden", textDecoration:"none" }}>
+                        <img src={`https://img.youtube.com/vi/${vi.id}/mqdefault.jpg`} alt="YouTube" style={{ width:"100%", display:"block", borderRadius:10 }}/>
+                        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,.35)", borderRadius:10 }}>
+                          <div style={{ width:48, height:48, background:"#ff0000", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                            <div style={{ width:0, height:0, borderTop:"10px solid transparent", borderBottom:"10px solid transparent", borderLeft:"18px solid #fff", marginLeft:4 }}/>
+                          </div>
+                        </div>
+                        <div style={{ position:"absolute", bottom:8, left:10, fontSize:10, color:"#fff", fontWeight:700, background:"rgba(0,0,0,.5)", padding:"2px 6px", borderRadius:6 }}>Ver en YouTube ↗</div>
+                      </a>
+                    );
+                    return (
+                      <a href={vi.url} target="_blank" rel="noreferrer"
+                        style={{ display:"flex", alignItems:"center", gap:8, background: vi.tipo==="tiktok"?"#010101":"#f0f0f0", borderRadius:10, padding:"10px 14px", marginBottom:10, textDecoration:"none" }}>
+                        <span style={{ fontSize:22 }}>{vi.tipo==="tiktok"?"🎵":"🔗"}</span>
+                        <div>
+                          <div style={{ fontSize:12, fontWeight:700, color: vi.tipo==="tiktok"?"#fff":"#333" }}>{vi.tipo==="tiktok"?"Ver en TikTok ↗":"Ver referencia ↗"}</div>
+                          <div style={{ fontSize:10, color: vi.tipo==="tiktok"?"#aaa":"#888", marginTop:1 }}>Abre en Safari</div>
+                        </div>
+                      </a>
+                    );
+                  })()}
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", textDecoration:item.comprado?"line-through":"none", marginBottom:2 }}>{item.nombre}</div>
@@ -1247,10 +1268,6 @@ function Decoraciones({ data, setData }: { data:{items:DecoItem[]}; setData:(d:a
                         {item.precio > 0 && item.cantidad > 1 && <span style={{ fontSize:10, color:"#c4a882" }}>({fmt(item.precio)} c/u)</span>}
                       </div>
                       {item.notas && <div style={{ fontSize:11, color:"#a07855" }}>{item.notas}</div>}
-                      {/* Link directo si no se pudo embeber */}
-                      {item.videoUrl && !embedUrl && (
-                        <a href={item.videoUrl} target="_blank" rel="noreferrer" style={{ fontSize:11, color:"#9b7bb5" }}>🔗 Ver referencia</a>
-                      )}
                     </div>
                     <div style={{ display:"flex", gap:5, flexShrink:0, marginLeft:8 }}>
                       <button onClick={()=>toggleComprado(item.id)}
