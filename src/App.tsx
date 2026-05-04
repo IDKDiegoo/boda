@@ -1190,7 +1190,7 @@ function Decoraciones({ data, setData }: { data:{items:DecoItem[]}; setData:(d:a
                 style={{ width:"100%", background:"#fdf8f3", border:"1.5px dashed #c9956a", borderRadius:9, padding:"10px", fontSize:12, color:"#c9956a", cursor:"pointer", fontFamily:"inherit", opacity:subiendo?.6:1 }}>
                 {subiendo ? "Subiendo..." : form.foto ? "📷 Cambiar foto" : "📷 Agregar foto desde teléfono"}
               </button>
-              <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={e=>subirFoto(e.target.files)} style={{ display:"none" }}/>
+              <input ref={fileRef} type="file" accept="image/*" onChange={e=>subirFoto(e.target.files)} style={{ display:"none" }}/>
             </div>
             <div>
               <div style={{ fontSize:10, color:"#a07855", fontWeight:600, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.06em" }}>Link de YouTube o TikTok</div>
