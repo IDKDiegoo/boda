@@ -113,6 +113,22 @@ type MesaPos   = { id:number; numero:number; x:number; y:number; forma:"circular
 type Foto      = { url:string; nombre:string; };
 type DecoItem  = { id:number; nombre:string; categoria:string; cantidad:number; precio:number; foto?:string; videoUrl?:string; notas?:string; comprado:boolean; };
 
+// ── Error Boundary ───────────────────────────────────────────────
+export class ErrorBoundary extends React.Component<{children:React.ReactNode},{error:string|null}> {
+  constructor(props:any) { super(props); this.state = { error:null }; }
+  static getDerivedStateFromError(e:any) { return { error: e?.message || String(e) }; }
+  render() {
+    if (this.state.error) return (
+      <div style={{ padding:32, fontFamily:"sans-serif", color:"#c00" }}>
+        <h2>Error en la app</h2>
+        <pre style={{ fontSize:12, marginTop:12, whiteSpace:"pre-wrap" }}>{this.state.error}</pre>
+        <button onClick={()=>window.location.reload()} style={{ marginTop:16, padding:"8px 16px", cursor:"pointer" }}>Recargar</button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
 // ── Estilos globales ─────────────────────────────────────────────
 function S() {
   return <style>{`
@@ -1226,39 +1242,38 @@ function Decoraciones({ data, setData }: { data:{items:DecoItem[]}; setData:(d:a
           <div key={cat} style={{ marginBottom:20 }}>
             <div style={{ fontSize:11, fontWeight:700, color:"#c9956a", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>{cat}</div>
             {items.map(item => {
+              const vi = getVideoInfo(item.videoUrl || "");
+              const opacidad = item.comprado ? 0.7 : 1;
               return (
-                <Card key={item.id} style={{ marginBottom:10, opacity:item.comprado?.7:1, borderLeft:`3px solid ${item.comprado?"#6aaa96":"#e8d5c4"}` }}>
+                <Card key={item.id} style={{ marginBottom:10, opacity:opacidad, borderLeft:`3px solid ${item.comprado?"#6aaa96":"#e8d5c4"}` }}>
                   {/* Foto */}
-                  {item.foto && (
-                    <img src={item.foto} alt={item.nombre} onClick={()=>setPreview(item.foto!)}
+                  {!!item.foto && (
+                    <img src={item.foto} alt={item.nombre} onClick={()=>setPreview(item.foto as string)}
                       style={{ width:"100%", maxHeight:200, objectFit:"cover", borderRadius:10, marginBottom:10, cursor:"pointer", display:"block" }}/>
                   )}
-                  {/* Video preview */}
-                  {(()=>{
-                    const vi = getVideoInfo(item.videoUrl || "");
-                    if (!vi) return null;
-                    if (vi.tipo === "youtube" && vi.id) return (
-                      <a href={vi.url} target="_blank" rel="noreferrer" style={{ display:"block", position:"relative", marginBottom:10, borderRadius:10, overflow:"hidden", textDecoration:"none" }}>
-                        <img src={`https://img.youtube.com/vi/${vi.id}/mqdefault.jpg`} alt="YouTube" style={{ width:"100%", display:"block", borderRadius:10 }}/>
-                        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,.35)", borderRadius:10 }}>
-                          <div style={{ width:48, height:48, background:"#ff0000", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                            <div style={{ width:0, height:0, borderTop:"10px solid transparent", borderBottom:"10px solid transparent", borderLeft:"18px solid #fff", marginLeft:4 }}/>
-                          </div>
+                  {/* Video: YouTube con thumbnail */}
+                  {vi && vi.tipo === "youtube" && vi.id && (
+                    <a href={vi.url} target="_blank" rel="noreferrer" style={{ display:"block", position:"relative", marginBottom:10, borderRadius:10, overflow:"hidden", textDecoration:"none" }}>
+                      <img src={`https://img.youtube.com/vi/${vi.id}/mqdefault.jpg`} alt="YouTube" style={{ width:"100%", display:"block", borderRadius:10 }}/>
+                      <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,.35)", borderRadius:10 }}>
+                        <div style={{ width:48, height:48, background:"#ff0000", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          <div style={{ width:0, height:0, borderTop:"10px solid transparent", borderBottom:"10px solid transparent", borderLeft:"18px solid #fff", marginLeft:4 }}/>
                         </div>
-                        <div style={{ position:"absolute", bottom:8, left:10, fontSize:10, color:"#fff", fontWeight:700, background:"rgba(0,0,0,.5)", padding:"2px 6px", borderRadius:6 }}>Ver en YouTube ↗</div>
-                      </a>
-                    );
-                    return (
-                      <a href={vi.url} target="_blank" rel="noreferrer"
-                        style={{ display:"flex", alignItems:"center", gap:8, background: vi.tipo==="tiktok"?"#010101":"#f0f0f0", borderRadius:10, padding:"10px 14px", marginBottom:10, textDecoration:"none" }}>
-                        <span style={{ fontSize:22 }}>{vi.tipo==="tiktok"?"🎵":"🔗"}</span>
-                        <div>
-                          <div style={{ fontSize:12, fontWeight:700, color: vi.tipo==="tiktok"?"#fff":"#333" }}>{vi.tipo==="tiktok"?"Ver en TikTok ↗":"Ver referencia ↗"}</div>
-                          <div style={{ fontSize:10, color: vi.tipo==="tiktok"?"#aaa":"#888", marginTop:1 }}>Abre en Safari</div>
-                        </div>
-                      </a>
-                    );
-                  })()}
+                      </div>
+                      <div style={{ position:"absolute", bottom:8, left:10, fontSize:10, color:"#fff", fontWeight:700, background:"rgba(0,0,0,.5)", padding:"2px 6px", borderRadius:6 }}>Ver en YouTube ↗</div>
+                    </a>
+                  )}
+                  {/* Video: TikTok u otro link */}
+                  {vi && vi.tipo !== "youtube" && (
+                    <a href={vi.url} target="_blank" rel="noreferrer"
+                      style={{ display:"flex", alignItems:"center", gap:8, background:vi.tipo==="tiktok"?"#010101":"#f0f0f0", borderRadius:10, padding:"10px 14px", marginBottom:10, textDecoration:"none" }}>
+                      <span style={{ fontSize:22 }}>{vi.tipo==="tiktok"?"🎵":"🔗"}</span>
+                      <div>
+                        <div style={{ fontSize:12, fontWeight:700, color:vi.tipo==="tiktok"?"#fff":"#333" }}>{vi.tipo==="tiktok"?"Ver en TikTok ↗":"Ver referencia ↗"}</div>
+                        <div style={{ fontSize:10, color:vi.tipo==="tiktok"?"#aaa":"#888", marginTop:1 }}>Abre en Safari</div>
+                      </div>
+                    </a>
+                  )}
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", textDecoration:item.comprado?"line-through":"none", marginBottom:2 }}>{item.nombre}</div>
