@@ -203,6 +203,7 @@ function BannerNotificaciones() {
   const esPWA = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone;
 
   React.useEffect(() => {
+    if (!("Notification" in window)) return;
     if (Notification.permission === "granted") setEstado("listo");
     if (Notification.permission === "denied")  setEstado("negado");
   }, []);
@@ -213,7 +214,8 @@ function BannerNotificaciones() {
     if (!esPWA) return;
     setEstado("cargando");
     await initFCM();
-    setEstado(Notification.permission === "granted" ? "listo" : "negado");
+    const perm = ("Notification" in window) ? Notification.permission : "denied";
+    setEstado(perm === "granted" ? "listo" : "negado");
   };
 
   if (!esPWA) return (
