@@ -13,11 +13,16 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(payload => {
-  const { title, body, icon } = payload.notification || {};
-  self.registration.showNotification(title || '💍 Boda', {
-    body:  body || '',
-    icon:  icon || '/logo.jpg',
-    badge: '/logo.jpg',
+  // Si el payload tiene campo 'notification', el navegador lo muestra automáticamente.
+  // Llamar showNotification aquí causaría 2 notificaciones → salimos.
+  if (payload.notification) return;
+  // Mensajes data-only: mostrar manualmente.
+  const title = (payload.data && payload.data.title) || '💍 Boda';
+  const body  = (payload.data && payload.data.body)  || '';
+  self.registration.showNotification(title, {
+    body,
+    icon:    '/logo.jpg',
+    badge:   '/logo.jpg',
     vibrate: [200, 100, 200],
   });
 });

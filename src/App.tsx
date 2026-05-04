@@ -50,6 +50,17 @@ const FOTOS_PIN    = "BODA27";
 const fmt = (n: number) => "$" + n.toLocaleString("es-CL");
 const diasFaltantes = () => Math.ceil((BODA_FECHA.getTime() - Date.now()) / 86400000);
 
+function getVideoEmbed(url: string): string | null {
+  if (!url) return null;
+  // YouTube: youtu.be/ID, youtube.com/watch?v=ID, youtube.com/shorts/ID
+  const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([a-zA-Z0-9_-]{11})/);
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  // TikTok: tiktok.com/@user/video/ID
+  const tt = url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+  if (tt) return `https://www.tiktok.com/embed/v2/${tt[1]}`;
+  return null;
+}
+
 function useCuentaRegresiva() {
   const [tiempo, setTiempo] = useState({ dias:0, horas:0, minutos:0, segundos:0 });
   useEffect(() => {
@@ -97,6 +108,7 @@ type Regalo    = { id:number; nombre:string; precio:number; prioridad:"alta"|"me
 type LunaItem  = { id:number; categoria:string; descripcion:string; monto:number; confirmado:boolean; notas?:string; };
 type MesaPos   = { id:number; numero:number; x:number; y:number; forma:"circular"|"rectangular"|"cuadrada"; };
 type Foto      = { url:string; nombre:string; };
+type DecoItem  = { id:number; nombre:string; categoria:string; cantidad:number; precio:number; foto?:string; videoUrl?:string; notas?:string; comprado:boolean; };
 
 // ── Estilos globales ─────────────────────────────────────────────
 function S() {
@@ -1043,6 +1055,230 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
 }
 
 // ════════════════════════════════════════════════════════════════
+// DECORACIONES
+// ════════════════════════════════════════════════════════════════
+const CATS_DECO = ["Flores","Centros de mesa","Iluminación","Arcos y estructuras","Telas y manteles","Detalles","Otro"];
+
+function Decoraciones({ data, setData }: { data:{items:DecoItem[]}; setData:(d:any)=>void }) {
+  const lista = data.items || [];
+  const [show, setShow]     = useState(false);
+  const [editId, setEditId] = useState<number|null>(null);
+  const [form, setForm]     = useState<Partial<DecoItem>>({ categoria:"Flores", cantidad:1, comprado:false });
+  const [subiendo, setSubiendo] = useState(false);
+  const [preview, setPreview]   = useState<string|null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const totalEst    = lista.reduce((s,i)=>s+i.precio*i.cantidad,0);
+  const comprados   = lista.filter(i=>i.comprado).length;
+
+  const comprimir = (file: File): Promise<Blob> => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1080;
+      const ratio = Math.min(MAX / img.naturalWidth, MAX / img.naturalHeight, 1);
+      const w = Math.max(1, Math.round(img.naturalWidth * ratio));
+      const h = Math.max(1, Math.round(img.naturalHeight * ratio));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("Canvas no disponible")); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error("toBlob falló")), "image/jpeg", 0.80);
+    };
+    img.onerror = () => reject(new Error("No se pudo cargar la imagen"));
+    img.src = URL.createObjectURL(file);
+  });
+
+  const subirFoto = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    setSubiendo(true);
+    try {
+      const blob  = await comprimir(files[0]);
+      const nombre = `deco_${Date.now()}.jpg`;
+      const r = ref(stor, `decoraciones-boda/${nombre}`);
+      await uploadBytes(r, blob, { contentType:"image/jpeg" });
+      const url = await getDownloadURL(r);
+      setForm(f => ({ ...f, foto: url }));
+    } catch(e:any) { alert("Error al subir foto: " + e.message); }
+    finally { setSubiendo(false); if (fileRef.current) fileRef.current.value = ""; }
+  };
+
+  const guardar = () => {
+    if (!form.nombre) return;
+    const item: DecoItem = {
+      id:        editId ?? Date.now(),
+      nombre:    form.nombre!,
+      categoria: form.categoria || "Flores",
+      cantidad:  Number(form.cantidad) || 1,
+      precio:    Number(form.precio)   || 0,
+      foto:      form.foto || "",
+      videoUrl:  form.videoUrl || "",
+      notas:     form.notas || "",
+      comprado:  form.comprado || false,
+    };
+    if (editId !== null) {
+      setData({ items: lista.map(i => i.id === editId ? item : i) });
+    } else {
+      setData({ items: [...lista, item] });
+    }
+    setForm({ categoria:"Flores", cantidad:1, comprado:false });
+    setEditId(null); setShow(false);
+  };
+
+  const abrirEditar = (i: DecoItem) => {
+    setForm({ ...i }); setEditId(i.id); setShow(true);
+  };
+
+  const eliminar = (id: number) => {
+    if (!window.confirm("¿Eliminar este ítem?")) return;
+    setData({ items: lista.filter(i => i.id !== id) });
+  };
+
+  const toggleComprado = (id: number) =>
+    setData({ items: lista.map(i => i.id === id ? { ...i, comprado: !i.comprado } : i) });
+
+  return (
+    <div style={{ animation:"fadeUp .3s ease" }}>
+      <Title icon="🌸" title="Decoraciones"/>
+
+      {/* Resumen */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+        <Card style={{ padding:14, textAlign:"center" }}>
+          <div style={{ fontSize:22, fontWeight:700, color:"#c9956a" }}>{fmt(totalEst)}</div>
+          <div style={{ fontSize:11, color:"#a07855" }}>Presupuesto estimado</div>
+        </Card>
+        <Card style={{ padding:14, textAlign:"center" }}>
+          <div style={{ fontSize:22, fontWeight:700, color:"#6aaa96" }}>{comprados}/{lista.length}</div>
+          <div style={{ fontSize:11, color:"#a07855" }}>Comprados</div>
+        </Card>
+      </div>
+
+      {/* Formulario */}
+      {show && (
+        <Card style={{ marginBottom:16, border:"2px solid #e8d5c4" }}>
+          <div style={{ fontSize:14, fontWeight:700, color:"#5c3d2e", marginBottom:14 }}>
+            {editId !== null ? "Editar ítem" : "Nuevo ítem"}
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            <div>
+              <div style={{ fontSize:10, color:"#a07855", fontWeight:600, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.06em" }}>Nombre *</div>
+              <Inp value={form.nombre||""} onChange={v=>setForm({...form,nombre:v})} placeholder="Ej: Rosas blancas"/>
+            </div>
+            <div>
+              <div style={{ fontSize:10, color:"#a07855", fontWeight:600, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.06em" }}>Categoría</div>
+              <Sel value={form.categoria||"Flores"} onChange={v=>setForm({...form,categoria:v})} options={CATS_DECO.map(c=>({value:c,label:c}))}/>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+              <div>
+                <div style={{ fontSize:10, color:"#a07855", fontWeight:600, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.06em" }}>Cantidad</div>
+                <Inp value={form.cantidad?.toString()||"1"} onChange={v=>setForm({...form,cantidad:Number(v)})} placeholder="1" type="number"/>
+              </div>
+              <div>
+                <div style={{ fontSize:10, color:"#a07855", fontWeight:600, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.06em" }}>Precio aprox ($)</div>
+                <Inp value={form.precio?.toString()||""} onChange={v=>setForm({...form,precio:Number(v)})} placeholder="0" type="number"/>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize:10, color:"#a07855", fontWeight:600, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.06em" }}>Foto de referencia</div>
+              {form.foto && (
+                <div style={{ position:"relative", marginBottom:8 }}>
+                  <img src={form.foto} alt="ref" style={{ width:"100%", maxHeight:180, objectFit:"cover", borderRadius:10, border:"1.5px solid #e8d5c4" }}/>
+                  <button onClick={()=>setForm({...form,foto:""})} style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,.55)", border:"none", borderRadius:6, color:"#fff", fontSize:12, cursor:"pointer", padding:"2px 7px" }}>✕</button>
+                </div>
+              )}
+              <button onClick={()=>fileRef.current?.click()} disabled={subiendo}
+                style={{ width:"100%", background:"#fdf8f3", border:"1.5px dashed #c9956a", borderRadius:9, padding:"10px", fontSize:12, color:"#c9956a", cursor:"pointer", fontFamily:"inherit", opacity:subiendo?.6:1 }}>
+                {subiendo ? "Subiendo..." : form.foto ? "📷 Cambiar foto" : "📷 Agregar foto desde teléfono"}
+              </button>
+              <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={e=>subirFoto(e.target.files)} style={{ display:"none" }}/>
+            </div>
+            <div>
+              <div style={{ fontSize:10, color:"#a07855", fontWeight:600, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.06em" }}>Link de YouTube o TikTok</div>
+              <Inp value={form.videoUrl||""} onChange={v=>setForm({...form,videoUrl:v})} placeholder="https://youtu.be/... o tiktok.com/..."/>
+            </div>
+            <div>
+              <div style={{ fontSize:10, color:"#a07855", fontWeight:600, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.06em" }}>Notas</div>
+              <textarea value={form.notas||""} onChange={e=>setForm({...form,notas:e.target.value})} placeholder="Color, tamaño, dónde comprarlo..." rows={2}
+                style={{ width:"100%", background:"#fdf8f3", border:"1.5px solid #e8d5c4", borderRadius:9, padding:"9px 12px", fontSize:12, color:"#5c3d2e", fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" as any }}/>
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              <Btn onClick={guardar} style={{ flex:2 }}>💾 Guardar</Btn>
+              <Btn outline onClick={()=>{ setShow(false); setEditId(null); setForm({ categoria:"Flores", cantidad:1, comprado:false }); }} style={{ flex:1 }}>Cancelar</Btn>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {!show && <Btn onClick={()=>setShow(true)} style={{ marginBottom:16 }}>+ Agregar ítem</Btn>}
+
+      {/* Lista por categoría */}
+      {lista.length === 0 && (
+        <div style={{ textAlign:"center", color:"#c4a882", padding:32 }}>Empieza a armar tu lista de decoraciones 🌸</div>
+      )}
+
+      {CATS_DECO.map(cat => {
+        const items = lista.filter(i => i.categoria === cat);
+        if (!items.length) return null;
+        return (
+          <div key={cat} style={{ marginBottom:20 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:"#c9956a", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>{cat}</div>
+            {items.map(item => {
+              const embedUrl = getVideoEmbed(item.videoUrl || "");
+              return (
+                <Card key={item.id} style={{ marginBottom:10, opacity:item.comprado?.7:1, borderLeft:`3px solid ${item.comprado?"#6aaa96":"#e8d5c4"}` }}>
+                  {/* Foto */}
+                  {item.foto && (
+                    <img src={item.foto} alt={item.nombre} onClick={()=>setPreview(item.foto!)}
+                      style={{ width:"100%", maxHeight:200, objectFit:"cover", borderRadius:10, marginBottom:10, cursor:"pointer", display:"block" }}/>
+                  )}
+                  {/* Video embed */}
+                  {embedUrl && (
+                    <div style={{ position:"relative", paddingBottom:"56.25%", height:0, borderRadius:10, overflow:"hidden", marginBottom:10, background:"#000" }}>
+                      <iframe src={embedUrl} title={item.nombre} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", border:"none" }}/>
+                    </div>
+                  )}
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", textDecoration:item.comprado?"line-through":"none", marginBottom:2 }}>{item.nombre}</div>
+                      <div style={{ display:"flex", gap:8, flexWrap:"wrap" as any, alignItems:"center", marginBottom:4 }}>
+                        {item.cantidad > 1 && <span style={{ fontSize:11, color:"#a07855" }}>×{item.cantidad}</span>}
+                        {item.precio > 0 && <span style={{ fontSize:12, fontWeight:700, color:"#c9956a" }}>{fmt(item.precio * item.cantidad)}</span>}
+                        {item.precio > 0 && item.cantidad > 1 && <span style={{ fontSize:10, color:"#c4a882" }}>({fmt(item.precio)} c/u)</span>}
+                      </div>
+                      {item.notas && <div style={{ fontSize:11, color:"#a07855" }}>{item.notas}</div>}
+                      {/* Link directo si no se pudo embeber */}
+                      {item.videoUrl && !embedUrl && (
+                        <a href={item.videoUrl} target="_blank" rel="noreferrer" style={{ fontSize:11, color:"#9b7bb5" }}>🔗 Ver referencia</a>
+                      )}
+                    </div>
+                    <div style={{ display:"flex", gap:5, flexShrink:0, marginLeft:8 }}>
+                      <button onClick={()=>toggleComprado(item.id)}
+                        style={{ background:item.comprado?"#e8f5ec":"none", border:`1px solid ${item.comprado?"#6aaa96":"#e8d5c4"}`, borderRadius:6, padding:"4px 7px", fontSize:11, color:item.comprado?"#6aaa96":"#a07855", cursor:"pointer", fontFamily:"inherit" }}>
+                        {item.comprado?"✓":"Comprar"}
+                      </button>
+                      <button onClick={()=>abrirEditar(item)} style={{ background:"#fdf0e8", border:"none", borderRadius:6, padding:"4px 7px", fontSize:12, cursor:"pointer" }}>✏️</button>
+                      <button onClick={()=>eliminar(item.id)} style={{ background:"#fef2f2", border:"none", borderRadius:6, padding:"4px 7px", fontSize:12, cursor:"pointer" }}>🗑️</button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        );
+      })}
+
+      {/* Preview foto */}
+      {preview && (
+        <div onClick={()=>setPreview(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.85)", zIndex:999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+          <img src={preview} alt="preview" style={{ maxWidth:"100%", maxHeight:"90vh", borderRadius:12, objectFit:"contain" }}/>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
 // FOTOS
 // ════════════════════════════════════════════════════════════════
 function Fotos({ esAdmin }: { esAdmin:boolean }) {
@@ -1390,6 +1626,7 @@ export default function App() {
   const [regalos,     setRegalos]     = useData<{regalos:Regalo[]}>("regalos",          {regalos:[]});
   const [luna,        setLuna]        = useData<{items:LunaItem[]}>("luna",              {items:[]});
   const [mesasPosData,setMesasPosData]= useData<{mesas:MesaPos[]}>("mesaspos",           {mesas:[]});
+  const [decoraciones,setDecoraciones]= useData<{items:DecoItem[]}>("decoraciones",       {items:[]});
 
   const login = (tipo:"admin"|"fotos") => {
     setAcceso(tipo);
@@ -1431,13 +1668,14 @@ export default function App() {
     { id:"presupuesto", icon:"💰", label:"Presupuesto" },
   ];
   const SIDEBAR_ITEMS = [
-    { id:"proveedores", icon:"🤝", label:"Proveedores",  desc:"Fotógrafo, animador, etc." },
-    { id:"programa",    icon:"🎵", label:"Programa",     desc:"Canciones, juegos, actividades" },
-    { id:"regalos",     icon:"🎁", label:"Regalos",      desc:"Lista de regalos" },
-    { id:"luna",        icon:"✈️", label:"Luna de Miel", desc:"Viaje y actividades" },
-    { id:"checklist",   icon:"✅", label:"Pendientes",   desc:"Tareas y cosas por hacer" },
-    { id:"fotos",       icon:"📷", label:"Galería",      desc:"Fotos de la boda" },
-    { id:"qr",          icon:"📱", label:"QR Invitados", desc:"Código para subir fotos" },
+    { id:"proveedores",  icon:"🤝", label:"Proveedores",   desc:"Fotógrafo, animador, etc." },
+    { id:"decoraciones", icon:"🌸", label:"Decoraciones",  desc:"Lista de compras y referencias" },
+    { id:"programa",     icon:"🎵", label:"Programa",      desc:"Canciones, juegos, actividades" },
+    { id:"regalos",      icon:"🎁", label:"Regalos",       desc:"Lista de regalos" },
+    { id:"luna",         icon:"✈️", label:"Luna de Miel",  desc:"Viaje y actividades" },
+    { id:"checklist",    icon:"✅", label:"Pendientes",    desc:"Tareas y cosas por hacer" },
+    { id:"fotos",        icon:"📷", label:"Galería",       desc:"Fotos de la boda" },
+    { id:"qr",           icon:"📱", label:"QR Invitados",  desc:"Código para subir fotos" },
   ];
 
   return (
@@ -1484,8 +1722,9 @@ export default function App() {
         {tab==="invitados"   && <Invitados data={invitados} setData={setInvitados}/>}
         {tab==="mesas"       && <Mesas invitados={invitados} setInvitados={setInvitados} mesasData={mesasPosData} setMesasData={setMesasPosData}/>}
         {tab==="presupuesto" && <Presupuesto gastos={gastos} setGastos={setGastos} proveedores={proveedores} invitados={invitados}/>}
-        {tab==="proveedores" && <Proveedores data={proveedores} setData={setProveedores}/>}
-        {tab==="programa"    && <Programa canciones={canciones} setCanciones={setCanciones}/>}
+        {tab==="proveedores"  && <Proveedores data={proveedores} setData={setProveedores}/>}
+        {tab==="decoraciones" && <Decoraciones data={decoraciones} setData={setDecoraciones}/>}
+        {tab==="programa"     && <Programa canciones={canciones} setCanciones={setCanciones}/>}
         {tab==="regalos"     && <Regalos data={regalos} setData={setRegalos}/>}
         {tab==="luna"        && <LunaMiel data={luna} setData={setLuna}/>}
         {tab==="checklist"   && <CheckList/>}
