@@ -1444,7 +1444,7 @@ function QRInvitados() {
 // ════════════════════════════════════════════════════════════════
 type Tarea = { id:number; titulo:string; categoria:string; hecho:boolean; prioridad:"alta"|"media"|"baja"; fecha?:string; notas?:string; };
 
-const CATS_CHECK   = ["Vestimenta","Decoración","Catering","Música","Fotografía","Trámites","Invitados","Luna de miel","Otro"];
+const CATS_CHECK   = ["Boda Civil","Matrimonio","Vestimenta","Decoración","Catering","Música","Fotografía","Trámites","Invitados","Luna de miel","Otro"];
 const PRIO_COLOR   = { alta:"#e8544a", media:"#e8a94a", baja:"#6ab04c" };
 const PRIO_LABEL   = { alta:"Alta", media:"Media", baja:"Baja" };
 
