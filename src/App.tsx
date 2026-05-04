@@ -1472,7 +1472,7 @@ function CheckList() {
   const pct       = tareas.length ? Math.round((hechas/tareas.length)*100) : 0;
 
   const toggleHecho = (id:number) => guardar(tareas.map(t => t.id===id ? {...t,hecho:!t.hecho} : t));
-  const eliminar    = (id:number) => guardar(tareas.filter(t=>t.id!==id));
+  const eliminar    = (id:number) => { if (!window.confirm("¿Eliminar esta tarea?")) return; guardar(tareas.filter(t=>t.id!==id)); };
 
   const handleGuardar = () => {
     if (!nueva.titulo?.trim()) return;
