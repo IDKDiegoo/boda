@@ -1332,6 +1332,141 @@ function PaquetesTab({ viajeId, viaje, onBuscarAhora }: { viajeId: string|null; 
   );
 }
 
+function PresupuestoViaje({ viaje, mejorPaquete, lista, onAgregar }: {
+  viaje: ViajeConfig;
+  mejorPaquete: Paquete | null;
+  lista: LunaItem[];
+  onAgregar: (items: LunaItem[]) => void;
+}) {
+  const noches   = viaje.noches   || 7;
+  const personas = viaje.personas || 2;
+
+  // Precio del paquete (vuelo + hotel)
+  const precioPackage = mejorPaquete
+    ? (mejorPaquete.precio_pareja ?? (mejorPaquete.precio_persona ? mejorPaquete.precio_persona * personas : null))
+    : null;
+
+  // Estimados para lo que NO cubre el paquete
+  const estimComida       = Math.round(noches * personas * 28000 / 1000) * 1000;
+  const estimTransporte   = Math.round(noches * 9000 / 1000) * 1000;
+  const estimActividades  = Math.round(noches * personas * 12000 / 1000) * 1000;
+  const estimSeguro       = personas * 35000;
+  const estimOtros        = Math.round(noches * personas * 8000 / 1000) * 1000;
+
+  // Si no hay paquete, usar estimados de vuelo+hotel
+  const estimVuelos = personas * 850000;
+  const estimHotel  = Math.round(noches * personas * 65000 / 1000) * 1000;
+
+  const baseViaje = precioPackage ?? (estimVuelos + estimHotel);
+  const totalExtras = estimComida + estimTransporte + estimActividades + estimSeguro + estimOtros;
+  const totalFinal  = baseViaje + totalExtras;
+
+  // Verificar si ya fue agregado al presupuesto para este viaje
+  const tagViaje = `[${viaje.id}]`;
+  const yaAgregado = lista.some(i => i.notas?.includes(tagViaje));
+
+  const agregarTodo = () => {
+    const ts = Date.now();
+    const nuevos: LunaItem[] = [
+      {
+        id: ts + 1,
+        categoria: "Vuelos",
+        descripcion: mejorPaquete
+          ? `Paquete ${viaje.destino} — ${mejorPaquete.aerolinea} · ${mejorPaquete.hotel} (${mejorPaquete.noches}n)`
+          : `Vuelos + Alojamiento ${viaje.destino} (estimado)`,
+        monto: baseViaje,
+        confirmado: false,
+        notas: tagViaje,
+      },
+      { id:ts+2, categoria:"Comidas",     descripcion:`Comidas ${noches} noches · ${personas} pers.`, monto:estimComida,      confirmado:false, notas:tagViaje },
+      { id:ts+3, categoria:"Transporte",  descripcion:`Transporte local ${viaje.destino}`,            monto:estimTransporte,  confirmado:false, notas:tagViaje },
+      { id:ts+4, categoria:"Actividades", descripcion:`Excursiones y actividades`,                    monto:estimActividades, confirmado:false, notas:tagViaje },
+      { id:ts+5, categoria:"Seguro",      descripcion:`Seguro de viaje (${personas} pers.)`,          monto:estimSeguro,      confirmado:false, notas:tagViaje },
+      { id:ts+6, categoria:"Otro",        descripcion:`Gastos varios y souvenirs`,                    monto:estimOtros,       confirmado:false, notas:tagViaje },
+    ];
+    onAgregar(nuevos);
+  };
+
+  type RowProps = { icon:string; cat:string; desc:string; monto:number; enPaquete?:boolean };
+  const Row = ({ icon, cat, desc, monto, enPaquete }: RowProps) => (
+    <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0", borderBottom:"1px solid #f0e8e0" }}>
+      <div style={{ fontSize:20, width:28, textAlign:"center" as const }}>{icon}</div>
+      <div style={{ flex:1 }}>
+        <div style={{ fontSize:12, fontWeight:700, color:"#5c3d2e" }}>{cat}</div>
+        <div style={{ fontSize:10, color:"#a07855", lineHeight:1.3 }}>{desc}</div>
+      </div>
+      <div style={{ textAlign:"right" as const, minWidth:80 }}>
+        {enPaquete && <div style={{ fontSize:9, color:"#6aaa96", fontWeight:700, background:"#e8f5ec", padding:"1px 5px", borderRadius:4, marginBottom:2, display:"inline-block" }}>EN PAQUETE</div>}
+        <div style={{ fontSize:13, fontWeight:700, color: enPaquete ? "#6aaa96" : "#4070b0" }}>{fmt(monto)}</div>
+      </div>
+    </div>
+  );
+
+  const incluye    = mejorPaquete?.incluye    || [];
+  const noIncluye  = mejorPaquete?.no_incluye || [];
+
+  return (
+    <Card style={{ marginTop:14 }}>
+      <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:3 }}>
+        💰 Desglose del presupuesto
+      </div>
+      <div style={{ fontSize:11, color:"#a07855", marginBottom:14 }}>
+        {viaje.destino} · {noches} noches · {personas} persona{personas>1?"s":""}
+        {mejorPaquete ? ` · Basado en ${mejorPaquete.fuente}` : " · Valores estimados"}
+      </div>
+
+      {mejorPaquete ? (
+        <Row icon="🎁" cat="Paquete vuelo + hotel"
+          desc={`${mejorPaquete.aerolinea} · ${mejorPaquete.hotel} · ${mejorPaquete.noches} noches`}
+          monto={baseViaje} enPaquete />
+      ) : (
+        <>
+          <Row icon="✈️" cat="Vuelos (estimado)" desc={`Ida y vuelta · ${personas} pers. desde SCL`} monto={estimVuelos} />
+          <Row icon="🏨" cat="Alojamiento (estimado)" desc={`${noches} noches`} monto={estimHotel} />
+        </>
+      )}
+      <Row icon="🍽️" cat="Comidas"          desc={`~${fmt(Math.round(estimComida/noches/personas))} por persona/día`} monto={estimComida} />
+      <Row icon="🚗" cat="Transporte local"  desc="Taxis, Uber, colectivos"                                           monto={estimTransporte} />
+      <Row icon="🎯" cat="Actividades"       desc="Excursiones, entradas, paseos"                                     monto={estimActividades} />
+      <Row icon="🛡️" cat="Seguro de viaje"   desc={`Assist Card o similar · ${personas} pers.`}                       monto={estimSeguro} />
+      <Row icon="🛍️" cat="Gastos varios"     desc="Souvenirs, extras, imprevistos"                                    monto={estimOtros} />
+
+      {/* Total */}
+      <div style={{ background:"linear-gradient(135deg,#fdf0e8,#fae0cc)", borderRadius:10, padding:"12px 14px", margin:"14px 0 10px" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ fontSize:12, fontWeight:700, color:"#8c4820" }}>TOTAL ESTIMADO</div>
+          <div style={{ fontSize:22, fontWeight:900, color:"#c9956a" }}>{fmt(totalFinal)}</div>
+        </div>
+        <div style={{ fontSize:10, color:"#a07855", marginTop:3 }}>
+          {personas} persona{personas>1?"s":""} · {noches} noches
+          {mejorPaquete ? ` · Paquete ${mejorPaquete.fuente} incluido` : " · Todo estimado"}
+        </div>
+      </div>
+
+      {/* Incluye/No incluye del paquete */}
+      {incluye.length > 0 && (
+        <div style={{ marginBottom:8 }}>
+          <div style={{ fontSize:9, fontWeight:700, color:"#6aaa96", letterSpacing:"0.05em", marginBottom:4 }}>✅ EL PAQUETE INCLUYE</div>
+          {incluye.map((item,i) => <div key={i} style={{ fontSize:10, color:"#6aaa96", marginBottom:1 }}>• {item}</div>)}
+        </div>
+      )}
+      {noIncluye.length > 0 && (
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:9, fontWeight:700, color:"#e07070", letterSpacing:"0.05em", marginBottom:4 }}>⚠️ DEBES PAGAR APARTE</div>
+          {noIncluye.map((item,i) => <div key={i} style={{ fontSize:10, color:"#c47070", marginBottom:1 }}>• {item}</div>)}
+        </div>
+      )}
+
+      <button
+        onClick={agregarTodo}
+        disabled={yaAgregado}
+        style={{ width:"100%", background:yaAgregado?"#e8f5ec":"#c9956a", color:yaAgregado?"#6aaa96":"#fff", border:yaAgregado?"1.5px solid #6aaa96":"none", borderRadius:10, padding:"12px", fontSize:12, fontWeight:700, cursor:yaAgregado?"default":"pointer", fontFamily:"inherit" }}>
+        {yaAgregado ? "✅ Ya está en tu presupuesto" : "📋 Agregar todo al presupuesto"}
+      </button>
+    </Card>
+  );
+}
+
 function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=>void }) {
   const lista = data.items || [];
   const [subTab, setSubTab]   = useState<"viajes"|"paquetes"|"gastos">("viajes");
@@ -1342,6 +1477,7 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
 
   // ── Trip planner state ─────────────────────────────────────
   const { data: viajesData, guardar: guardarViajes } = useViajesConfig();
+  const allPaquetes = usePaquetes();
   const viajes = viajesData.viajes || [];
   const [selectedViajeId, setSelectedViajeId] = useState<string|null>(null);
   const [showNuevoViaje, setShowNuevoViaje]   = useState(false);
@@ -1349,6 +1485,12 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
   const [vForm, setVForm] = useState({ nombre:"", destino:"", fechaSalida:"", fechaRegreso:"", personas:"2", notas:"" });
 
   const selectedViaje = viajes.find(v => v.id === selectedViajeId) || (viajes.length > 0 ? viajes[0] : null);
+
+  // Mejor paquete para el viaje seleccionado
+  const viajeDataPaquetes = selectedViaje ? allPaquetes[selectedViaje.id] : null;
+  const mejorPaquete: Paquete | null = viajeDataPaquetes
+    ? (viajeDataPaquetes.paquetes?.find(p => p.id === viajeDataPaquetes.mejor_opcion) || viajeDataPaquetes.paquetes?.[0] || null)
+    : null;
 
   const calcNoches = (s: string, r: string) => {
     if (!s || !r) return 0;
@@ -1604,6 +1746,14 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
             </div>
           )}
           <PaquetesTab viajeId={selectedViaje?.id || null} viaje={selectedViaje || null} onBuscarAhora={solicitarBusqueda}/>
+          {selectedViaje && (
+            <PresupuestoViaje
+              viaje={selectedViaje}
+              mejorPaquete={mejorPaquete}
+              lista={lista}
+              onAgregar={(items) => setData({ items:[...lista, ...items] })}
+            />
+          )}
         </div>
       )}
 
