@@ -2457,13 +2457,22 @@ function BodaCivil() {
 
   // ── Invitados ────────────────────────────────────────────────
   const [showFInv, setShowFInv] = useState(false);
-  const [fInv, setFInv]         = useState({ nombre:"", notas:"" });
+  const [editInvId, setEditInvId] = useState<number|null>(null);
+  const [fInv, setFInv]           = useState({ nombre:"", notas:"" });
   const confirmados = invitados.filter(i=>i.confirmado).length;
 
-  const agregarInv = () => {
+  const abrirNuevoInv = () => { setEditInvId(null); setFInv({ nombre:"", notas:"" }); setShowFInv(true); };
+  const abrirEditInv  = (inv: CivilInvitado) => { setEditInvId(inv.id); setFInv({ nombre:inv.nombre, notas:inv.notas||"" }); setShowFInv(true); };
+  const cerrarFInv    = () => { setShowFInv(false); setEditInvId(null); setFInv({ nombre:"", notas:"" }); };
+
+  const guardarInv = () => {
     if (!fInv.nombre.trim()) return;
-    guardar({ ...data, invitados:[...invitados,{ id:Date.now(), nombre:fInv.nombre.trim(), confirmado:false, notas:fInv.notas }] });
-    setFInv({ nombre:"", notas:"" }); setShowFInv(false);
+    if (editInvId !== null) {
+      guardar({ ...data, invitados:invitados.map(i=>i.id===editInvId?{...i,nombre:fInv.nombre.trim(),notas:fInv.notas}:i) });
+    } else {
+      guardar({ ...data, invitados:[...invitados,{ id:Date.now(), nombre:fInv.nombre.trim(), confirmado:false, notas:fInv.notas }] });
+    }
+    cerrarFInv();
   };
   const toggleInv = (id:number) =>
     guardar({ ...data, invitados:invitados.map(i=>i.id===id?{...i,confirmado:!i.confirmado}:i) });
@@ -2471,7 +2480,8 @@ function BodaCivil() {
     guardar({ ...data, invitados:invitados.filter(i=>i.id!==id) });
 
   // ── Gastos ───────────────────────────────────────────────────
-  const [showFG, setShowFG] = useState(false);
+  const [showFG,   setShowFG]   = useState(false);
+  const [editGId,  setEditGId]  = useState<number|null>(null);
   const [fG, setFG] = useState({ categoria:"Carnes", descripcion:"", cantidad:"", unidad:"kg", precioPorUnidad:"", notas:"" });
 
   const totalGeneral = gastos.reduce((s,g)=>s+g.cantidad*g.precioPorUnidad,0);
@@ -2479,15 +2489,19 @@ function BodaCivil() {
   const totalComida  = gastos.filter(g=>["Carnes","Acompañamientos","Bebidas"].includes(g.categoria)).reduce((s,g)=>s+g.cantidad*g.precioPorUnidad,0);
   const totalServ    = gastos.filter(g=>g.categoria==="Servicios").reduce((s,g)=>s+g.cantidad*g.precioPorUnidad,0);
 
-  const agregarGasto = () => {
+  const abrirNuevoG = () => { setEditGId(null); setFG({ categoria:"Carnes", descripcion:"", cantidad:"", unidad:"kg", precioPorUnidad:"", notas:"" }); setShowFG(true); };
+  const abrirEditG  = (g: CivilGasto) => { setEditGId(g.id); setFG({ categoria:g.categoria, descripcion:g.descripcion, cantidad:String(g.cantidad), unidad:g.unidad, precioPorUnidad:String(g.precioPorUnidad), notas:g.notas||"" }); setShowFG(true); };
+  const cerrarFG    = () => { setShowFG(false); setEditGId(null); };
+
+  const guardarGasto = () => {
     if (!fG.descripcion.trim()||!fG.cantidad||!fG.precioPorUnidad) return;
-    guardar({ ...data, gastos:[...gastos,{
-      id:Date.now(), categoria:fG.categoria, descripcion:fG.descripcion.trim(),
-      cantidad:Number(fG.cantidad), unidad:fG.unidad,
-      precioPorUnidad:Number(fG.precioPorUnidad), notas:fG.notas
-    }]});
-    setFG({ categoria:"Carnes", descripcion:"", cantidad:"", unidad:"kg", precioPorUnidad:"", notas:"" });
-    setShowFG(false);
+    const item = { categoria:fG.categoria, descripcion:fG.descripcion.trim(), cantidad:Number(fG.cantidad), unidad:fG.unidad, precioPorUnidad:Number(fG.precioPorUnidad), notas:fG.notas };
+    if (editGId !== null) {
+      guardar({ ...data, gastos:gastos.map(g=>g.id===editGId?{...g,...item}:g) });
+    } else {
+      guardar({ ...data, gastos:[...gastos,{ id:Date.now(), ...item }] });
+    }
+    cerrarFG();
   };
   const delGasto = (id:number) => guardar({ ...data, gastos:gastos.filter(g=>g.id!==id) });
 
@@ -2552,8 +2566,10 @@ function BodaCivil() {
 
           {/* Formulario */}
           {showFG && (
-            <Card style={{ marginBottom:14, border:"2px solid #e8d5c4" }}>
-              <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:12 }}>Nuevo ítem</div>
+            <Card style={{ marginBottom:14, border:`2px solid ${editGId?"#5070a0":"#e8d5c4"}` }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:12 }}>
+                {editGId ? "✏️ Editar ítem" : "Nuevo ítem"}
+              </div>
               <div style={{ display:"flex", flexDirection:"column" as const, gap:9 }}>
                 <Sel value={fG.categoria} onChange={v=>setFG({...fG,categoria:v})} options={CATS_CIVIL.map(c=>({value:c,label:`${CAT_ICON_CIVIL[c]} ${c}`}))}/>
                 <Inp value={fG.descripcion} onChange={v=>setFG({...fG,descripcion:v})} placeholder="Descripción (ej: Lomo vetado, Arroz, Gaseosas)"/>
@@ -2574,12 +2590,12 @@ function BodaCivil() {
                 <Inp value={fG.notas} onChange={v=>setFG({...fG,notas:v})} placeholder="Notas (opcional)"/>
               </div>
               <div style={{ display:"flex", gap:8, marginTop:12 }}>
-                <Btn onClick={agregarGasto}>Guardar</Btn>
-                <Btn onClick={()=>{setShowFG(false);setFG({categoria:"Carnes",descripcion:"",cantidad:"",unidad:"kg",precioPorUnidad:"",notas:""});}} outline>Cancelar</Btn>
+                <Btn onClick={guardarGasto}>{editGId ? "Guardar cambios" : "Agregar"}</Btn>
+                <Btn onClick={cerrarFG} outline>Cancelar</Btn>
               </div>
             </Card>
           )}
-          {!showFG && <Btn onClick={()=>setShowFG(true)} style={{ marginBottom:16 }}>+ Agregar ítem</Btn>}
+          {!showFG && <Btn onClick={abrirNuevoG} style={{ marginBottom:16 }}>+ Agregar ítem</Btn>}
 
           {/* Lista por categoría */}
           {gastos.length === 0 && (
@@ -2612,8 +2628,11 @@ function BodaCivil() {
                           {g.notas && <div style={{ fontSize:10, color:"#c4a882", marginTop:2 }}>{g.notas}</div>}
                         </div>
                         <div style={{ textAlign:"right" as const, flexShrink:0 }}>
-                          <div style={{ fontSize:15, fontWeight:700, color:"#4070b0" }}>{fmt(total)}</div>
-                          <button onClick={()=>delGasto(g.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14, marginTop:4 }}>🗑</button>
+                          <div style={{ fontSize:15, fontWeight:700, color:"#4070b0", marginBottom:4 }}>{fmt(total)}</div>
+                          <div style={{ display:"flex", gap:4, justifyContent:"flex-end" }}>
+                            <button onClick={()=>abrirEditG(g)} style={{ background:"none", border:"1px solid #d0c0b0", borderRadius:6, padding:"3px 7px", fontSize:11, color:"#a07855", cursor:"pointer" }}>✏️</button>
+                            <button onClick={()=>delGasto(g.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
+                          </div>
                         </div>
                       </div>
                     </Card>
@@ -2637,21 +2656,23 @@ function BodaCivil() {
             </div>
           </Card>
 
-          {/* Formulario nuevo invitado */}
+          {/* Formulario agregar / editar */}
           {showFInv && (
-            <Card style={{ marginBottom:14, border:"2px solid #e8d5c4" }}>
-              <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:10 }}>Nuevo invitado</div>
+            <Card style={{ marginBottom:14, border:`2px solid ${editInvId?"#5070a0":"#e8d5c4"}` }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:10 }}>
+                {editInvId ? "✏️ Editar invitado" : "Nuevo invitado"}
+              </div>
               <div style={{ display:"flex", flexDirection:"column" as const, gap:8 }}>
                 <Inp value={fInv.nombre} onChange={v=>setFInv({...fInv,nombre:v})} placeholder="Nombre completo"/>
-                <Inp value={fInv.notas} onChange={v=>setFInv({...fInv,notas:v})} placeholder="Notas (relación, dieta, etc.)"/>
+                <Inp value={fInv.notas}  onChange={v=>setFInv({...fInv,notas:v})}  placeholder="Notas (relación, dieta, etc.)"/>
               </div>
               <div style={{ display:"flex", gap:8, marginTop:10 }}>
-                <Btn onClick={agregarInv}>Agregar</Btn>
-                <Btn onClick={()=>{setShowFInv(false);setFInv({nombre:"",notas:""}); }} outline>Cancelar</Btn>
+                <Btn onClick={guardarInv}>{editInvId ? "Guardar cambios" : "Agregar"}</Btn>
+                <Btn onClick={cerrarFInv} outline>Cancelar</Btn>
               </div>
             </Card>
           )}
-          {!showFInv && <Btn onClick={()=>setShowFInv(true)} style={{ marginBottom:14 }}>+ Agregar invitado</Btn>}
+          {!showFInv && <Btn onClick={abrirNuevoInv} style={{ marginBottom:14 }}>+ Agregar invitado</Btn>}
 
           {/* Lista */}
           {invitados.length===0 && (
@@ -2671,8 +2692,9 @@ function BodaCivil() {
                 </div>
                 <div style={{ display:"flex", gap:6, flexShrink:0 }}>
                   <button onClick={()=>toggleInv(inv.id)} style={{ background:inv.confirmado?"#e8f5ec":"none", border:`1px solid ${inv.confirmado?"#6aaa96":"#e8d5c4"}`, borderRadius:6, padding:"4px 8px", fontSize:10, color:inv.confirmado?"#6aaa96":"#a07855", cursor:"pointer", fontFamily:"inherit" }}>
-                    {inv.confirmado?"✓ Confirmado":"Confirmar"}
+                    {inv.confirmado?"✓ Conf.":"Confirmar"}
                   </button>
+                  <button onClick={()=>abrirEditInv(inv)} style={{ background:"none", border:"1px solid #d0c0b0", borderRadius:6, padding:"4px 8px", fontSize:12, color:"#a07855", cursor:"pointer" }}>✏️</button>
                   <button onClick={()=>delInv(inv.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
                 </div>
               </div>
