@@ -1234,7 +1234,8 @@ function useBusquedaPendiente(): { pendiente: boolean; ts: string|null } {
     const unsub = onSnapshot(doc(db, "boda", "config_busqueda"), snap => {
       if (snap.exists()) {
         const d = snap.data();
-        setEstado({ pendiente: !!d.solicitada, ts: d.ts || null });
+        // pendiente = solicitada (esperando al watcher) OR buscando (Claude corriendo)
+        setEstado({ pendiente: !!(d.solicitada || d.buscando), ts: d.ts || null });
       } else {
         setEstado({ pendiente: false, ts: null });
       }
@@ -1261,14 +1262,19 @@ function PaquetesTab({ viajeId, viaje, onBuscarAhora }: { viajeId: string|null; 
   // Estado: búsqueda en progreso
   if (busqueda.pendiente) return (
     <Card style={{ textAlign:"center" as const, padding:32, color:"#5070a0", background:"linear-gradient(135deg,#e8f0ff,#d8e8ff)" }}>
-      <div style={{ fontSize:28, marginBottom:8 }}>⏳</div>
-      <div style={{ fontSize:13, fontWeight:700, marginBottom:6 }}>Buscando paquetes para {viaje.destino}...</div>
-      <div style={{ fontSize:11, lineHeight:1.6 }}>
-        Claude está revisando Despegar, LATAM, Falabella y más.<br/>
-        <strong>Esto toma entre 3 y 10 minutos.</strong><br/>
-        Los resultados aparecerán aquí automáticamente.
+      <div style={{ fontSize:32, marginBottom:8, animation:"spin 2s linear infinite", display:"inline-block" }}>🔄</div>
+      <div style={{ fontSize:14, fontWeight:700, marginBottom:8 }}>Buscando paquetes para {viaje.destino}...</div>
+      <div style={{ fontSize:11, lineHeight:1.8, color:"#4060a0" }}>
+        Claude está revisando en este momento:<br/>
+        Despegar · LATAM · Falabella Viajes · Atrapalo · Cocha<br/>
+        <br/>
+        <strong>Tarda entre 5 y 10 minutos.</strong><br/>
+        Los resultados aparecen solos cuando termina — no cierres la app.
       </div>
-      {data && <div style={{ fontSize:10, color:"#7090c0", marginTop:10 }}>Última búsqueda previa: {new Date(data.fecha_consulta).toLocaleString("es-CL",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</div>}
+      {busqueda.ts && <div style={{ fontSize:10, color:"#7090c0", marginTop:12, background:"rgba(255,255,255,0.5)", borderRadius:6, padding:"4px 8px", display:"inline-block" }}>
+        Iniciado: {new Date(busqueda.ts).toLocaleString("es-CL",{hour:"2-digit",minute:"2-digit"})}
+      </div>}
+      {data && <div style={{ fontSize:10, color:"#7090c0", marginTop:6 }}>Última búsqueda previa: {new Date(data.fecha_consulta).toLocaleString("es-CL",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</div>}
     </Card>
   );
 
