@@ -1332,25 +1332,20 @@ function PaquetesTab({ viajeId, viaje, onBuscarAhora }: { viajeId: string|null; 
   );
 }
 
-function PresupuestoViaje({ viaje, paquetes, mejorPaqueteId, lista, onAgregar }: {
+function PresupuestoViaje({ viaje, paquetes, mejorPaqueteId, selectedId, onSelectId, lista, onAgregar }: {
   viaje: ViajeConfig;
   paquetes: Paquete[];
   mejorPaqueteId: string | null;
+  selectedId: string | null;           // controlado por el padre
+  onSelectId: (id: string | null) => void;
   lista: LunaItem[];
   onAgregar: (items: LunaItem[]) => void;
 }) {
-  const disponibles = paquetes.filter(p => p.disponible !== false);
-  // null = usuario no ha elegido (usa el mejor automático), "none" = sin paquete
-  const [selectedId, setSelectedId] = useState<string|null|"none">(null);
-
-  // Si el usuario no ha elegido explícitamente, mostrar el mejor por defecto
-  const effectiveId = selectedId !== null
-    ? selectedId
-    : (mejorPaqueteId || disponibles[0]?.id || "none");
-
-  const paquete = effectiveId !== "none"
-    ? (disponibles.find(p => p.id === effectiveId) || null)
-    : null;
+  // Mostrar todos los paquetes en el selector (no sólo disponibles)
+  const todos = paquetes;
+  // Para el desglose usar el seleccionado, o el mejor por defecto
+  const effectiveId = selectedId ?? mejorPaqueteId ?? todos[0]?.id ?? null;
+  const paquete = effectiveId ? (todos.find(p => p.id === effectiveId) || null) : null;
 
   const noches   = viaje.noches   || 7;
   const personas = viaje.personas || 2;
@@ -1415,33 +1410,34 @@ function PresupuestoViaje({ viaje, paquetes, mejorPaqueteId, lista, onAgregar }:
       </div>
 
       {/* Selector de paquete */}
-      {disponibles.length > 0 && (
+      {todos.length > 0 && (
         <div style={{ marginBottom:14 }}>
           <div style={{ fontSize:10, fontWeight:700, color:"#7090c0", marginBottom:8, letterSpacing:"0.05em" }}>
-            ELIGE EL PAQUETE BASE ({disponibles.length} encontrados)
+            ELIGE EL PAQUETE BASE ({todos.length} encontrados)
           </div>
           <div style={{ display:"flex", flexDirection:"column" as const, gap:6 }}>
             {/* Opción sin paquete */}
             <button
-              onClick={()=>setSelectedId("none")}
-              style={{ display:"flex", justifyContent:"space-between", alignItems:"center", textAlign:"left" as const, padding:"9px 12px", borderRadius:9, border:`1.5px solid ${effectiveId==="none"?"#5070a0":"#e8d5c4"}`, background:effectiveId==="none"?"#e8f0ff":"#fdf8f3", cursor:"pointer", fontFamily:"inherit", gap:8 }}>
+              onClick={()=>onSelectId(null)}
+              style={{ display:"flex", justifyContent:"space-between", alignItems:"center", textAlign:"left" as const, padding:"9px 12px", borderRadius:9, border:`1.5px solid ${effectiveId===null?"#5070a0":"#e8d5c4"}`, background:effectiveId===null?"#e8f0ff":"#fdf8f3", cursor:"pointer", fontFamily:"inherit", gap:8 }}>
               <div>
-                <div style={{ fontSize:11, fontWeight:700, color:effectiveId==="none"?"#4060a0":"#a07855" }}>Sin paquete — usar estimados</div>
-                <div style={{ fontSize:10, color:effectiveId==="none"?"#6080c0":"#c4a882" }}>Calcula con valores aproximados de mercado</div>
+                <div style={{ fontSize:11, fontWeight:700, color:effectiveId===null?"#4060a0":"#a07855" }}>Sin paquete — usar estimados</div>
+                <div style={{ fontSize:10, color:effectiveId===null?"#6080c0":"#c4a882" }}>Calcula con valores aproximados de mercado</div>
               </div>
-              <div style={{ fontSize:12, fontWeight:700, color:effectiveId==="none"?"#4060a0":"#c4a882" }}>{fmt(estimVuelos+estimHotel)}</div>
+              <div style={{ fontSize:12, fontWeight:700, color:effectiveId===null?"#4060a0":"#c4a882" }}>{fmt(estimVuelos+estimHotel)}</div>
             </button>
-            {/* Un botón por cada paquete disponible */}
-            {disponibles.map(p => {
+            {/* Un botón por cada paquete */}
+            {todos.map(p => {
               const precio = p.precio_pareja ?? (p.precio_persona ? p.precio_persona*personas : null);
               const active = effectiveId === p.id;
               return (
-                <button key={p.id} onClick={()=>setSelectedId(p.id)}
+                <button key={p.id} onClick={()=>onSelectId(p.id)}
                   style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", textAlign:"left" as const, padding:"9px 12px", borderRadius:9, border:`1.5px solid ${active?"#c9956a":"#e8d5c4"}`, background:active?"#fff5ec":"#fdf8f3", cursor:"pointer", fontFamily:"inherit", gap:8 }}>
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:2 }}>
                       {mejorPaqueteId===p.id && <span style={{ fontSize:9, background:"#6aaa96", color:"#fff", borderRadius:4, padding:"1px 5px", fontWeight:700 }}>MEJOR</span>}
                       {p.es_oferta && <span style={{ fontSize:9, background:"#e07070", color:"#fff", borderRadius:4, padding:"1px 5px", fontWeight:700 }}>OFERTA</span>}
+                      {!p.disponible && <span style={{ fontSize:9, background:"#b0b0b0", color:"#fff", borderRadius:4, padding:"1px 5px", fontWeight:700 }}>NO CONFIRMADO</span>}
                       <span style={{ fontSize:11, fontWeight:700, color:active?"#c9956a":"#a07855" }}>{p.fuente}</span>
                     </div>
                     <div style={{ fontSize:10, color:active?"#a07855":"#c4a882", lineHeight:1.3 }}>
@@ -1525,9 +1521,10 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
   const { data: viajesData, guardar: guardarViajes } = useViajesConfig();
   const allPaquetes = usePaquetes();
   const viajes = viajesData.viajes || [];
-  const [selectedViajeId, setSelectedViajeId] = useState<string|null>(null);
-  const [showNuevoViaje, setShowNuevoViaje]   = useState(false);
-  const [showGuia, setShowGuia]               = useState(false);
+  const [selectedViajeId,    setSelectedViajeId]    = useState<string|null>(null);
+  const [selectedPaqueteId,  setSelectedPaqueteId]  = useState<string|null>(null);
+  const [showNuevoViaje,     setShowNuevoViaje]      = useState(false);
+  const [showGuia,           setShowGuia]            = useState(false);
   const [vForm, setVForm] = useState({ nombre:"", destino:"", fechaSalida:"", fechaRegreso:"", personas:"2", notas:"" });
 
   const selectedViaje = viajes.find(v => v.id === selectedViajeId) || (viajes.length > 0 ? viajes[0] : null);
@@ -1793,6 +1790,8 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
               viaje={selectedViaje}
               paquetes={viajeDataPaquetes?.paquetes || []}
               mejorPaqueteId={viajeDataPaquetes?.mejor_opcion || null}
+              selectedId={selectedPaqueteId}
+              onSelectId={setSelectedPaqueteId}
               lista={lista}
               onAgregar={(items) => setData({ items:[...lista, ...items] })}
             />
