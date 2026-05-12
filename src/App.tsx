@@ -1111,21 +1111,6 @@ const PRESUPUESTOS: Record<Destino, Record<Ventana, {
   },
 };
 
-const ESTRATEGIAS = [
-  { titulo:"Membresía Travel Up JetSMART", ahorro:"Maleta + embarque GRATIS", detalle:"$89.990 CLP con 100% cashback si tienes tarjeta MACHBANK o BCI Black/Signature. Cubre 8 vuelos en 12 meses.", vence:"31 mayo 2026", urgente:true, url:"https://jetsmart.com/cl/es/sites/alianza-bci-machbank-lider" },
-  { titulo:"Tarjeta Santander WorldMember", ahorro:"Maleta gratis en LATAM", detalle:"Nivel 1 del programa: maleta en bodega gratis hasta el 31 dic 2026. WorldMember Limited/Platinum: siempre.", vence:"31 dic 2026", urgente:false, url:"https://www.santander.cl" },
-  { titulo:"BCI Black/Signature", ahorro:"$100.000 CLP en equipaje", detalle:"2 cupones de $50.000 CLP para agregar maleta en LATAM o SKY al comprar por Viajes BCI.", vence:"Anual", urgente:false, url:"https://www.bci.cl/personas/beneficios-viajes-tarjeta-bci" },
-  { titulo:"Banco de Chile Visa Infinite", ahorro:"Maleta gratis en SKY", detalle:"Visa Signature, Infinite o Mastercard Black de Banco de Chile/Edwards incluye maleta gratis en SKY.", vence:"Vigente 2026", urgente:false, url:"https://www.bancochile.cl" },
-  { titulo:"Check-in online 24h antes", ahorro:"Asiento gratis", detalle:"En LATAM y SKY, al abrir el check-in 24h antes aparecen asientos liberados sin costo que no estaban disponibles al comprar.", vence:"Siempre", urgente:false, url:"" },
-  { titulo:"Código JETPACKSALE", ahorro:"15% off paquetes Brasil", detalle:"Aplicar en el pago en JetSMART para paquetes vuelo+hotel a Brasil. Válido durante Hot Sale.", vence:"~13 mayo 2026", urgente:true, url:"https://jetsmart.com/cl/es" },
-];
-
-const POLITICAS = [
-  { aerolinea:"LATAM Light", riesgo:"Medio", color:"#f0a850", resumen:"Cambios con penalización + diferencia tarifaria. Reembolso SOLO de tasas a LATAM Wallet (no a tu banco). No cancelas el pasaje.", consejo:"Agregar seguro de viaje para cubrir cancelaciones." },
-  { aerolinea:"LATAM Plus", riesgo:"Bajo", color:"#6aaa96", resumen:"Cambios con costo. Reembolso parcial REAL a tarjeta de crédito. Mejor opción si hay incertidumbre en las fechas.", consejo:"La mejor tarifa si algo puede cambiar antes del viaje." },
-  { aerolinea:"JetSMART base", riesgo:"Alto", color:"#e07070", resumen:"Sin reembolso de dinero real. Solo Gift Card (crédito aerolínea, no efectivo). Si cancelas pierdes casi todo.", consejo:"Solo si tienes seguro de viaje con cancelación total." },
-  { aerolinea:"SKY Light", riesgo:"Alto", color:"#e07070", resumen:"Sin reembolso de dinero en ninguna tarifa. Solo devuelven tasas de embarque (~15% del valor).", consejo:"Igual que JetSMART — complementar siempre con seguro." },
-];
 
 const ITINERARIO_FLN = [
   { dia:"Día 1", plan:"Llegada FLN → check-in → atardecer en Lagoa da Conceição" },
@@ -1304,8 +1289,6 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
   const [ventana, setVentana] = useState<Ventana>("ene");
   const [form, setForm]       = useState<Partial<LunaItem>>({ categoria:"Vuelos" });
   const [showForm, setShowForm] = useState(false);
-  const [showEstrategia, setShowEstrategia] = useState<number|null>(null);
-  const [showPolitica, setShowPolitica]     = useState<number|null>(null);
 
   // ── Trip planner state ─────────────────────────────────────
   const { data: viajesData, guardar: guardarViajes } = useViajesConfig();
@@ -1358,7 +1341,6 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
   const eliminar = (id:number) => setData({ items:lista.filter(i=>i.id!==id) });
 
   const d   = DESTINOS[destino];
-  const v   = VENTANAS[ventana];
   const pre = PRESUPUESTOS[destino][ventana];
   const itinerario = destino === "fln" ? ITINERARIO_FLN : ITINERARIO_BZC;
 
