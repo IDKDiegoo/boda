@@ -1332,57 +1332,54 @@ function PaquetesTab({ viajeId, viaje, onBuscarAhora }: { viajeId: string|null; 
   );
 }
 
-function PresupuestoViaje({ viaje, mejorPaquete, lista, onAgregar }: {
+function PresupuestoViaje({ viaje, paquetes, mejorPaqueteId, lista, onAgregar }: {
   viaje: ViajeConfig;
-  mejorPaquete: Paquete | null;
+  paquetes: Paquete[];
+  mejorPaqueteId: string | null;
   lista: LunaItem[];
   onAgregar: (items: LunaItem[]) => void;
 }) {
+  const disponibles = paquetes.filter(p => p.disponible !== false);
+  const defaultId   = mejorPaqueteId || disponibles[0]?.id || null;
+  const [selectedId, setSelectedId] = useState<string|null>(defaultId);
+  const paquete = disponibles.find(p => p.id === selectedId) || null;
+
   const noches   = viaje.noches   || 7;
   const personas = viaje.personas || 2;
 
-  // Precio del paquete (vuelo + hotel)
-  const precioPackage = mejorPaquete
-    ? (mejorPaquete.precio_pareja ?? (mejorPaquete.precio_persona ? mejorPaquete.precio_persona * personas : null))
+  const precioPackage = paquete
+    ? (paquete.precio_pareja ?? (paquete.precio_persona ? paquete.precio_persona * personas : null))
     : null;
 
-  // Estimados para lo que NO cubre el paquete
-  const estimComida       = Math.round(noches * personas * 28000 / 1000) * 1000;
-  const estimTransporte   = Math.round(noches * 9000 / 1000) * 1000;
-  const estimActividades  = Math.round(noches * personas * 12000 / 1000) * 1000;
-  const estimSeguro       = personas * 35000;
-  const estimOtros        = Math.round(noches * personas * 8000 / 1000) * 1000;
+  const estimComida      = Math.round(noches * personas * 28000 / 1000) * 1000;
+  const estimTransporte  = Math.round(noches * 9000 / 1000) * 1000;
+  const estimActividades = Math.round(noches * personas * 12000 / 1000) * 1000;
+  const estimSeguro      = personas * 35000;
+  const estimOtros       = Math.round(noches * personas * 8000 / 1000) * 1000;
+  const estimVuelos      = personas * 850000;
+  const estimHotel       = Math.round(noches * personas * 65000 / 1000) * 1000;
 
-  // Si no hay paquete, usar estimados de vuelo+hotel
-  const estimVuelos = personas * 850000;
-  const estimHotel  = Math.round(noches * personas * 65000 / 1000) * 1000;
+  const baseViaje   = precioPackage ?? (estimVuelos + estimHotel);
+  const totalFinal  = baseViaje + estimComida + estimTransporte + estimActividades + estimSeguro + estimOtros;
 
-  const baseViaje = precioPackage ?? (estimVuelos + estimHotel);
-  const totalExtras = estimComida + estimTransporte + estimActividades + estimSeguro + estimOtros;
-  const totalFinal  = baseViaje + totalExtras;
-
-  // Verificar si ya fue agregado al presupuesto para este viaje
-  const tagViaje = `[${viaje.id}]`;
+  const tagViaje  = `[${viaje.id}]`;
   const yaAgregado = lista.some(i => i.notas?.includes(tagViaje));
 
   const agregarTodo = () => {
     const ts = Date.now();
     const nuevos: LunaItem[] = [
       {
-        id: ts + 1,
-        categoria: "Vuelos",
-        descripcion: mejorPaquete
-          ? `Paquete ${viaje.destino} — ${mejorPaquete.aerolinea} · ${mejorPaquete.hotel} (${mejorPaquete.noches}n)`
+        id: ts+1, categoria:"Vuelos",
+        descripcion: paquete
+          ? `Paquete ${viaje.destino} — ${paquete.aerolinea} · ${paquete.hotel} (${paquete.noches}n)`
           : `Vuelos + Alojamiento ${viaje.destino} (estimado)`,
-        monto: baseViaje,
-        confirmado: false,
-        notas: tagViaje,
+        monto: baseViaje, confirmado:false, notas:tagViaje,
       },
-      { id:ts+2, categoria:"Comidas",     descripcion:`Comidas ${noches} noches · ${personas} pers.`, monto:estimComida,      confirmado:false, notas:tagViaje },
-      { id:ts+3, categoria:"Transporte",  descripcion:`Transporte local ${viaje.destino}`,            monto:estimTransporte,  confirmado:false, notas:tagViaje },
-      { id:ts+4, categoria:"Actividades", descripcion:`Excursiones y actividades`,                    monto:estimActividades, confirmado:false, notas:tagViaje },
-      { id:ts+5, categoria:"Seguro",      descripcion:`Seguro de viaje (${personas} pers.)`,          monto:estimSeguro,      confirmado:false, notas:tagViaje },
-      { id:ts+6, categoria:"Otro",        descripcion:`Gastos varios y souvenirs`,                    monto:estimOtros,       confirmado:false, notas:tagViaje },
+      { id:ts+2, categoria:"Comidas",     descripcion:`Comidas ${noches}n · ${personas} pers.`,  monto:estimComida,      confirmado:false, notas:tagViaje },
+      { id:ts+3, categoria:"Transporte",  descripcion:`Transporte local ${viaje.destino}`,        monto:estimTransporte,  confirmado:false, notas:tagViaje },
+      { id:ts+4, categoria:"Actividades", descripcion:`Excursiones y actividades`,               monto:estimActividades, confirmado:false, notas:tagViaje },
+      { id:ts+5, categoria:"Seguro",      descripcion:`Seguro de viaje (${personas} pers.)`,     monto:estimSeguro,      confirmado:false, notas:tagViaje },
+      { id:ts+6, categoria:"Otro",        descripcion:`Gastos varios y souvenirs`,               monto:estimOtros,       confirmado:false, notas:tagViaje },
     ];
     onAgregar(nuevos);
   };
@@ -1397,39 +1394,80 @@ function PresupuestoViaje({ viaje, mejorPaquete, lista, onAgregar }: {
       </div>
       <div style={{ textAlign:"right" as const, minWidth:80 }}>
         {enPaquete && <div style={{ fontSize:9, color:"#6aaa96", fontWeight:700, background:"#e8f5ec", padding:"1px 5px", borderRadius:4, marginBottom:2, display:"inline-block" }}>EN PAQUETE</div>}
-        <div style={{ fontSize:13, fontWeight:700, color: enPaquete ? "#6aaa96" : "#4070b0" }}>{fmt(monto)}</div>
+        <div style={{ fontSize:13, fontWeight:700, color:enPaquete?"#6aaa96":"#4070b0" }}>{fmt(monto)}</div>
       </div>
     </div>
   );
 
-  const incluye    = mejorPaquete?.incluye    || [];
-  const noIncluye  = mejorPaquete?.no_incluye || [];
-
   return (
     <Card style={{ marginTop:14 }}>
-      <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:3 }}>
-        💰 Desglose del presupuesto
-      </div>
-      <div style={{ fontSize:11, color:"#a07855", marginBottom:14 }}>
+      <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:3 }}>💰 Desglose del presupuesto</div>
+      <div style={{ fontSize:11, color:"#a07855", marginBottom:12 }}>
         {viaje.destino} · {noches} noches · {personas} persona{personas>1?"s":""}
-        {mejorPaquete ? ` · Basado en ${mejorPaquete.fuente}` : " · Valores estimados"}
       </div>
 
-      {mejorPaquete ? (
+      {/* Selector de paquete */}
+      {disponibles.length > 0 && (
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:10, fontWeight:700, color:"#7090c0", marginBottom:8, letterSpacing:"0.05em" }}>
+            ELIGE EL PAQUETE BASE ({disponibles.length} encontrados)
+          </div>
+          <div style={{ display:"flex", flexDirection:"column" as const, gap:6 }}>
+            {/* Opción sin paquete */}
+            <button
+              onClick={()=>setSelectedId(null)}
+              style={{ display:"flex", justifyContent:"space-between", alignItems:"center", textAlign:"left" as const, padding:"9px 12px", borderRadius:9, border:`1.5px solid ${selectedId===null?"#5070a0":"#e8d5c4"}`, background:selectedId===null?"#e8f0ff":"#fdf8f3", cursor:"pointer", fontFamily:"inherit", gap:8 }}>
+              <div>
+                <div style={{ fontSize:11, fontWeight:700, color:selectedId===null?"#4060a0":"#a07855" }}>Sin paquete — usar estimados</div>
+                <div style={{ fontSize:10, color:selectedId===null?"#6080c0":"#c4a882" }}>Calcula con valores aproximados de mercado</div>
+              </div>
+              <div style={{ fontSize:12, fontWeight:700, color:selectedId===null?"#4060a0":"#c4a882" }}>{fmt(estimVuelos+estimHotel)}</div>
+            </button>
+            {/* Un botón por cada paquete disponible */}
+            {disponibles.map(p => {
+              const precio = p.precio_pareja ?? (p.precio_persona ? p.precio_persona*personas : null);
+              const active = selectedId === p.id;
+              return (
+                <button key={p.id} onClick={()=>setSelectedId(p.id)}
+                  style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", textAlign:"left" as const, padding:"9px 12px", borderRadius:9, border:`1.5px solid ${active?"#c9956a":"#e8d5c4"}`, background:active?"#fff5ec":"#fdf8f3", cursor:"pointer", fontFamily:"inherit", gap:8 }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:2 }}>
+                      {mejorPaqueteId===p.id && <span style={{ fontSize:9, background:"#6aaa96", color:"#fff", borderRadius:4, padding:"1px 5px", fontWeight:700 }}>MEJOR</span>}
+                      {p.es_oferta && <span style={{ fontSize:9, background:"#e07070", color:"#fff", borderRadius:4, padding:"1px 5px", fontWeight:700 }}>OFERTA</span>}
+                      <span style={{ fontSize:11, fontWeight:700, color:active?"#c9956a":"#a07855" }}>{p.fuente}</span>
+                    </div>
+                    <div style={{ fontSize:10, color:active?"#a07855":"#c4a882", lineHeight:1.3 }}>
+                      {p.hotel} · {p.categoria_hotel} · {p.noches}n
+                    </div>
+                    <div style={{ fontSize:10, color:active?"#a07855":"#c4a882" }}>{p.aerolinea} · {p.pension}</div>
+                  </div>
+                  <div style={{ textAlign:"right" as const, flexShrink:0 }}>
+                    {precio ? <div style={{ fontSize:13, fontWeight:700, color:active?"#c9956a":"#a07855" }}>{fmt(precio)}</div>
+                            : <div style={{ fontSize:11, color:"#c4a882" }}>Ver precio</div>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Desglose */}
+      {paquete ? (
         <Row icon="🎁" cat="Paquete vuelo + hotel"
-          desc={`${mejorPaquete.aerolinea} · ${mejorPaquete.hotel} · ${mejorPaquete.noches} noches`}
+          desc={`${paquete.aerolinea} · ${paquete.hotel} · ${paquete.noches}n · ${paquete.fuente}`}
           monto={baseViaje} enPaquete />
       ) : (
         <>
-          <Row icon="✈️" cat="Vuelos (estimado)" desc={`Ida y vuelta · ${personas} pers. desde SCL`} monto={estimVuelos} />
-          <Row icon="🏨" cat="Alojamiento (estimado)" desc={`${noches} noches`} monto={estimHotel} />
+          <Row icon="✈️" cat="Vuelos (estimado)"       desc={`Ida y vuelta · ${personas} pers. desde SCL`} monto={estimVuelos} />
+          <Row icon="🏨" cat="Alojamiento (estimado)"  desc={`${noches} noches`}                           monto={estimHotel} />
         </>
       )}
-      <Row icon="🍽️" cat="Comidas"          desc={`~${fmt(Math.round(estimComida/noches/personas))} por persona/día`} monto={estimComida} />
-      <Row icon="🚗" cat="Transporte local"  desc="Taxis, Uber, colectivos"                                           monto={estimTransporte} />
-      <Row icon="🎯" cat="Actividades"       desc="Excursiones, entradas, paseos"                                     monto={estimActividades} />
-      <Row icon="🛡️" cat="Seguro de viaje"   desc={`Assist Card o similar · ${personas} pers.`}                       monto={estimSeguro} />
-      <Row icon="🛍️" cat="Gastos varios"     desc="Souvenirs, extras, imprevistos"                                    monto={estimOtros} />
+      <Row icon="🍽️" cat="Comidas"         desc={`~${fmt(Math.round(estimComida/noches/personas))}/persona/día`} monto={estimComida} />
+      <Row icon="🚗" cat="Transporte local" desc="Taxis, Uber, colectivos"                                        monto={estimTransporte} />
+      <Row icon="🎯" cat="Actividades"      desc="Excursiones, entradas, paseos"                                  monto={estimActividades} />
+      <Row icon="🛡️" cat="Seguro de viaje"  desc={`Assist Card o similar · ${personas} pers.`}                    monto={estimSeguro} />
+      <Row icon="🛍️" cat="Gastos varios"    desc="Souvenirs, extras, imprevistos"                                 monto={estimOtros} />
 
       {/* Total */}
       <div style={{ background:"linear-gradient(135deg,#fdf0e8,#fae0cc)", borderRadius:10, padding:"12px 14px", margin:"14px 0 10px" }}>
@@ -1439,21 +1477,21 @@ function PresupuestoViaje({ viaje, mejorPaquete, lista, onAgregar }: {
         </div>
         <div style={{ fontSize:10, color:"#a07855", marginTop:3 }}>
           {personas} persona{personas>1?"s":""} · {noches} noches
-          {mejorPaquete ? ` · Paquete ${mejorPaquete.fuente} incluido` : " · Todo estimado"}
+          {paquete ? ` · Paquete ${paquete.fuente}` : " · Valores estimados"}
         </div>
       </div>
 
-      {/* Incluye/No incluye del paquete */}
-      {incluye.length > 0 && (
+      {/* Incluye / No incluye */}
+      {(paquete?.incluye?.length || 0) > 0 && (
         <div style={{ marginBottom:8 }}>
           <div style={{ fontSize:9, fontWeight:700, color:"#6aaa96", letterSpacing:"0.05em", marginBottom:4 }}>✅ EL PAQUETE INCLUYE</div>
-          {incluye.map((item,i) => <div key={i} style={{ fontSize:10, color:"#6aaa96", marginBottom:1 }}>• {item}</div>)}
+          {paquete!.incluye.map((item,i) => <div key={i} style={{ fontSize:10, color:"#6aaa96", marginBottom:1 }}>• {item}</div>)}
         </div>
       )}
-      {noIncluye.length > 0 && (
+      {(paquete?.no_incluye?.length || 0) > 0 && (
         <div style={{ marginBottom:14 }}>
           <div style={{ fontSize:9, fontWeight:700, color:"#e07070", letterSpacing:"0.05em", marginBottom:4 }}>⚠️ DEBES PAGAR APARTE</div>
-          {noIncluye.map((item,i) => <div key={i} style={{ fontSize:10, color:"#c47070", marginBottom:1 }}>• {item}</div>)}
+          {paquete!.no_incluye.map((item,i) => <div key={i} style={{ fontSize:10, color:"#c47070", marginBottom:1 }}>• {item}</div>)}
         </div>
       )}
 
@@ -1486,11 +1524,7 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
 
   const selectedViaje = viajes.find(v => v.id === selectedViajeId) || (viajes.length > 0 ? viajes[0] : null);
 
-  // Mejor paquete para el viaje seleccionado
   const viajeDataPaquetes = selectedViaje ? allPaquetes[selectedViaje.id] : null;
-  const mejorPaquete: Paquete | null = viajeDataPaquetes
-    ? (viajeDataPaquetes.paquetes?.find(p => p.id === viajeDataPaquetes.mejor_opcion) || viajeDataPaquetes.paquetes?.[0] || null)
-    : null;
 
   const calcNoches = (s: string, r: string) => {
     if (!s || !r) return 0;
@@ -1749,7 +1783,8 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
           {selectedViaje && (
             <PresupuestoViaje
               viaje={selectedViaje}
-              mejorPaquete={mejorPaquete}
+              paquetes={viajeDataPaquetes?.paquetes || []}
+              mejorPaqueteId={viajeDataPaquetes?.mejor_opcion || null}
               lista={lista}
               onAgregar={(items) => setData({ items:[...lista, ...items] })}
             />
