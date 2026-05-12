@@ -1340,9 +1340,17 @@ function PresupuestoViaje({ viaje, paquetes, mejorPaqueteId, lista, onAgregar }:
   onAgregar: (items: LunaItem[]) => void;
 }) {
   const disponibles = paquetes.filter(p => p.disponible !== false);
-  const defaultId   = mejorPaqueteId || disponibles[0]?.id || null;
-  const [selectedId, setSelectedId] = useState<string|null>(defaultId);
-  const paquete = disponibles.find(p => p.id === selectedId) || null;
+  // null = usuario no ha elegido (usa el mejor automático), "none" = sin paquete
+  const [selectedId, setSelectedId] = useState<string|null|"none">(null);
+
+  // Si el usuario no ha elegido explícitamente, mostrar el mejor por defecto
+  const effectiveId = selectedId !== null
+    ? selectedId
+    : (mejorPaqueteId || disponibles[0]?.id || "none");
+
+  const paquete = effectiveId !== "none"
+    ? (disponibles.find(p => p.id === effectiveId) || null)
+    : null;
 
   const noches   = viaje.noches   || 7;
   const personas = viaje.personas || 2;
@@ -1415,18 +1423,18 @@ function PresupuestoViaje({ viaje, paquetes, mejorPaqueteId, lista, onAgregar }:
           <div style={{ display:"flex", flexDirection:"column" as const, gap:6 }}>
             {/* Opción sin paquete */}
             <button
-              onClick={()=>setSelectedId(null)}
-              style={{ display:"flex", justifyContent:"space-between", alignItems:"center", textAlign:"left" as const, padding:"9px 12px", borderRadius:9, border:`1.5px solid ${selectedId===null?"#5070a0":"#e8d5c4"}`, background:selectedId===null?"#e8f0ff":"#fdf8f3", cursor:"pointer", fontFamily:"inherit", gap:8 }}>
+              onClick={()=>setSelectedId("none")}
+              style={{ display:"flex", justifyContent:"space-between", alignItems:"center", textAlign:"left" as const, padding:"9px 12px", borderRadius:9, border:`1.5px solid ${effectiveId==="none"?"#5070a0":"#e8d5c4"}`, background:effectiveId==="none"?"#e8f0ff":"#fdf8f3", cursor:"pointer", fontFamily:"inherit", gap:8 }}>
               <div>
-                <div style={{ fontSize:11, fontWeight:700, color:selectedId===null?"#4060a0":"#a07855" }}>Sin paquete — usar estimados</div>
-                <div style={{ fontSize:10, color:selectedId===null?"#6080c0":"#c4a882" }}>Calcula con valores aproximados de mercado</div>
+                <div style={{ fontSize:11, fontWeight:700, color:effectiveId==="none"?"#4060a0":"#a07855" }}>Sin paquete — usar estimados</div>
+                <div style={{ fontSize:10, color:effectiveId==="none"?"#6080c0":"#c4a882" }}>Calcula con valores aproximados de mercado</div>
               </div>
-              <div style={{ fontSize:12, fontWeight:700, color:selectedId===null?"#4060a0":"#c4a882" }}>{fmt(estimVuelos+estimHotel)}</div>
+              <div style={{ fontSize:12, fontWeight:700, color:effectiveId==="none"?"#4060a0":"#c4a882" }}>{fmt(estimVuelos+estimHotel)}</div>
             </button>
             {/* Un botón por cada paquete disponible */}
             {disponibles.map(p => {
               const precio = p.precio_pareja ?? (p.precio_persona ? p.precio_persona*personas : null);
-              const active = selectedId === p.id;
+              const active = effectiveId === p.id;
               return (
                 <button key={p.id} onClick={()=>setSelectedId(p.id)}
                   style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", textAlign:"left" as const, padding:"9px 12px", borderRadius:9, border:`1.5px solid ${active?"#c9956a":"#e8d5c4"}`, background:active?"#fff5ec":"#fdf8f3", cursor:"pointer", fontFamily:"inherit", gap:8 }}>
