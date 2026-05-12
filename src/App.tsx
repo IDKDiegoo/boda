@@ -2422,6 +2422,269 @@ function CheckList() {
 }
 
 // ════════════════════════════════════════════════════════════════
+// BODA CIVIL
+// ════════════════════════════════════════════════════════════════
+type CivilInvitado = { id:number; nombre:string; confirmado:boolean; notas?:string; };
+type CivilGasto    = { id:number; categoria:string; descripcion:string; cantidad:number; unidad:string; precioPorUnidad:number; notas?:string; };
+type CivilData     = { invitados:CivilInvitado[]; gastos:CivilGasto[]; };
+
+const CATS_CIVIL  = ["Lugar","Carnes","Acompañamientos","Bebidas","Servicios","Otro"];
+const UNIDS_CIVIL = ["kg","lt","unid","persona","porción","hora"];
+
+const CAT_ICON_CIVIL: Record<string,string> = {
+  "Lugar":"🏡","Carnes":"🥩","Acompañamientos":"🥗","Bebidas":"🥤","Servicios":"👨‍🍳","Otro":"📦"
+};
+
+function useCivil() {
+  const [data, setLocal] = useState<CivilData>({ invitados:[], gastos:[] });
+  useEffect(()=>{
+    const unsub = onSnapshot(doc(db,"boda","civil"), snap=>{
+      if (snap.exists()) setLocal(snap.data() as CivilData);
+      else setLocal({ invitados:[], gastos:[] });
+    });
+    return unsub;
+  },[]);
+  const guardar = async (d:CivilData) => { setLocal(d); await setDoc(doc(db,"boda","civil"),d); };
+  return { data, guardar };
+}
+
+function BodaCivil() {
+  const { data, guardar } = useCivil();
+  const invitados = data.invitados || [];
+  const gastos    = data.gastos    || [];
+
+  const [subTab, setSubTab] = useState<"presupuesto"|"invitados">("presupuesto");
+
+  // ── Invitados ────────────────────────────────────────────────
+  const [showFInv, setShowFInv] = useState(false);
+  const [fInv, setFInv]         = useState({ nombre:"", notas:"" });
+  const confirmados = invitados.filter(i=>i.confirmado).length;
+
+  const agregarInv = () => {
+    if (!fInv.nombre.trim()) return;
+    guardar({ ...data, invitados:[...invitados,{ id:Date.now(), nombre:fInv.nombre.trim(), confirmado:false, notas:fInv.notas }] });
+    setFInv({ nombre:"", notas:"" }); setShowFInv(false);
+  };
+  const toggleInv = (id:number) =>
+    guardar({ ...data, invitados:invitados.map(i=>i.id===id?{...i,confirmado:!i.confirmado}:i) });
+  const delInv = (id:number) =>
+    guardar({ ...data, invitados:invitados.filter(i=>i.id!==id) });
+
+  // ── Gastos ───────────────────────────────────────────────────
+  const [showFG, setShowFG] = useState(false);
+  const [fG, setFG] = useState({ categoria:"Carnes", descripcion:"", cantidad:"", unidad:"kg", precioPorUnidad:"", notas:"" });
+
+  const totalGeneral = gastos.reduce((s,g)=>s+g.cantidad*g.precioPorUnidad,0);
+  const totalLugar   = gastos.filter(g=>g.categoria==="Lugar").reduce((s,g)=>s+g.cantidad*g.precioPorUnidad,0);
+  const totalComida  = gastos.filter(g=>["Carnes","Acompañamientos","Bebidas"].includes(g.categoria)).reduce((s,g)=>s+g.cantidad*g.precioPorUnidad,0);
+  const totalServ    = gastos.filter(g=>g.categoria==="Servicios").reduce((s,g)=>s+g.cantidad*g.precioPorUnidad,0);
+
+  const agregarGasto = () => {
+    if (!fG.descripcion.trim()||!fG.cantidad||!fG.precioPorUnidad) return;
+    guardar({ ...data, gastos:[...gastos,{
+      id:Date.now(), categoria:fG.categoria, descripcion:fG.descripcion.trim(),
+      cantidad:Number(fG.cantidad), unidad:fG.unidad,
+      precioPorUnidad:Number(fG.precioPorUnidad), notas:fG.notas
+    }]});
+    setFG({ categoria:"Carnes", descripcion:"", cantidad:"", unidad:"kg", precioPorUnidad:"", notas:"" });
+    setShowFG(false);
+  };
+  const delGasto = (id:number) => guardar({ ...data, gastos:gastos.filter(g=>g.id!==id) });
+
+  // ── Sugerencia local de arriendo ─────────────────────────────
+  const precioArriendo = 8000;
+  const sugerenciaLugar = (confirmados || invitados.length || 37) * precioArriendo;
+
+  const SUB = (id:"presupuesto"|"invitados", label:string, icon:string) => (
+    <button onClick={()=>setSubTab(id)} style={{ flex:1, background:subTab===id?"#c9956a":"#fdf8f3", border:`1.5px solid ${subTab===id?"#c9956a":"#e8d5c4"}`, color:subTab===id?"#fff":"#a07855", borderRadius:9, padding:"8px 4px", fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", flexDirection:"column" as const, alignItems:"center", gap:2 }}>
+      <span style={{ fontSize:15 }}>{icon}</span>{label}
+    </button>
+  );
+
+  return (
+    <div style={{ animation:"fadeUp .3s ease" }}>
+      <Title icon="💒" title="Boda Civil"/>
+
+      {/* Sub-tabs */}
+      <div style={{ display:"flex", gap:5, marginBottom:16 }}>
+        {SUB("presupuesto","Presupuesto","💰")}
+        {SUB("invitados","Invitados","👥")}
+      </div>
+
+      {/* ══ PRESUPUESTO ══ */}
+      {subTab==="presupuesto" && (
+        <div>
+          {/* Resumen */}
+          <Card style={{ background:"linear-gradient(135deg,#fdf0e8,#fae0cc)", marginBottom:16 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:"#8c4820", marginBottom:8, letterSpacing:"0.06em" }}>RESUMEN BODA CIVIL</div>
+            <div style={{ fontSize:26, fontWeight:900, color:"#c9956a", marginBottom:8 }}>{fmt(totalGeneral)}</div>
+            <div style={{ display:"flex", gap:12, flexWrap:"wrap" as const }}>
+              <div style={{ fontSize:10, color:"#a07855" }}>🏡 Lugar: <strong>{fmt(totalLugar)}</strong></div>
+              <div style={{ fontSize:10, color:"#a07855" }}>🍽️ Comida: <strong>{fmt(totalComida)}</strong></div>
+              <div style={{ fontSize:10, color:"#a07855" }}>👨‍🍳 Servicios: <strong>{fmt(totalServ)}</strong></div>
+            </div>
+            <div style={{ fontSize:10, color:"#c4a882", marginTop:8 }}>
+              {invitados.length} invitados · {confirmados} confirmados
+            </div>
+          </Card>
+
+          {/* Sugerencia de arriendo si no hay item Lugar */}
+          {!gastos.some(g=>g.categoria==="Lugar") && invitados.length === 0 && (
+            <Card style={{ background:"#fff8f0", marginBottom:12, border:"1px dashed #e8c8a0" }}>
+              <div style={{ fontSize:11, fontWeight:700, color:"#c9956a", marginBottom:4 }}>💡 Sugerencia — Arriendo del lugar</div>
+              <div style={{ fontSize:11, color:"#a07855" }}>
+                Con ~37 invitados × $8.000/pers. = <strong>{fmt(37*8000)}</strong><br/>
+                Agrega el ítem y ajusta según el número real de asistentes.
+              </div>
+            </Card>
+          )}
+          {!gastos.some(g=>g.categoria==="Lugar") && invitados.length > 0 && (
+            <Card style={{ background:"#fff8f0", marginBottom:12, border:"1px dashed #e8c8a0" }}>
+              <div style={{ fontSize:11, fontWeight:700, color:"#c9956a", marginBottom:4 }}>💡 Arriendo estimado del lugar</div>
+              <div style={{ fontSize:11, color:"#a07855", marginBottom:8 }}>
+                {invitados.length} invitados × $8.000/pers. = <strong>{fmt(sugerenciaLugar)}</strong>
+              </div>
+              <button onClick={()=>{ guardar({ ...data, gastos:[...gastos,{ id:Date.now(), categoria:"Lugar", descripcion:"Arriendo del lugar", cantidad:invitados.length||37, unidad:"persona", precioPorUnidad:8000, notas:"$8.000 por persona" }]}); }} style={{ background:"#c9956a", color:"#fff", border:"none", borderRadius:8, padding:"8px 14px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                + Agregar arriendo
+              </button>
+            </Card>
+          )}
+
+          {/* Formulario */}
+          {showFG && (
+            <Card style={{ marginBottom:14, border:"2px solid #e8d5c4" }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:12 }}>Nuevo ítem</div>
+              <div style={{ display:"flex", flexDirection:"column" as const, gap:9 }}>
+                <Sel value={fG.categoria} onChange={v=>setFG({...fG,categoria:v})} options={CATS_CIVIL.map(c=>({value:c,label:`${CAT_ICON_CIVIL[c]} ${c}`}))}/>
+                <Inp value={fG.descripcion} onChange={v=>setFG({...fG,descripcion:v})} placeholder="Descripción (ej: Lomo vetado, Arroz, Gaseosas)"/>
+                <div style={{ display:"flex", gap:8 }}>
+                  <div style={{ flex:1 }}>
+                    <Inp value={fG.cantidad} onChange={v=>setFG({...fG,cantidad:v})} placeholder="Cantidad" type="number"/>
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <Sel value={fG.unidad} onChange={v=>setFG({...fG,unidad:v})} options={UNIDS_CIVIL.map(u=>({value:u,label:u}))}/>
+                  </div>
+                </div>
+                <Inp value={fG.precioPorUnidad} onChange={v=>setFG({...fG,precioPorUnidad:v})} placeholder={`Precio por ${fG.unidad} ($)`} type="number"/>
+                {fG.cantidad && fG.precioPorUnidad && (
+                  <div style={{ background:"#fdf0e8", borderRadius:8, padding:"8px 12px", fontSize:12, fontWeight:700, color:"#c9956a" }}>
+                    Total: {fmt(Number(fG.cantidad)*Number(fG.precioPorUnidad))}
+                  </div>
+                )}
+                <Inp value={fG.notas} onChange={v=>setFG({...fG,notas:v})} placeholder="Notas (opcional)"/>
+              </div>
+              <div style={{ display:"flex", gap:8, marginTop:12 }}>
+                <Btn onClick={agregarGasto}>Guardar</Btn>
+                <Btn onClick={()=>{setShowFG(false);setFG({categoria:"Carnes",descripcion:"",cantidad:"",unidad:"kg",precioPorUnidad:"",notas:""});}} outline>Cancelar</Btn>
+              </div>
+            </Card>
+          )}
+          {!showFG && <Btn onClick={()=>setShowFG(true)} style={{ marginBottom:16 }}>+ Agregar ítem</Btn>}
+
+          {/* Lista por categoría */}
+          {gastos.length === 0 && (
+            <div style={{ textAlign:"center" as const, color:"#c4a882", padding:32, fontSize:12 }}>
+              Aún no hay ítems.<br/>Agrega el arriendo, comida y servicios.
+            </div>
+          )}
+          {CATS_CIVIL.map(cat=>{
+            const items = gastos.filter(g=>g.categoria===cat);
+            if (!items.length) return null;
+            const subtotal = items.reduce((s,g)=>s+g.cantidad*g.precioPorUnidad,0);
+            return (
+              <div key={cat} style={{ marginBottom:20 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:"#7090c0", letterSpacing:"0.07em", textTransform:"uppercase" as const }}>
+                    {CAT_ICON_CIVIL[cat]} {cat}
+                  </div>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#c9956a" }}>{fmt(subtotal)}</div>
+                </div>
+                {items.map(g=>{
+                  const total = g.cantidad * g.precioPorUnidad;
+                  return (
+                    <Card key={g.id} style={{ padding:12, marginBottom:8 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e" }}>{g.descripcion}</div>
+                          <div style={{ fontSize:11, color:"#a07855", marginTop:2 }}>
+                            {g.cantidad} {g.unidad} × {fmt(g.precioPorUnidad)}/{g.unidad}
+                          </div>
+                          {g.notas && <div style={{ fontSize:10, color:"#c4a882", marginTop:2 }}>{g.notas}</div>}
+                        </div>
+                        <div style={{ textAlign:"right" as const, flexShrink:0 }}>
+                          <div style={{ fontSize:15, fontWeight:700, color:"#4070b0" }}>{fmt(total)}</div>
+                          <button onClick={()=>delGasto(g.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14, marginTop:4 }}>🗑</button>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ══ INVITADOS ══ */}
+      {subTab==="invitados" && (
+        <div>
+          {/* Resumen */}
+          <Card style={{ background:"linear-gradient(135deg,#e8f4ff,#d8e8ff)", marginBottom:14, padding:14 }}>
+            <div style={{ display:"flex", justifyContent:"space-between" }}>
+              <div><div style={{ fontSize:10, color:"#7090c0" }}>Total invitados</div><div style={{ fontSize:24, fontWeight:700, color:"#4070b0" }}>{invitados.length}</div></div>
+              <div style={{ textAlign:"center" as const }}><div style={{ fontSize:10, color:"#6aaa96" }}>Confirmados</div><div style={{ fontSize:24, fontWeight:700, color:"#6aaa96" }}>{confirmados}</div></div>
+              <div style={{ textAlign:"right" as const }}><div style={{ fontSize:10, color:"#c4a882" }}>Por confirmar</div><div style={{ fontSize:24, fontWeight:700, color:"#c9956a" }}>{invitados.length-confirmados}</div></div>
+            </div>
+          </Card>
+
+          {/* Formulario nuevo invitado */}
+          {showFInv && (
+            <Card style={{ marginBottom:14, border:"2px solid #e8d5c4" }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:10 }}>Nuevo invitado</div>
+              <div style={{ display:"flex", flexDirection:"column" as const, gap:8 }}>
+                <Inp value={fInv.nombre} onChange={v=>setFInv({...fInv,nombre:v})} placeholder="Nombre completo"/>
+                <Inp value={fInv.notas} onChange={v=>setFInv({...fInv,notas:v})} placeholder="Notas (relación, dieta, etc.)"/>
+              </div>
+              <div style={{ display:"flex", gap:8, marginTop:10 }}>
+                <Btn onClick={agregarInv}>Agregar</Btn>
+                <Btn onClick={()=>{setShowFInv(false);setFInv({nombre:"",notas:""}); }} outline>Cancelar</Btn>
+              </div>
+            </Card>
+          )}
+          {!showFInv && <Btn onClick={()=>setShowFInv(true)} style={{ marginBottom:14 }}>+ Agregar invitado</Btn>}
+
+          {/* Lista */}
+          {invitados.length===0 && (
+            <div style={{ textAlign:"center" as const, color:"#c4a882", padding:32, fontSize:12 }}>
+              Sin invitados aún. ¡Agrega los ~37 invitados de la boda civil!
+            </div>
+          )}
+          {invitados.map(inv=>(
+            <Card key={inv.id} style={{ padding:12, marginBottom:8, background:inv.confirmado?"#f0f8f4":"#fff" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:32, height:32, borderRadius:"50%", background:inv.confirmado?"#6aaa96":"#e8d5c4", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#fff", flexShrink:0 }}>
+                  {inv.nombre.charAt(0).toUpperCase()}
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e" }}>{inv.nombre}</div>
+                  {inv.notas && <div style={{ fontSize:10, color:"#a07855" }}>{inv.notas}</div>}
+                </div>
+                <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+                  <button onClick={()=>toggleInv(inv.id)} style={{ background:inv.confirmado?"#e8f5ec":"none", border:`1px solid ${inv.confirmado?"#6aaa96":"#e8d5c4"}`, borderRadius:6, padding:"4px 8px", fontSize:10, color:inv.confirmado?"#6aaa96":"#a07855", cursor:"pointer", fontFamily:"inherit" }}>
+                    {inv.confirmado?"✓ Confirmado":"Confirmar"}
+                  </button>
+                  <button onClick={()=>delInv(inv.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
 // APP
 // ════════════════════════════════════════════════════════════════
 export default function App() {
@@ -2486,6 +2749,7 @@ export default function App() {
     { id:"decoraciones", icon:"🌸", label:"Decoraciones",  desc:"Lista de compras y referencias" },
     { id:"programa",     icon:"🎵", label:"Programa",      desc:"Canciones, juegos, actividades" },
     { id:"regalos",      icon:"🎁", label:"Regalos",       desc:"Lista de regalos" },
+    { id:"civil",        icon:"💒", label:"Boda Civil",    desc:"Invitados, comida y gastos" },
     { id:"luna",         icon:"✈️", label:"Luna de Miel",  desc:"Viaje y actividades" },
     { id:"checklist",    icon:"✅", label:"Pendientes",    desc:"Tareas y cosas por hacer" },
     { id:"fotos",        icon:"📷", label:"Galería",       desc:"Fotos de la boda" },
@@ -2540,6 +2804,7 @@ export default function App() {
         {tab==="decoraciones" && <Decoraciones data={decoraciones} setData={setDecoraciones}/>}
         {tab==="programa"     && <Programa canciones={canciones} setCanciones={setCanciones}/>}
         {tab==="regalos"     && <Regalos data={regalos} setData={setRegalos}/>}
+        {tab==="civil"       && <BodaCivil/>}
         {tab==="luna"        && <LunaMiel data={luna} setData={setLuna}/>}
         {tab==="checklist"   && <CheckList/>}
         {tab==="fotos"       && <Fotos esAdmin={true}/>}
