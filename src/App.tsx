@@ -1228,35 +1228,76 @@ function PaqueteCard({ p, mejorId }: { p: Paquete; mejorId: string|null }) {
   );
 }
 
-function PaquetesTab({ viajeId, viaje }: { viajeId: string|null; viaje: ViajeConfig|null }) {
+function useBusquedaPendiente(): { pendiente: boolean; ts: string|null } {
+  const [estado, setEstado] = useState({ pendiente: false, ts: null as string|null });
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "boda", "config_busqueda"), snap => {
+      if (snap.exists()) {
+        const d = snap.data();
+        setEstado({ pendiente: !!d.solicitada, ts: d.ts || null });
+      } else {
+        setEstado({ pendiente: false, ts: null });
+      }
+    });
+    return unsub;
+  }, []);
+  return estado;
+}
+
+function PaquetesTab({ viajeId, viaje, onBuscarAhora }: { viajeId: string|null; viaje: ViajeConfig|null; onBuscarAhora: (id: string) => void }) {
   const allPaquetes = usePaquetes();
+  const busqueda    = useBusquedaPendiente();
 
   if (!viajeId || !viaje) return (
     <Card style={{ textAlign:"center" as const, padding:32, color:"#a07855" }}>
       <div style={{ fontSize:28, marginBottom:8 }}>✈️</div>
       <div style={{ fontSize:13, fontWeight:700, marginBottom:4 }}>Configura un viaje primero</div>
-      <div style={{ fontSize:11 }}>Ve a "Viajes" y crea un viaje para ver los paquetes disponibles</div>
+      <div style={{ fontSize:11 }}>Ve a "Viajes" y crea un viaje para buscar paquetes</div>
     </Card>
   );
 
   const data = allPaquetes[viajeId] || null;
 
-  if (!data) return (
-    <Card style={{ textAlign:"center" as const, padding:32, color:"#a07855" }}>
-      <div style={{ fontSize:28, marginBottom:8 }}>🔍</div>
-      <div style={{ fontSize:13, fontWeight:700, marginBottom:4 }}>Buscando paquetes para {viaje.destino}...</div>
-      <div style={{ fontSize:11, lineHeight:1.5 }}>Claude busca automáticamente cada mañana a las 9am.<br/>El primer resultado aparecerá mañana.</div>
+  // Estado: búsqueda en progreso
+  if (busqueda.pendiente) return (
+    <Card style={{ textAlign:"center" as const, padding:32, color:"#5070a0", background:"linear-gradient(135deg,#e8f0ff,#d8e8ff)" }}>
+      <div style={{ fontSize:28, marginBottom:8 }}>⏳</div>
+      <div style={{ fontSize:13, fontWeight:700, marginBottom:6 }}>Buscando paquetes para {viaje.destino}...</div>
+      <div style={{ fontSize:11, lineHeight:1.6 }}>
+        Claude está revisando Despegar, LATAM, Falabella y más.<br/>
+        <strong>Esto toma entre 3 y 10 minutos.</strong><br/>
+        Los resultados aparecerán aquí automáticamente.
+      </div>
+      {data && <div style={{ fontSize:10, color:"#7090c0", marginTop:10 }}>Última búsqueda previa: {new Date(data.fecha_consulta).toLocaleString("es-CL",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</div>}
     </Card>
   );
 
+  // Sin resultados aún
+  if (!data) return (
+    <Card style={{ textAlign:"center" as const, padding:28, color:"#a07855" }}>
+      <div style={{ fontSize:28, marginBottom:8 }}>🔍</div>
+      <div style={{ fontSize:13, fontWeight:700, marginBottom:6 }}>Sin resultados aún para {viaje.destino}</div>
+      <div style={{ fontSize:11, lineHeight:1.5, marginBottom:14 }}>
+        La búsqueda automática corre todos los días a las 9am,<br/>o puedes lanzarla ahora mismo:
+      </div>
+      <button onClick={()=>onBuscarAhora(viajeId)} style={{ background:"#5070a0", color:"#fff", border:"none", borderRadius:9, padding:"10px 20px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+        🔍 Buscar ahora
+      </button>
+    </Card>
+  );
+
+  // Error en última búsqueda
   if ((data as any).error || !data.paquetes?.length) return (
     <Card style={{ textAlign:"center" as const, padding:28, color:"#a07855" }}>
       <div style={{ fontSize:28, marginBottom:8 }}>📭</div>
       <div style={{ fontSize:13, fontWeight:700, marginBottom:4 }}>
-        {(data as any).error ? "Error en la búsqueda de ayer" : "Sin paquetes aún para este viaje"}
+        {(data as any).error ? "Error en la última búsqueda" : "Sin paquetes encontrados aún"}
       </div>
-      <div style={{ fontSize:11, color:"#c4a882", lineHeight:1.5 }}>{data.resumen || "Se reintentará mañana a las 9am"}</div>
-      {data.fecha_consulta && <div style={{ fontSize:10, color:"#c4a882", marginTop:8 }}>Última búsqueda: {new Date(data.fecha_consulta).toLocaleString("es-CL",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</div>}
+      <div style={{ fontSize:11, color:"#c4a882", lineHeight:1.5, marginBottom:12 }}>{data.resumen || "Puede que no haya paquetes para esas fechas exactas."}</div>
+      {data.fecha_consulta && <div style={{ fontSize:10, color:"#c4a882", marginBottom:12 }}>Última búsqueda: {new Date(data.fecha_consulta).toLocaleString("es-CL",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</div>}
+      <button onClick={()=>onBuscarAhora(viajeId)} style={{ background:"#5070a0", color:"#fff", border:"none", borderRadius:9, padding:"10px 20px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+        🔍 Buscar de nuevo
+      </button>
     </Card>
   );
 
@@ -1264,18 +1305,21 @@ function PaquetesTab({ viajeId, viaje }: { viajeId: string|null; viaje: ViajeCon
     <div>
       <Card style={{ background:"linear-gradient(135deg,#e8f0ff,#d8e8ff)", marginBottom:12, padding:12 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <div>
-            <div style={{ fontSize:11, fontWeight:700, color:"#5070a0" }}>🔄 ACTUALIZACIÓN AUTOMÁTICA DIARIA</div>
-            <div style={{ fontSize:10, color:"#7090c0" }}>Todos los días a las 9am · {viaje.destino} · {viaje.personas} personas · {viaje.noches} noches</div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:"#5070a0" }}>🔄 BÚSQUEDA AUTOMÁTICA DIARIA — 9am</div>
+            <div style={{ fontSize:10, color:"#7090c0" }}>{viaje.destino} · {viaje.personas} pers. · {viaje.noches} noches</div>
           </div>
-          <div style={{ textAlign:"right" as const }}>
-            <div style={{ fontSize:10, color:"#7090c0" }}>Última búsqueda</div>
+          <div style={{ textAlign:"right" as const, marginLeft:8 }}>
+            <div style={{ fontSize:10, color:"#7090c0" }}>Actualizado</div>
             <div style={{ fontSize:11, fontWeight:700, color:"#5070a0" }}>
               {new Date(data.fecha_consulta).toLocaleString("es-CL",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}
             </div>
           </div>
         </div>
         {data.resumen && <div style={{ fontSize:11, color:"#5070a0", marginTop:8, paddingTop:8, borderTop:"1px solid #c0d0f0", lineHeight:1.5 }}>{data.resumen}</div>}
+        <button onClick={()=>onBuscarAhora(viajeId)} style={{ width:"100%", marginTop:10, background:"#5070a0", color:"#fff", border:"none", borderRadius:8, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+          🔍 Buscar de nuevo ahora
+        </button>
       </Card>
       {data.paquetes.map(p => <PaqueteCard key={p.id} p={p} mejorId={data.mejor_opcion} />)}
     </div>
@@ -1305,6 +1349,14 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
     return Math.max(0, Math.round((new Date(r).getTime() - new Date(s).getTime()) / 86400000));
   };
 
+  const solicitarBusqueda = async (viajeId?: string) => {
+    await setDoc(doc(db, "boda", "config_busqueda"), {
+      solicitada: true,
+      viaje_id: viajeId || null,
+      ts: new Date().toISOString(),
+    }, { merge: true });
+  };
+
   const guardarNuevoViaje = async () => {
     if (!vForm.nombre || !vForm.destino || !vForm.fechaSalida || !vForm.fechaRegreso) return;
     const nuevo: ViajeConfig = {
@@ -1319,9 +1371,11 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
       creado: new Date().toISOString(),
     };
     await guardarViajes({ viajes: [...viajes, nuevo] });
+    await solicitarBusqueda(nuevo.id);  // búsqueda inmediata al crear
     setSelectedViajeId(nuevo.id);
     setShowNuevoViaje(false);
     setVForm({ nombre:"", destino:"", fechaSalida:"", fechaRegreso:"", personas:"2", notas:"" });
+    setSubTab("paquetes");
   };
 
   const eliminarViaje = async (id: string) => {
@@ -1431,9 +1485,14 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
                   </div>
                   <button onClick={()=>eliminarViaje(v.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:18, padding:"0 4px" }}>🗑</button>
                 </div>
-                <button onClick={()=>{ setSelectedViajeId(v.id); setSubTab("paquetes"); }} style={{ width:"100%", marginTop:10, background:"#c9956a", color:"#fff", border:"none", borderRadius:9, padding:"9px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                  Ver paquetes para este viaje →
-                </button>
+                <div style={{ display:"flex", gap:6, marginTop:10 }}>
+                  <button onClick={()=>{ setSelectedViajeId(v.id); setSubTab("paquetes"); }} style={{ flex:2, background:"#c9956a", color:"#fff", border:"none", borderRadius:9, padding:"9px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                    Ver paquetes →
+                  </button>
+                  <button onClick={async ()=>{ await solicitarBusqueda(v.id); setSelectedViajeId(v.id); setSubTab("paquetes"); }} style={{ flex:1, background:"#5070a0", color:"#fff", border:"none", borderRadius:9, padding:"9px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                    🔍 Buscar ahora
+                  </button>
+                </div>
               </Card>
             );
           })}
@@ -1538,7 +1597,7 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
               ))}
             </div>
           )}
-          <PaquetesTab viajeId={selectedViaje?.id || null} viaje={selectedViaje || null}/>
+          <PaquetesTab viajeId={selectedViaje?.id || null} viaje={selectedViaje || null} onBuscarAhora={solicitarBusqueda}/>
         </div>
       )}
 
