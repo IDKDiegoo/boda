@@ -1008,6 +1008,11 @@ const CATS_LUNA = ["Vuelos","Alojamiento","Actividades","Comidas","Transporte","
 
 type Destino = "fln" | "bzc";
 type Ventana = "dic" | "ene";
+type ViajeConfig = {
+  id: string; nombre: string; destino: string; fechaSalida: string; fechaRegreso: string;
+  noches: number; personas: number; notas: string; creado: string;
+};
+type ViajesData = { viajes: ViajeConfig[] };
 
 const DESTINOS = {
   fln: {
@@ -1154,170 +1159,192 @@ type PaquetesData = {
   fecha_consulta: string; error?: boolean;
 };
 
-function usePaquetes() {
-  const [data, setData] = useState<PaquetesData|null>(null);
+function useViajesConfig() {
+  const [data, setData] = useState<ViajesData>({ viajes: [] });
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "boda", "viajes_config"), snap => {
+      if (snap.exists()) setData(snap.data() as ViajesData);
+      else setData({ viajes: [] });
+    });
+    return unsub;
+  }, []);
+  const guardar = async (nuevo: ViajesData) => {
+    setData(nuevo);
+    await setDoc(doc(db, "boda", "viajes_config"), nuevo);
+  };
+  return { data, guardar };
+}
+
+function usePaquetes(): Record<string, PaquetesData> {
+  const [data, setData] = useState<Record<string, PaquetesData>>({});
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "boda", "paquetes"), snap => {
-      if (snap.exists()) setData(snap.data() as PaquetesData);
+      if (snap.exists()) setData(snap.data() as Record<string, PaquetesData>);
     });
     return unsub;
   }, []);
   return data;
 }
 
-function PaquetesTab({ filtroVentana }: { filtroVentana: Ventana }) {
-  const data = usePaquetes();
-  const [filtro, setFiltro] = useState<"todos"|"dic"|"ene">("todos");
-  const [expandido, setExpandido] = useState<string|null>(null);
+function PaqueteCard({ p, mejorId }: { p: Paquete; mejorId: string|null }) {
+  const [exp, setExp] = useState(false);
+  const esMejor = p.id === mejorId;
+  return (
+    <Card style={{ marginBottom:10, padding:14, border: esMejor ? "2px solid #c9956a" : p.es_oferta ? "2px solid #6aaa96" : "1.5px solid #f0e8e0", background: esMejor ? "#fffaf5" : "#fff" }}>
+      <div style={{ display:"flex", gap:5, marginBottom:8, flexWrap:"wrap" as const }}>
+        {esMejor && <span style={{ background:"#c9956a", color:"#fff", borderRadius:6, padding:"2px 8px", fontSize:9, fontWeight:700 }}>⭐ MEJOR OPCIÓN</span>}
+        {p.es_oferta && <span style={{ background:"#6aaa9622", color:"#6aaa96", border:"1px solid #6aaa9644", borderRadius:6, padding:"2px 8px", fontSize:9, fontWeight:700 }}>OFERTA</span>}
+        {!p.disponible && <span style={{ background:"#e0707022", color:"#e07070", border:"1px solid #e0707044", borderRadius:6, padding:"2px 8px", fontSize:9, fontWeight:700 }}>FECHAS CERCANAS</span>}
+      </div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e" }}>{p.destino} — {p.hotel}</div>
+          <div style={{ fontSize:11, color:"#a07855", marginTop:2 }}>{p.categoria_hotel} · {p.pension}</div>
+          <div style={{ fontSize:11, color:"#7090c0", marginTop:2 }}>{p.fecha_salida} → {p.fecha_regreso} · {p.noches} noches</div>
+          <div style={{ fontSize:10, color:"#a07855", marginTop:2 }}>{p.aerolinea} · {p.fuente}</div>
+        </div>
+        <div style={{ textAlign:"right" as const, minWidth:90 }}>
+          {p.precio_pareja ? (
+            <>
+              <div style={{ fontSize:15, fontWeight:700, color:"#3060a0" }}>{fmt(p.precio_pareja)}</div>
+              <div style={{ fontSize:10, color:"#7090c0" }}>total {p.noches}n</div>
+              {p.precio_persona && <div style={{ fontSize:10, color:"#a07855" }}>{fmt(p.precio_persona)}/pers.</div>}
+            </>
+          ) : <div style={{ fontSize:11, color:"#a07855" }}>Consultar</div>}
+        </div>
+      </div>
+      {p.ahorro_vs_separado != null && (
+        <div style={{ background: p.ahorro_vs_separado >= 0 ? "#f0f8f4" : "#fff5f5", borderRadius:8, padding:"5px 10px", marginBottom:8 }}>
+          <span style={{ fontSize:11, fontWeight:700, color: p.ahorro_vs_separado >= 0 ? "#6aaa96" : "#e07070" }}>
+            {p.ahorro_vs_separado >= 0 ? `Ahorras ${fmt(p.ahorro_vs_separado)} vs separado` : `${fmt(Math.abs(p.ahorro_vs_separado))} más caro que separado`}
+          </span>
+        </div>
+      )}
+      {exp && (
+        <div style={{ borderTop:"1px solid #f0e8e0", paddingTop:10, marginTop:4 }}>
+          <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:"#6aaa96", marginBottom:4 }}>INCLUYE</div>
+              {(p.incluye||[]).map((item,i)=><div key={i} style={{ fontSize:11, color:"#5c3d2e", marginBottom:3 }}>✓ {item}</div>)}
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:"#e07070", marginBottom:4 }}>NO INCLUYE</div>
+              {(p.no_incluye||[]).map((item,i)=><div key={i} style={{ fontSize:11, color:"#5c3d2e", marginBottom:3 }}>✗ {item}</div>)}
+            </div>
+          </div>
+          {p.notas && <div style={{ fontSize:11, color:"#7a5c42", background:"#fdf8f3", borderRadius:8, padding:"8px 10px", marginBottom:8, lineHeight:1.5 }}>{p.notas}</div>}
+          {p.url && <a href={p.url} target="_blank" rel="noreferrer" style={{ display:"block", background:"#c9956a", color:"#fff", borderRadius:9, padding:"9px 14px", fontSize:12, fontWeight:700, textDecoration:"none", textAlign:"center" as const }}>Ver paquete y comprar →</a>}
+        </div>
+      )}
+      <button onClick={()=>setExp(!exp)} style={{ width:"100%", background:"none", border:"1px solid #e8d5c4", borderRadius:8, padding:"6px", fontSize:11, color:"#a07855", cursor:"pointer", fontFamily:"inherit", marginTop:exp?8:0 }}>
+        {exp ? "▲ Ocultar detalle" : "▼ Ver qué incluye y link de compra"}
+      </button>
+    </Card>
+  );
+}
+
+function PaquetesTab({ viajeId, viaje }: { viajeId: string|null; viaje: ViajeConfig|null }) {
+  const allPaquetes = usePaquetes();
+
+  if (!viajeId || !viaje) return (
+    <Card style={{ textAlign:"center" as const, padding:32, color:"#a07855" }}>
+      <div style={{ fontSize:28, marginBottom:8 }}>✈️</div>
+      <div style={{ fontSize:13, fontWeight:700, marginBottom:4 }}>Configura un viaje primero</div>
+      <div style={{ fontSize:11 }}>Ve a "Viajes" y crea un viaje para ver los paquetes disponibles</div>
+    </Card>
+  );
+
+  const data = allPaquetes[viajeId] || null;
 
   if (!data) return (
     <Card style={{ textAlign:"center" as const, padding:32, color:"#a07855" }}>
-      <div style={{ fontSize:24, marginBottom:8 }}>🔍</div>
-      <div style={{ fontSize:13, fontWeight:700, marginBottom:4 }}>Buscando paquetes...</div>
-      <div style={{ fontSize:11 }}>Claude revisa los sitios de viaje cada mañana a las 9am</div>
+      <div style={{ fontSize:28, marginBottom:8 }}>🔍</div>
+      <div style={{ fontSize:13, fontWeight:700, marginBottom:4 }}>Buscando paquetes para {viaje.destino}...</div>
+      <div style={{ fontSize:11, lineHeight:1.5 }}>Claude busca automáticamente cada mañana a las 9am.<br/>El primer resultado aparecerá mañana.</div>
     </Card>
   );
 
-  if (data.error || data.paquetes.length === 0) return (
-    <Card style={{ textAlign:"center" as const, padding:32, color:"#a07855" }}>
-      <div style={{ fontSize:24, marginBottom:8 }}>📭</div>
+  if ((data as any).error || !data.paquetes?.length) return (
+    <Card style={{ textAlign:"center" as const, padding:28, color:"#a07855" }}>
+      <div style={{ fontSize:28, marginBottom:8 }}>📭</div>
       <div style={{ fontSize:13, fontWeight:700, marginBottom:4 }}>
-        {data.error ? "Error al obtener paquetes" : "Sin paquetes disponibles aún"}
+        {(data as any).error ? "Error en la búsqueda de ayer" : "Sin paquetes aún para este viaje"}
       </div>
-      <div style={{ fontSize:11, color:"#c4a882" }}>{data.resumen || "Se revisará automáticamente mañana a las 9am"}</div>
-      {data.fecha_consulta && (
-        <div style={{ fontSize:10, color:"#c4a882", marginTop:8 }}>
-          Última consulta: {new Date(data.fecha_consulta).toLocaleString("es-CL")}
-        </div>
-      )}
+      <div style={{ fontSize:11, color:"#c4a882", lineHeight:1.5 }}>{data.resumen || "Se reintentará mañana a las 9am"}</div>
+      {data.fecha_consulta && <div style={{ fontSize:10, color:"#c4a882", marginTop:8 }}>Última búsqueda: {new Date(data.fecha_consulta).toLocaleString("es-CL",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</div>}
     </Card>
   );
-
-  const paquetes = filtro === "todos" ? data.paquetes : data.paquetes.filter(p => p.ventana === filtro);
-  const mejorId  = data.mejor_opcion;
 
   return (
     <div>
-      {/* Header con última actualización */}
       <Card style={{ background:"linear-gradient(135deg,#e8f0ff,#d8e8ff)", marginBottom:12, padding:12 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div>
-            <div style={{ fontSize:11, fontWeight:700, color:"#5070a0" }}>ACTUALIZACIÓN AUTOMÁTICA</div>
-            <div style={{ fontSize:10, color:"#7090c0" }}>Todos los días a las 9am</div>
+            <div style={{ fontSize:11, fontWeight:700, color:"#5070a0" }}>🔄 ACTUALIZACIÓN AUTOMÁTICA DIARIA</div>
+            <div style={{ fontSize:10, color:"#7090c0" }}>Todos los días a las 9am · {viaje.destino} · {viaje.personas} personas · {viaje.noches} noches</div>
           </div>
           <div style={{ textAlign:"right" as const }}>
-            <div style={{ fontSize:10, color:"#7090c0" }}>Última consulta</div>
+            <div style={{ fontSize:10, color:"#7090c0" }}>Última búsqueda</div>
             <div style={{ fontSize:11, fontWeight:700, color:"#5070a0" }}>
               {new Date(data.fecha_consulta).toLocaleString("es-CL",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}
             </div>
           </div>
         </div>
-        {data.resumen && (
-          <div style={{ fontSize:11, color:"#5070a0", marginTop:8, paddingTop:8, borderTop:"1px solid #c0d0f0", lineHeight:1.5 }}>
-            {data.resumen}
-          </div>
-        )}
+        {data.resumen && <div style={{ fontSize:11, color:"#5070a0", marginTop:8, paddingTop:8, borderTop:"1px solid #c0d0f0", lineHeight:1.5 }}>{data.resumen}</div>}
       </Card>
-
-      {/* Filtro fechas */}
-      <div style={{ display:"flex", gap:6, marginBottom:12 }}>
-        {([["todos","Todas","🗓️"],["dic","20-27 Dic","🎄"],["ene","10-17 Ene","✨"]] as [string,string,string][]).map(([id,lbl,ic])=>(
-          <button key={id} onClick={()=>setFiltro(id as any)} style={{ flex:1, background:filtro===id?"#c9956a":"#fdf8f3", border:`1.5px solid ${filtro===id?"#c9956a":"#e8d5c4"}`, color:filtro===id?"#fff":"#a07855", borderRadius:8, padding:"6px 4px", fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-            {ic} {lbl}
-          </button>
-        ))}
-      </div>
-
-      {/* Lista de paquetes */}
-      {paquetes.length === 0 && (
-        <div style={{ textAlign:"center" as const, color:"#c4a882", padding:24, fontSize:12 }}>
-          Sin paquetes para esta ventana de fechas
-        </div>
-      )}
-      {paquetes.map(p => {
-        const esMejor = p.id === mejorId;
-        const exp     = expandido === p.id;
-        return (
-          <Card key={p.id} style={{ marginBottom:10, padding:14, border: esMejor ? "2px solid #c9956a" : p.es_oferta ? "2px solid #6aaa96" : "1.5px solid #f0e8e0", background: esMejor ? "#fffaf5" : "#fff" }}>
-            {/* Badge superior */}
-            <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" as const }}>
-              {esMejor && <span style={{ background:"#c9956a", color:"#fff", borderRadius:6, padding:"2px 8px", fontSize:9, fontWeight:700 }}>⭐ MEJOR OPCIÓN</span>}
-              {p.es_oferta && <span style={{ background:"#6aaa9622", color:"#6aaa96", border:"1px solid #6aaa9644", borderRadius:6, padding:"2px 8px", fontSize:9, fontWeight:700 }}>OFERTA</span>}
-              {!p.disponible && <span style={{ background:"#e0707022", color:"#e07070", border:"1px solid #e0707044", borderRadius:6, padding:"2px 8px", fontSize:9, fontWeight:700 }}>FECHAS CERCANAS</span>}
-              <span style={{ background:"#7090c022", color:"#5070a0", borderRadius:6, padding:"2px 8px", fontSize:9, fontWeight:700 }}>{p.ventana === "dic" ? "🎄 Dic 2026" : "✨ Ene 2027"}</span>
-            </div>
-
-            {/* Header paquete */}
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e" }}>{p.destino} — {p.hotel}</div>
-                <div style={{ fontSize:11, color:"#a07855", marginTop:2 }}>{p.categoria_hotel} · {p.pension}</div>
-                <div style={{ fontSize:11, color:"#7090c0", marginTop:2 }}>
-                  {p.fecha_salida} → {p.fecha_regreso} · {p.noches} noches
-                </div>
-                <div style={{ fontSize:10, color:"#a07855", marginTop:2 }}>{p.aerolinea} · {p.fuente}</div>
-              </div>
-              <div style={{ textAlign:"right" as const, minWidth:90 }}>
-                {p.precio_pareja ? (
-                  <>
-                    <div style={{ fontSize:15, fontWeight:700, color:"#3060a0" }}>{fmt(p.precio_pareja)}</div>
-                    <div style={{ fontSize:10, color:"#7090c0" }}>pareja total</div>
-                    {p.precio_persona && <div style={{ fontSize:10, color:"#a07855" }}>{fmt(p.precio_persona)}/persona</div>}
-                  </>
-                ) : <div style={{ fontSize:11, color:"#a07855" }}>Precio consultar</div>}
-              </div>
-            </div>
-
-            {/* Ahorro vs separado */}
-            {p.ahorro_vs_separado !== null && p.ahorro_vs_separado !== undefined && (
-              <div style={{ background: p.ahorro_vs_separado >= 0 ? "#f0f8f4" : "#fff5f5", borderRadius:8, padding:"6px 10px", marginBottom:8 }}>
-                <span style={{ fontSize:11, fontWeight:700, color: p.ahorro_vs_separado >= 0 ? "#6aaa96" : "#e07070" }}>
-                  {p.ahorro_vs_separado >= 0 ? `Ahorras ${fmt(p.ahorro_vs_separado)} vs comprar por separado` : `${fmt(Math.abs(p.ahorro_vs_separado))} más caro que por separado`}
-                </span>
-              </div>
-            )}
-
-            {/* Expandible */}
-            {exp && (
-              <div style={{ borderTop:"1px solid #f0e8e0", paddingTop:10, marginTop:4 }}>
-                <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:10, fontWeight:700, color:"#6aaa96", marginBottom:4 }}>INCLUYE</div>
-                    {(p.incluye||[]).map((item,i)=><div key={i} style={{ fontSize:11, color:"#5c3d2e", marginBottom:3 }}>✓ {item}</div>)}
-                  </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:10, fontWeight:700, color:"#e07070", marginBottom:4 }}>NO INCLUYE</div>
-                    {(p.no_incluye||[]).map((item,i)=><div key={i} style={{ fontSize:11, color:"#5c3d2e", marginBottom:3 }}>✗ {item}</div>)}
-                  </div>
-                </div>
-                {p.notas && <div style={{ fontSize:11, color:"#7a5c42", background:"#fdf8f3", borderRadius:8, padding:"8px 10px", marginBottom:8, lineHeight:1.5 }}>{p.notas}</div>}
-                {p.url && (
-                  <a href={p.url} target="_blank" rel="noreferrer" style={{ display:"block", background:"#c9956a", color:"#fff", borderRadius:9, padding:"9px 14px", fontSize:12, fontWeight:700, textDecoration:"none", textAlign:"center" as const }}>
-                    Ver paquete y comprar →
-                  </a>
-                )}
-              </div>
-            )}
-
-            <button onClick={()=>setExpandido(exp?null:p.id)} style={{ width:"100%", background:"none", border:"1px solid #e8d5c4", borderRadius:8, padding:"6px", fontSize:11, color:"#a07855", cursor:"pointer", fontFamily:"inherit", marginTop:exp?8:0 }}>
-              {exp ? "▲ Ocultar detalle" : "▼ Ver qué incluye y link de compra"}
-            </button>
-          </Card>
-        );
-      })}
+      {data.paquetes.map(p => <PaqueteCard key={p.id} p={p} mejorId={data.mejor_opcion} />)}
     </div>
   );
 }
 
 function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=>void }) {
   const lista = data.items || [];
-  const [subTab, setSubTab]   = useState<"plan"|"budget"|"paquetes"|"gastos">("plan");
+  const [subTab, setSubTab]   = useState<"viajes"|"paquetes"|"gastos">("viajes");
   const [destino, setDestino] = useState<Destino>("bzc");
   const [ventana, setVentana] = useState<Ventana>("ene");
   const [form, setForm]       = useState<Partial<LunaItem>>({ categoria:"Vuelos" });
   const [showForm, setShowForm] = useState(false);
   const [showEstrategia, setShowEstrategia] = useState<number|null>(null);
   const [showPolitica, setShowPolitica]     = useState<number|null>(null);
+
+  // ── Trip planner state ─────────────────────────────────────
+  const { data: viajesData, guardar: guardarViajes } = useViajesConfig();
+  const viajes = viajesData.viajes || [];
+  const [selectedViajeId, setSelectedViajeId] = useState<string|null>(null);
+  const [showNuevoViaje, setShowNuevoViaje]   = useState(false);
+  const [showGuia, setShowGuia]               = useState(false);
+  const [vForm, setVForm] = useState({ nombre:"", destino:"", fechaSalida:"", fechaRegreso:"", personas:"2", notas:"" });
+
+  const selectedViaje = viajes.find(v => v.id === selectedViajeId) || (viajes.length > 0 ? viajes[0] : null);
+
+  const calcNoches = (s: string, r: string) => {
+    if (!s || !r) return 0;
+    return Math.max(0, Math.round((new Date(r).getTime() - new Date(s).getTime()) / 86400000));
+  };
+
+  const guardarNuevoViaje = async () => {
+    if (!vForm.nombre || !vForm.destino || !vForm.fechaSalida || !vForm.fechaRegreso) return;
+    const nuevo: ViajeConfig = {
+      id: `viaje_${Date.now()}`,
+      nombre: vForm.nombre,
+      destino: vForm.destino,
+      fechaSalida: vForm.fechaSalida,
+      fechaRegreso: vForm.fechaRegreso,
+      noches: calcNoches(vForm.fechaSalida, vForm.fechaRegreso),
+      personas: Number(vForm.personas) || 2,
+      notas: vForm.notas,
+      creado: new Date().toISOString(),
+    };
+    await guardarViajes({ viajes: [...viajes, nuevo] });
+    setSelectedViajeId(nuevo.id);
+    setShowNuevoViaje(false);
+    setVForm({ nombre:"", destino:"", fechaSalida:"", fechaRegreso:"", personas:"2", notas:"" });
+  };
+
+  const eliminarViaje = async (id: string) => {
+    await guardarViajes({ viajes: viajes.filter(v => v.id !== id) });
+    if (selectedViajeId === id) setSelectedViajeId(null);
+  };
 
   const total  = lista.reduce((s,i)=>s+i.monto,0);
   const pagado = lista.filter(i=>i.confirmado).reduce((s,i)=>s+i.monto,0);
@@ -1338,7 +1365,7 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
   const calcMin = () => pre.vuelos.min + pre.hotel.min + (pre.transfer?.min||0) + pre.comida.min + pre.actividades.min + pre.seguro.min;
   const calcMax = () => pre.vuelos.max + pre.hotel.max + (pre.transfer?.max||0) + pre.comida.max + pre.actividades.max + pre.seguro.max;
 
-  const TAB_BTN = (id:"plan"|"budget"|"paquetes"|"gastos", label:string, icon:string) => (
+  const TAB_BTN = (id:"viajes"|"paquetes"|"gastos", label:string, icon:string) => (
     <button onClick={()=>setSubTab(id)} style={{ flex:1, background:subTab===id?"#c9956a":"#fdf8f3", border:`1.5px solid ${subTab===id?"#c9956a":"#e8d5c4"}`, color:subTab===id?"#fff":"#a07855", borderRadius:9, padding:"8px 4px", fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", flexDirection:"column" as const, alignItems:"center", gap:2 }}>
       <span style={{ fontSize:15 }}>{icon}</span>{label}
     </button>
@@ -1346,227 +1373,192 @@ function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=
 
   return (
     <div style={{ animation:"fadeUp .3s ease" }}>
-      <Title icon="✈️" title="Luna de Miel"/>
+      <Title icon="✈️" title="Planificador de Viajes"/>
 
       {/* Sub-tabs */}
       <div style={{ display:"flex", gap:5, marginBottom:16 }}>
-        {TAB_BTN("plan","Planificar","🗺️")}
-        {TAB_BTN("budget","Presupuesto","💰")}
+        {TAB_BTN("viajes","Viajes","🗺️")}
         {TAB_BTN("paquetes","Paquetes","🎁")}
-        {TAB_BTN("gastos","Mis Gastos","📋")}
         {TAB_BTN("gastos","Mis Gastos","📋")}
       </div>
 
-      {/* ── TAB: PLANIFICADOR ── */}
-      {subTab==="plan" && (
+      {/* ── TAB: VIAJES ── */}
+      {subTab==="viajes" && (
         <div>
-          {/* Selector destino */}
-          <div style={{ fontSize:11, fontWeight:700, color:"#a07855", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>Elegir destino</div>
-          <div style={{ display:"flex", gap:8, marginBottom:16 }}>
-            {(["fln","bzc"] as Destino[]).map(id=>{
-              const dest = DESTINOS[id];
-              const sel  = destino === id;
-              return (
-                <button key={id} onClick={()=>setDestino(id)} style={{ flex:1, background:sel?"linear-gradient(135deg,#c9956a,#e8b48a)":"#fff", border:`2px solid ${sel?"#c9956a":"#e8d5c4"}`, borderRadius:12, padding:"12px 8px", cursor:"pointer", fontFamily:"inherit", textAlign:"left" as const, transition:"all .2s" }}>
-                  <div style={{ fontSize:20, marginBottom:4 }}>{dest.emoji}</div>
-                  <div style={{ fontSize:13, fontWeight:700, color:sel?"#fff":"#5c3d2e" }}>{dest.nombre}</div>
-                  <div style={{ fontSize:10, color:sel?"#fde8d0":"#a07855", marginTop:2 }}>{dest.pais}</div>
-                  <div style={{ marginTop:6, background:sel?"rgba(255,255,255,.2)":dest.colorPerfil+"22", borderRadius:6, padding:"2px 6px", display:"inline-block" }}>
-                    <span style={{ fontSize:9, fontWeight:700, color:sel?"#fff":dest.colorPerfil }}>{dest.perfil}</span>
+          {/* ── Nuevo viaje form ─────────────────────────────── */}
+          {showNuevoViaje ? (
+            <Card style={{ marginBottom:16, border:"2px solid #c9956a" }}>
+              <div style={{ fontSize:14, fontWeight:700, color:"#5c3d2e", marginBottom:14 }}>Nuevo viaje</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                <Inp value={vForm.nombre} onChange={v=>setVForm({...vForm,nombre:v})} placeholder="Nombre del viaje (ej: Luna de miel, Viaje familia)"/>
+                <Inp value={vForm.destino} onChange={v=>setVForm({...vForm,destino:v})} placeholder="Destino (ej: Florianópolis Brasil, Buenos Aires)"/>
+                <div style={{ display:"flex", gap:8 }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:10, color:"#a07855", marginBottom:4 }}>Salida</div>
+                    <input type="date" value={vForm.fechaSalida} onChange={e=>setVForm({...vForm,fechaSalida:e.target.value})} style={{ width:"100%", background:"#fdf8f3", border:"1.5px solid #e8d5c4", borderRadius:9, padding:"8px 10px", fontSize:12, color:"#5c3d2e", fontFamily:"inherit", boxSizing:"border-box" as const }}/>
                   </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Card destino seleccionado */}
-          <Card style={{ background:"linear-gradient(135deg,#fdf0e8,#fae8d8)", marginBottom:16, border:"1.5px solid #e8d5c4" }}>
-            <div style={{ fontSize:22, marginBottom:6 }}>{d.emoji}</div>
-            <div style={{ fontSize:15, fontWeight:700, color:"#5c3d2e", marginBottom:4 }}>{d.nombre}, {d.pais}</div>
-            <div style={{ fontSize:12, color:"#7a5c42", marginBottom:12, lineHeight:1.5 }}>{d.descripcion}</div>
-            <div style={{ display:"flex", gap:8 }}>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:10, fontWeight:700, color:"#6aaa96", marginBottom:4 }}>LO BUENO</div>
-                {d.pros.map((p,i)=><div key={i} style={{ fontSize:11, color:"#5c3d2e", marginBottom:3 }}>✓ {p}</div>)}
-              </div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:10, fontWeight:700, color:"#e07070", marginBottom:4 }}>A TENER EN CUENTA</div>
-                {d.contras.map((c,i)=><div key={i} style={{ fontSize:11, color:"#5c3d2e", marginBottom:3 }}>• {c}</div>)}
-              </div>
-            </div>
-          </Card>
-
-          {/* Selector fechas */}
-          <div style={{ fontSize:11, fontWeight:700, color:"#a07855", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>Elegir fechas</div>
-          <div style={{ display:"flex", gap:8, marginBottom:16 }}>
-            {(["dic","ene"] as Ventana[]).map(id=>{
-              const ven = VENTANAS[id];
-              const sel = ventana === id;
-              return (
-                <button key={id} onClick={()=>setVentana(id)} style={{ flex:1, background:sel?"#fff":"#fdf8f3", border:`2px solid ${sel?"#c9956a":"#e8d5c4"}`, borderRadius:12, padding:"12px 8px", cursor:"pointer", fontFamily:"inherit", textAlign:"left" as const }}>
-                  <div style={{ fontSize:18, marginBottom:4 }}>{ven.icon}</div>
-                  <div style={{ fontSize:12, fontWeight:700, color:"#5c3d2e" }}>{ven.label}</div>
-                  <div style={{ fontSize:10, color:"#a07855", marginTop:2 }}>{ven.titulo}</div>
-                  <div style={{ marginTop:6, background:ven.alertaColor+"22", borderRadius:6, padding:"3px 6px" }}>
-                    <span style={{ fontSize:9, fontWeight:700, color:ven.alertaColor }}>{ven.alerta}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Resumen rango de precios */}
-          <Card style={{ background:"linear-gradient(135deg,#e8f4ff,#d0e8ff)", marginBottom:16 }}>
-            <div style={{ fontSize:11, color:"#5070a0", fontWeight:700, marginBottom:6 }}>COSTO TOTAL ESTIMADO — PAREJA</div>
-            <div style={{ fontSize:28, fontWeight:700, color:"#3060a0" }}>{fmt(calcMin())} – {fmt(calcMax())}</div>
-            <div style={{ fontSize:11, color:"#7090c0", marginTop:4 }}>Todo incluido: vuelos + hotel 7 noches + comidas + actividades + seguro{pre.transfer?" + transfer":""}</div>
-            <div style={{ marginTop:10, padding:"8px 10px", background:"rgba(255,255,255,.5)", borderRadius:8 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:"#5070a0", marginBottom:4 }}>ESTRATEGIA DE COMPRA</div>
-              <div style={{ fontSize:11, color:"#5070a0" }}>Comprar pasajes en <strong>agosto–septiembre 2026</strong> (90 días antes = precio óptimo). Reservar hotel en octubre.</div>
-            </div>
-          </Card>
-
-          {/* Itinerario */}
-          <div style={{ fontSize:11, fontWeight:700, color:"#a07855", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>Itinerario sugerido — 7 días</div>
-          {itinerario.map((item,i)=>(
-            <div key={i} style={{ display:"flex", gap:10, marginBottom:8, alignItems:"flex-start" }}>
-              <div style={{ minWidth:44, background:"#c9956a22", borderRadius:8, padding:"4px 6px", textAlign:"center" as const }}>
-                <div style={{ fontSize:9, fontWeight:700, color:"#c9956a" }}>{item.dia}</div>
-              </div>
-              <div style={{ flex:1, fontSize:12, color:"#5c3d2e", paddingTop:4, lineHeight:1.4 }}>{item.plan}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── TAB: PRESUPUESTO ── */}
-      {subTab==="budget" && (
-        <div>
-          {/* Selector compacto destino+fecha */}
-          <div style={{ display:"flex", gap:6, marginBottom:14 }}>
-            <select value={destino} onChange={e=>setDestino(e.target.value as Destino)} style={{ flex:1, background:"#fdf8f3", border:"1.5px solid #e8d5c4", borderRadius:9, padding:"8px 10px", fontSize:12, color:"#5c3d2e", fontFamily:"inherit" }}>
-              <option value="fln">Florianópolis</option>
-              <option value="bzc">Búzios</option>
-            </select>
-            <select value={ventana} onChange={e=>setVentana(e.target.value as Ventana)} style={{ flex:1, background:"#fdf8f3", border:"1.5px solid #e8d5c4", borderRadius:9, padding:"8px 10px", fontSize:12, color:"#5c3d2e", fontFamily:"inherit" }}>
-              <option value="dic">20–27 Dic 2026</option>
-              <option value="ene">10–17 Ene 2027</option>
-            </select>
-          </div>
-
-          {/* Desglose ítem por ítem */}
-          {[
-            { icon:"✈️", label:"Vuelos", desc:"Ida + vuelta x2 personas", data:pre.vuelos, extra:pre.vuelos.nota },
-            ...(pre.transfer ? [{ icon:"🚌", label:"Transfer", desc:"Aeropuerto → destino x2", data:pre.transfer, extra:pre.transfer.nota }] : []),
-            { icon:"🏨", label:"Alojamiento", desc:`Hotel 7 noches — ${pre.hotel.tipo}`, data:pre.hotel, extra:pre.hotel.nota },
-            { icon:"🍽️", label:"Comida", desc:"7 días, pareja", data:pre.comida, extra:pre.comida.nota },
-            { icon:"🏄", label:"Actividades", desc:"Excursiones y tours", data:pre.actividades, extra:pre.actividades.nota },
-            { icon:"🛡️", label:"Seguro de viaje", desc:"Cancelación + médico", data:pre.seguro, extra:pre.seguro.nota },
-          ].map((item,i)=>(
-            <Card key={i} style={{ marginBottom:10, padding:14 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                <div style={{ display:"flex", gap:8, flex:1 }}>
-                  <span style={{ fontSize:20 }}>{item.icon}</span>
-                  <div>
-                    <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e" }}>{item.label}</div>
-                    <div style={{ fontSize:11, color:"#a07855" }}>{item.desc}</div>
-                    <div style={{ fontSize:10, color:"#c4a882", marginTop:2, lineHeight:1.4 }}>{item.extra}</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:10, color:"#a07855", marginBottom:4 }}>Regreso</div>
+                    <input type="date" value={vForm.fechaRegreso} onChange={e=>setVForm({...vForm,fechaRegreso:e.target.value})} style={{ width:"100%", background:"#fdf8f3", border:"1.5px solid #e8d5c4", borderRadius:9, padding:"8px 10px", fontSize:12, color:"#5c3d2e", fontFamily:"inherit", boxSizing:"border-box" as const }}/>
                   </div>
                 </div>
-                <div style={{ textAlign:"right" as const, minWidth:90 }}>
-                  <div style={{ fontSize:13, fontWeight:700, color:"#3060a0" }}>{fmt(item.data.min)}</div>
-                  <div style={{ fontSize:10, color:"#7090c0" }}>hasta {fmt(item.data.max)}</div>
-                </div>
-              </div>
-              {"links" in item.data && (item.data as any).links?.length > 0 && (
-                <div style={{ marginTop:10, paddingTop:8, borderTop:"1px solid #f0e8e0" }}>
-                  <div style={{ fontSize:10, fontWeight:700, color:"#a07855", marginBottom:6 }}>COMPRAR AQUÍ:</div>
-                  <div style={{ display:"flex", flexWrap:"wrap" as const, gap:6 }}>
-                    {(item.data as any).links.map((lnk:{label:string;url:string},j:number)=>(
-                      <a key={j} href={lnk.url} target="_blank" rel="noreferrer" style={{ background:"#c9956a", color:"#fff", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, textDecoration:"none" }}>{lnk.label} →</a>
+                {vForm.fechaSalida && vForm.fechaRegreso && (
+                  <div style={{ fontSize:11, color:"#6aaa96", fontWeight:700, textAlign:"center" as const }}>
+                    {calcNoches(vForm.fechaSalida, vForm.fechaRegreso)} noches
+                  </div>
+                )}
+                <div>
+                  <div style={{ fontSize:10, color:"#a07855", marginBottom:4 }}>Número de personas</div>
+                  <div style={{ display:"flex", gap:8 }}>
+                    {["1","2","3","4","5","6"].map(n=>(
+                      <button key={n} onClick={()=>setVForm({...vForm,personas:n})} style={{ flex:1, background:vForm.personas===n?"#c9956a":"#fdf8f3", border:`1.5px solid ${vForm.personas===n?"#c9956a":"#e8d5c4"}`, color:vForm.personas===n?"#fff":"#a07855", borderRadius:8, padding:"8px 4px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>{n}</button>
                     ))}
                   </div>
                 </div>
-              )}
+                <Inp value={vForm.notas} onChange={v=>setVForm({...vForm,notas:v})} placeholder="Notas opcionales (presupuesto máx, preferencias...)"/>
+              </div>
+              <div style={{ display:"flex", gap:8, marginTop:14 }}>
+                <Btn onClick={guardarNuevoViaje}>Guardar viaje</Btn>
+                <Btn onClick={()=>setShowNuevoViaje(false)} outline>Cancelar</Btn>
+              </div>
             </Card>
-          ))}
+          ) : (
+            <Btn onClick={()=>setShowNuevoViaje(true)} style={{ marginBottom:16, width:"100%" }}>+ Nuevo viaje</Btn>
+          )}
 
-          {/* Total */}
-          <Card style={{ background:"linear-gradient(135deg,#3060a0,#4070c0)", marginBottom:16, padding:16 }}>
-            <div style={{ fontSize:11, color:"#a0c0e8", fontWeight:700, marginBottom:4 }}>TOTAL REAL PAREJA — {d.nombre} · {v.label}</div>
-            <div style={{ fontSize:30, fontWeight:700, color:"#fff" }}>{fmt(calcMin())}</div>
-            <div style={{ fontSize:13, color:"#c0d8f8" }}>hasta {fmt(calcMax())} dependiendo de fechas exactas</div>
-          </Card>
-
-          {/* Qué está incluido */}
-          <div style={{ display:"flex", gap:8, marginBottom:16 }}>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:"#6aaa96", marginBottom:8 }}>QUÉ ESTÁ INCLUIDO</div>
-              {pre.incluido.map((item,i)=>(
-                <div key={i} style={{ fontSize:11, color:"#5c3d2e", marginBottom:5, display:"flex", gap:6 }}>
-                  <span style={{ color:"#6aaa96", fontWeight:700 }}>✓</span>{item}
-                </div>
-              ))}
-            </div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:"#e07070", marginBottom:8 }}>QUÉ NO INCLUYE</div>
-              {pre.noIncluido.map((item,i)=>(
-                <div key={i} style={{ fontSize:11, color:"#5c3d2e", marginBottom:5, display:"flex", gap:6 }}>
-                  <span style={{ color:"#e07070" }}>✗</span>{item}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Estrategias de ahorro */}
-          <div style={{ fontSize:11, fontWeight:700, color:"#a07855", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>Estrategias para abaratar</div>
-          {ESTRATEGIAS.map((e,i)=>(
-            <Card key={i} style={{ marginBottom:8, padding:12, border:e.urgente?"2px solid #e07070":"1.5px solid #f0e8e0" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                <div style={{ flex:1 }}>
-                  <div style={{ display:"flex", gap:6, alignItems:"center", marginBottom:3 }}>
-                    {e.urgente && <span style={{ background:"#e0707022", color:"#e07070", borderRadius:5, padding:"1px 6px", fontSize:9, fontWeight:700 }}>URGENTE</span>}
-                    <div style={{ fontSize:12, fontWeight:700, color:"#5c3d2e" }}>{e.titulo}</div>
+          {/* ── Lista de viajes guardados ─────────────────────── */}
+          {viajes.length === 0 && !showNuevoViaje && (
+            <Card style={{ textAlign:"center" as const, padding:32, color:"#a07855" }}>
+              <div style={{ fontSize:28, marginBottom:8 }}>🗺️</div>
+              <div style={{ fontSize:13, fontWeight:700, marginBottom:4 }}>Sin viajes configurados</div>
+              <div style={{ fontSize:11, lineHeight:1.5 }}>Crea un viaje y Claude buscará paquetes automáticamente cada día a las 9am</div>
+            </Card>
+          )}
+          {viajes.map(v => {
+            const sel = v.id === (selectedViaje?.id);
+            return (
+              <Card key={v.id} style={{ marginBottom:10, padding:14, border: sel ? "2px solid #c9956a" : "1.5px solid #f0e8e0", background: sel ? "#fffaf5" : "#fff" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e" }}>{v.nombre}</div>
+                    <div style={{ fontSize:12, color:"#a07855", marginTop:2 }}>📍 {v.destino}</div>
+                    <div style={{ fontSize:11, color:"#7090c0", marginTop:3 }}>
+                      {v.fechaSalida} → {v.fechaRegreso} · <strong>{v.noches} noches</strong> · {v.personas} persona{v.personas!==1?"s":""}
+                    </div>
+                    {v.notas && <div style={{ fontSize:10, color:"#c4a882", marginTop:3 }}>{v.notas}</div>}
                   </div>
-                  <div style={{ fontSize:12, fontWeight:700, color:"#6aaa96" }}>{e.ahorro}</div>
-                  {showEstrategia===i && <div style={{ fontSize:11, color:"#7a5c42", marginTop:4, lineHeight:1.5 }}>{e.detalle}<br/><span style={{ color:"#a07855" }}>Vence: {e.vence}</span></div>}
+                  <button onClick={()=>eliminarViaje(v.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:18, padding:"0 4px" }}>🗑</button>
                 </div>
-                <div style={{ display:"flex", gap:4, alignItems:"center" }}>
-                  {e.url && <a href={e.url} target="_blank" rel="noreferrer" style={{ background:"#c9956a", color:"#fff", borderRadius:7, padding:"4px 8px", fontSize:10, fontWeight:700, textDecoration:"none" }}>Ver →</a>}
-                  <button onClick={()=>setShowEstrategia(showEstrategia===i?null:i)} style={{ background:"none", border:"1px solid #e8d5c4", borderRadius:7, padding:"4px 8px", fontSize:10, color:"#a07855", cursor:"pointer", fontFamily:"inherit" }}>{showEstrategia===i?"▲":"▼"}</button>
-                </div>
-              </div>
-            </Card>
-          ))}
+                <button onClick={()=>{ setSelectedViajeId(v.id); setSubTab("paquetes"); }} style={{ width:"100%", marginTop:10, background:"#c9956a", color:"#fff", border:"none", borderRadius:9, padding:"9px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                  Ver paquetes para este viaje →
+                </button>
+              </Card>
+            );
+          })}
 
-          {/* Riesgo cancelación */}
-          <div style={{ fontSize:11, fontWeight:700, color:"#a07855", margin:"16px 0 8px", textTransform:"uppercase", letterSpacing:"0.08em" }}>Riesgo si necesitas cancelar</div>
-          {POLITICAS.map((p,i)=>(
-            <Card key={i} style={{ marginBottom:8, padding:12 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:"#5c3d2e" }}>{p.aerolinea}</div>
-                  {showPolitica===i && <div style={{ fontSize:11, color:"#7a5c42", marginTop:4, lineHeight:1.5 }}>{p.resumen}<br/><span style={{ color:p.color, fontWeight:700 }}>Consejo: </span><span>{p.consejo}</span></div>}
-                </div>
-                <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-                  <span style={{ background:p.color+"22", color:p.color, borderRadius:6, padding:"3px 8px", fontSize:10, fontWeight:700 }}>{p.riesgo}</span>
-                  <button onClick={()=>setShowPolitica(showPolitica===i?null:i)} style={{ background:"none", border:"1px solid #e8d5c4", borderRadius:7, padding:"4px 8px", fontSize:10, color:"#a07855", cursor:"pointer", fontFamily:"inherit" }}>{showPolitica===i?"▲":"▼"}</button>
-                </div>
+          {/* ── Guías de destino (collapsible) ───────────────── */}
+          <button onClick={()=>setShowGuia(!showGuia)} style={{ width:"100%", background:"#fdf8f3", border:"1.5px solid #e8d5c4", borderRadius:10, padding:"12px", fontSize:12, fontWeight:700, color:"#a07855", cursor:"pointer", fontFamily:"inherit", marginTop:8, display:"flex", justifyContent:"space-between" as const, alignItems:"center" }}>
+            <span>📚 Guías: Florianópolis & Búzios</span>
+            <span>{showGuia?"▲":"▼"}</span>
+          </button>
+          {showGuia && (
+            <div style={{ marginTop:8 }}>
+              {/* Selector destino guía */}
+              <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+                {(["fln","bzc"] as Destino[]).map(id=>{
+                  const dest = DESTINOS[id];
+                  const sel  = destino === id;
+                  return (
+                    <button key={id} onClick={()=>setDestino(id)} style={{ flex:1, background:sel?"linear-gradient(135deg,#c9956a,#e8b48a)":"#fff", border:`2px solid ${sel?"#c9956a":"#e8d5c4"}`, borderRadius:12, padding:"10px 8px", cursor:"pointer", fontFamily:"inherit", textAlign:"left" as const }}>
+                      <div style={{ fontSize:18, marginBottom:3 }}>{dest.emoji}</div>
+                      <div style={{ fontSize:12, fontWeight:700, color:sel?"#fff":"#5c3d2e" }}>{dest.nombre}</div>
+                      <div style={{ fontSize:9, color:sel?"#fde8d0":"#a07855" }}>{dest.perfil}</div>
+                    </button>
+                  );
+                })}
               </div>
-            </Card>
-          ))}
-
-          {/* Consejo final seguro */}
-          <Card style={{ background:"#fdf0e8", border:"1.5px solid #e8d5c4", marginTop:8 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:"#c9956a", marginBottom:4 }}>Recomendación para luna de miel</div>
-            <div style={{ fontSize:11, color:"#7a5c42", lineHeight:1.6 }}>Compra <strong>LATAM Light</strong> (incluye maleta) + <strong>Seguro de viaje con cancelación</strong> (~$70.000 CLP los dos). Esa combinación cubre casi cualquier imprevisto y sale más barato que LATAM Top.</div>
-            <a href="https://www.comparaonline.cl/seguro-viaje" target="_blank" rel="noreferrer" style={{ display:"inline-block", marginTop:8, background:"#c9956a", color:"#fff", borderRadius:8, padding:"6px 14px", fontSize:11, fontWeight:700, textDecoration:"none" }}>Ver seguros de viaje →</a>
-          </Card>
+              <Card style={{ background:"linear-gradient(135deg,#fdf0e8,#fae8d8)", marginBottom:12, border:"1.5px solid #e8d5c4" }}>
+                <div style={{ fontSize:14, fontWeight:700, color:"#5c3d2e", marginBottom:4 }}>{d.emoji} {d.nombre}</div>
+                <div style={{ fontSize:12, color:"#7a5c42", marginBottom:10, lineHeight:1.5 }}>{d.descripcion}</div>
+                <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:"#6aaa96", marginBottom:3 }}>LO BUENO</div>
+                    {d.pros.map((p,i)=><div key={i} style={{ fontSize:11, color:"#5c3d2e", marginBottom:2 }}>✓ {p}</div>)}
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:"#e07070", marginBottom:3 }}>A TENER EN CUENTA</div>
+                    {d.contras.map((c,i)=><div key={i} style={{ fontSize:11, color:"#5c3d2e", marginBottom:2 }}>• {c}</div>)}
+                  </div>
+                </div>
+                {/* Selector ventana */}
+                <div style={{ display:"flex", gap:6, marginBottom:10 }}>
+                  {(["dic","ene"] as Ventana[]).map(id=>{
+                    const ven = VENTANAS[id]; const sel = ventana === id;
+                    return <button key={id} onClick={()=>setVentana(id)} style={{ flex:1, background:sel?"#c9956a":"#fdf8f3", border:`1.5px solid ${sel?"#c9956a":"#e8d5c4"}`, color:sel?"#fff":"#a07855", borderRadius:8, padding:"6px 4px", fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>{ven.icon} {ven.label}</button>;
+                  })}
+                </div>
+                {/* Presupuesto estimado */}
+                <div style={{ background:"#fff", borderRadius:10, padding:12 }}>
+                  <div style={{ fontSize:10, fontWeight:700, color:"#5070a0", marginBottom:6 }}>PRESUPUESTO ESTIMADO — {ventana==="dic"?"7 noches Diciembre":"7 noches Enero"}</div>
+                  {[
+                    { icon:"✈️", l:"Vuelos", data:pre.vuelos },
+                    ...(pre.transfer ? [{ icon:"🚌", l:"Transfer", data:pre.transfer }] : []),
+                    { icon:"🏨", l:"Hotel 7n", data:pre.hotel },
+                    { icon:"🍽️", l:"Comida", data:pre.comida },
+                    { icon:"🏄", l:"Actividades", data:pre.actividades },
+                    { icon:"🛡️", l:"Seguro", data:pre.seguro },
+                  ].map((item,i)=>(
+                    <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:"1px solid #f5ede4" }}>
+                      <span style={{ fontSize:11, color:"#5c3d2e" }}>{item.icon} {item.l}</span>
+                      <span style={{ fontSize:11, fontWeight:700, color:"#3060a0" }}>{fmt(item.data.min)} – {fmt(item.data.max)}</span>
+                    </div>
+                  ))}
+                  <div style={{ display:"flex", justifyContent:"space-between", marginTop:8, paddingTop:6, borderTop:"2px solid #e8d5c4" }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#5c3d2e" }}>TOTAL PAREJA</span>
+                    <span style={{ fontSize:14, fontWeight:700, color:"#3060a0" }}>{fmt(calcMin())} – {fmt(calcMax())}</span>
+                  </div>
+                  {/* Links compra */}
+                  <div style={{ marginTop:10, display:"flex", flexWrap:"wrap" as const, gap:5 }}>
+                    {pre.vuelos.links.map((lnk,i)=>(
+                      <a key={i} href={lnk.url} target="_blank" rel="noreferrer" style={{ background:"#c9956a", color:"#fff", borderRadius:7, padding:"4px 9px", fontSize:10, fontWeight:700, textDecoration:"none" }}>{lnk.label} →</a>
+                    ))}
+                  </div>
+                </div>
+                {/* Itinerario sugerido */}
+                <div style={{ marginTop:10 }}>
+                  <div style={{ fontSize:10, fontWeight:700, color:"#a07855", marginBottom:6 }}>ITINERARIO SUGERIDO</div>
+                  {itinerario.map((item,i)=>(
+                    <div key={i} style={{ display:"flex", gap:8, marginBottom:5 }}>
+                      <div style={{ minWidth:40, background:"#c9956a22", borderRadius:6, padding:"3px 5px", textAlign:"center" as const }}>
+                        <div style={{ fontSize:9, fontWeight:700, color:"#c9956a" }}>{item.dia}</div>
+                      </div>
+                      <div style={{ flex:1, fontSize:11, color:"#5c3d2e", paddingTop:3, lineHeight:1.4 }}>{item.plan}</div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          )}
         </div>
       )}
 
       {/* ── TAB: PAQUETES ── */}
-      {subTab==="paquetes" && <PaquetesTab filtroVentana={ventana}/>}
+      {subTab==="paquetes" && (
+        <div>
+          {/* Selector de viaje si hay varios */}
+          {viajes.length > 1 && (
+            <div style={{ marginBottom:12 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:"#a07855", marginBottom:6 }}>VIAJE SELECCIONADO</div>
+              {viajes.map(v => (
+                <button key={v.id} onClick={()=>setSelectedViajeId(v.id)} style={{ display:"block", width:"100%", textAlign:"left" as const, background:selectedViaje?.id===v.id?"#c9956a":"#fdf8f3", border:`1.5px solid ${selectedViaje?.id===v.id?"#c9956a":"#e8d5c4"}`, color:selectedViaje?.id===v.id?"#fff":"#a07855", borderRadius:9, padding:"9px 12px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", marginBottom:5 }}>
+                  {v.nombre} — {v.destino} · {v.noches}n · {v.personas} pers.
+                </button>
+              ))}
+            </div>
+          )}
+          <PaquetesTab viajeId={selectedViaje?.id || null} viaje={selectedViaje || null}/>
+        </div>
+      )}
 
       {/* ── TAB: MIS GASTOS ── */}
       {subTab==="gastos" && (
