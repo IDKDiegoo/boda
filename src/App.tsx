@@ -1006,71 +1006,448 @@ function Regalos({ data, setData }: { data:{regalos:Regalo[]}; setData:(d:any)=>
 // ════════════════════════════════════════════════════════════════
 const CATS_LUNA = ["Vuelos","Alojamiento","Actividades","Comidas","Transporte","Seguro","Otro"];
 
+type Destino = "fln" | "bzc";
+type Ventana = "dic" | "ene";
+
+const DESTINOS = {
+  fln: {
+    nombre: "Florianópolis",
+    pais: "Brasil",
+    emoji: "🏝️",
+    descripcion: "Isla tranquila, verano austral perfecto. Menos masivo, ideal para descanso total.",
+    pros: ["Vuelo más corto (3h directa)","Más económica","Verano austral en enero","Playas tranquilas"],
+    contras: ["Más enfocada en jóvenes / vida nocturna","Menos romántica que Búzios"],
+    perfil: "Económica & Tranquila",
+    colorPerfil: "#6aaa96",
+  },
+  bzc: {
+    nombre: "Búzios",
+    pais: "Brasil",
+    emoji: "🌊",
+    descripcion: "El 'St. Tropez de Brasil'. Agua cristalina, ambiente boutique. El destino de pareja por excelencia.",
+    pros: ["Más romántica y boutique","Agua cristalina","Ambiente íntimo de pareja","Rua das Pedras al atardecer"],
+    contras: ["Más cara","Requiere bus de 2.5h desde Río","Sin vuelo directo"],
+    perfil: "Romántica & Premium",
+    colorPerfil: "#c9956a",
+  },
+};
+
+const VENTANAS = {
+  dic: {
+    label: "20–27 Dic 2026",
+    titulo: "Justo después de casarse",
+    descripcion: "Sales el 20 de diciembre, un día después de la boda. Celebras Navidad en Brasil.",
+    alerta: "Temporada ALTA — precios +50% en todo",
+    alertaColor: "#e07070",
+    icon: "🎄",
+  },
+  ene: {
+    label: "10–17 Ene 2027",
+    titulo: "Luna de miel relajada",
+    descripcion: "Disfrutas las fiestas en Chile y sales en enero cuando bajan los precios.",
+    alerta: "Precios normalizados — mejor relación calidad/precio",
+    alertaColor: "#6aaa96",
+    icon: "✨",
+  },
+};
+
+// Presupuestos reales por combinación (pareja, 7 noches)
+const PRESUPUESTOS: Record<Destino, Record<Ventana, {
+  vuelos: { min:number; max:number; aerolinea:string; nota:string; links:{label:string;url:string}[] };
+  hotel:  { min:number; max:number; tipo:string; recomendado:string; nota:string; links:{label:string;url:string}[] };
+  transfer?: { min:number; max:number; nota:string };
+  comida: { min:number; max:number; nota:string };
+  actividades: { min:number; max:number; nota:string };
+  seguro: { min:number; max:number; nota:string };
+  incluido: string[];
+  noIncluido: string[];
+}>> = {
+  fln: {
+    dic: {
+      vuelos:      { min:900000, max:1300000, aerolinea:"LATAM / JetSMART / SKY", nota:"Temporada alta Navidad — comprar en oct 2026", links:[{label:"LATAM",url:"https://www.latamairlines.com/cl/es"},{label:"JetSMART",url:"https://jetsmart.com/cl/es"},{label:"SKY",url:"https://www.skyairline.com/chile"},{label:"Comparar en KAYAK",url:"https://www.kayak.cl/vuelos/Santiago-de-Chile-Aeropuerto-Internacional-Comodoro-Arturo-Merino-Benitez-SCL/Florianopolis-Hercilio-Luz-FLN"}] },
+      hotel:       { min:450000, max:700000, tipo:"Pousada boutique 4★", recomendado:"Pousada Villa Rossa o similar", nota:"7 noches. Precio sube 40% en diciembre", links:[{label:"Booking.com Floripa",url:"https://www.booking.com/searchresults.html?ss=Florian%C3%B3polis"},{label:"Airbnb Floripa",url:"https://www.airbnb.cl/s/Florian%C3%B3polis--Brasil/homes"}] },
+      comida:      { min:250000, max:320000, nota:"~$36.000/día pareja. Restaurantes frente al mar incluidos" },
+      actividades: { min:80000,  max:120000, nota:"Paseo en barco (~$50.000), playas, alquiler bicicleta" },
+      seguro:      { min:60000,  max:90000,  nota:"Recomendado: Assist Card o Heymondo con cancelación" },
+      incluido:    ["1 maleta bodega 23kg c/u (LATAM Light)","Equipaje de mano 8kg","Check-in online","Desayuno en hotel (pousada boutique)","Wi-Fi en hotel","Piscina"],
+      noIncluido:  ["Selección de asiento (LATAM Light: $8-20 USD)","Vuelos de conexión domésticos en Brasil","Excursiones","Cenas en restaurante","Transporte local entre playas"],
+    },
+    ene: {
+      vuelos:      { min:600000, max:900000, aerolinea:"LATAM / JetSMART / SKY", nota:"Mejores precios del año. Comprar en ago-sep 2026", links:[{label:"LATAM",url:"https://www.latamairlines.com/cl/es"},{label:"JetSMART",url:"https://jetsmart.com/cl/es"},{label:"SKY",url:"https://www.skyairline.com/chile"},{label:"Comparar en KAYAK",url:"https://www.kayak.cl/vuelos/Santiago-de-Chile-Aeropuerto-Internacional-Comodoro-Arturo-Merino-Benitez-SCL/Florianopolis-Hercilio-Luz-FLN"}] },
+      hotel:       { min:350000, max:530000, tipo:"Pousada boutique 4★", recomendado:"Pousada Villa Rossa o similar", nota:"7 noches. Enero es temporada baja brasileña para turistas internacionales", links:[{label:"Booking.com Floripa",url:"https://www.booking.com/searchresults.html?ss=Florian%C3%B3polis"},{label:"Airbnb Floripa",url:"https://www.airbnb.cl/s/Florian%C3%B3polis--Brasil/homes"}] },
+      comida:      { min:220000, max:290000, nota:"~$32.000/día pareja" },
+      actividades: { min:70000,  max:100000, nota:"Paseo en barco, snorkeling Lagoa da Conceição, playas" },
+      seguro:      { min:60000,  max:90000,  nota:"Recomendado: Assist Card o Heymondo con cancelación" },
+      incluido:    ["1 maleta bodega 23kg c/u (LATAM Light)","Equipaje de mano 8kg","Desayuno en pousada","Wi-Fi hotel","Piscina"],
+      noIncluido:  ["Selección de asiento","Cenas","Transporte local","Excursiones premium"],
+    },
+  },
+  bzc: {
+    dic: {
+      vuelos:      { min:1000000, max:1400000, aerolinea:"LATAM vía GIG (Río de Janeiro)", nota:"Temporada alta — vuela a Río, luego bus a Búzios", links:[{label:"LATAM a Río",url:"https://www.latamairlines.com/cl/es"},{label:"SKY a Río",url:"https://www.skyairline.com/chile"},{label:"KAYAK SCL→RIO",url:"https://www.kayak.cl/vuelos/Santiago-de-Chile-Aeropuerto-Internacional-Comodoro-Arturo-Merino-Benitez-SCL/Rio-de-Janeiro-RIO"}] },
+      hotel:       { min:700000, max:1100000, tipo:"Hotel boutique 4-5★", recomendado:"Insólito Boutique & Spa", nota:"7 noches. Diciembre es alta temporada en Búzios", links:[{label:"Insólito Hotel",url:"https://www.booking.com/hotel/br/insolito-boutique.html"},{label:"Casas Brancas",url:"https://www.booking.com/hotel/br/casas-brancas-boutique-spa.html"},{label:"Booking Búzios",url:"https://www.booking.com/searchresults.html?ss=B%C3%BAzios"}] },
+      transfer:    { min:100000, max:160000, nota:"Bus/transfer privado GIG→Búzios x2. ~2.5h de viaje" },
+      comida:      { min:280000, max:360000, nota:"~$40.000/día pareja. Restaurantes frente al mar en Rua das Pedras" },
+      actividades: { min:80000,  max:130000, nota:"Escuna por las playas, snorkeling, Rua das Pedras" },
+      seguro:      { min:60000,  max:90000,  nota:"Imprescindible para luna de miel. Assist Card con cancelación" },
+      incluido:    ["Desayuno en hotel boutique","Piscina con vista al mar","Wi-Fi","Playa privada (Insólito)","Spa acceso (Insólito)"],
+      noIncluido:  ["Maleta bodega (agregar online: ~$35-45 USD c/u)","Selección asiento","Transfer aeropuerto","Cenas","Excursiones","Bebidas en hotel"],
+    },
+    ene: {
+      vuelos:      { min:700000, max:1000000, aerolinea:"LATAM vía GIG (Río de Janeiro)", nota:"Post fiestas — los mejores precios del año. Comprar ago-sep 2026", links:[{label:"LATAM a Río",url:"https://www.latamairlines.com/cl/es"},{label:"JetSMART a Río",url:"https://jetsmart.com/cl/es"},{label:"KAYAK SCL→RIO",url:"https://www.kayak.cl/vuelos/Santiago-de-Chile-Aeropuerto-Internacional-Comodoro-Arturo-Merino-Benitez-SCL/Rio-de-Janeiro-RIO"}] },
+      hotel:       { min:500000, max:800000, tipo:"Hotel boutique 4★", recomendado:"Insólito Boutique & Spa", nota:"7 noches. Enero tiene mejor disponibilidad y precios que diciembre", links:[{label:"Insólito Hotel",url:"https://www.booking.com/hotel/br/insolito-boutique.html"},{label:"Casas Brancas",url:"https://www.booking.com/hotel/br/casas-brancas-boutique-spa.html"},{label:"Booking Búzios",url:"https://www.booking.com/searchresults.html?ss=B%C3%BAzios"}] },
+      transfer:    { min:100000, max:160000, nota:"Bus/transfer privado GIG→Búzios x2. Reservar con anticipación" },
+      comida:      { min:250000, max:320000, nota:"~$36.000/día pareja" },
+      actividades: { min:70000,  max:110000, nota:"Escuna, snorkeling, paseo a caballo por las playas" },
+      seguro:      { min:60000,  max:90000,  nota:"Assist Card o Heymondo. Para luna de miel es imprescindible" },
+      incluido:    ["Desayuno en hotel","Piscina","Wi-Fi","Playa privada (Insólito)"],
+      noIncluido:  ["Maleta bodega (agregar online)","Selección asiento","Transfer GIG→Búzios","Cenas","Excursiones"],
+    },
+  },
+};
+
+const ESTRATEGIAS = [
+  { titulo:"Membresía Travel Up JetSMART", ahorro:"Maleta + embarque GRATIS", detalle:"$89.990 CLP con 100% cashback si tienes tarjeta MACHBANK o BCI Black/Signature. Cubre 8 vuelos en 12 meses.", vence:"31 mayo 2026", urgente:true, url:"https://jetsmart.com/cl/es/sites/alianza-bci-machbank-lider" },
+  { titulo:"Tarjeta Santander WorldMember", ahorro:"Maleta gratis en LATAM", detalle:"Nivel 1 del programa: maleta en bodega gratis hasta el 31 dic 2026. WorldMember Limited/Platinum: siempre.", vence:"31 dic 2026", urgente:false, url:"https://www.santander.cl" },
+  { titulo:"BCI Black/Signature", ahorro:"$100.000 CLP en equipaje", detalle:"2 cupones de $50.000 CLP para agregar maleta en LATAM o SKY al comprar por Viajes BCI.", vence:"Anual", urgente:false, url:"https://www.bci.cl/personas/beneficios-viajes-tarjeta-bci" },
+  { titulo:"Banco de Chile Visa Infinite", ahorro:"Maleta gratis en SKY", detalle:"Visa Signature, Infinite o Mastercard Black de Banco de Chile/Edwards incluye maleta gratis en SKY.", vence:"Vigente 2026", urgente:false, url:"https://www.bancochile.cl" },
+  { titulo:"Check-in online 24h antes", ahorro:"Asiento gratis", detalle:"En LATAM y SKY, al abrir el check-in 24h antes aparecen asientos liberados sin costo que no estaban disponibles al comprar.", vence:"Siempre", urgente:false, url:"" },
+  { titulo:"Código JETPACKSALE", ahorro:"15% off paquetes Brasil", detalle:"Aplicar en el pago en JetSMART para paquetes vuelo+hotel a Brasil. Válido durante Hot Sale.", vence:"~13 mayo 2026", urgente:true, url:"https://jetsmart.com/cl/es" },
+];
+
+const POLITICAS = [
+  { aerolinea:"LATAM Light", riesgo:"Medio", color:"#f0a850", resumen:"Cambios con penalización + diferencia tarifaria. Reembolso SOLO de tasas a LATAM Wallet (no a tu banco). No cancelas el pasaje.", consejo:"Agregar seguro de viaje para cubrir cancelaciones." },
+  { aerolinea:"LATAM Plus", riesgo:"Bajo", color:"#6aaa96", resumen:"Cambios con costo. Reembolso parcial REAL a tarjeta de crédito. Mejor opción si hay incertidumbre en las fechas.", consejo:"La mejor tarifa si algo puede cambiar antes del viaje." },
+  { aerolinea:"JetSMART base", riesgo:"Alto", color:"#e07070", resumen:"Sin reembolso de dinero real. Solo Gift Card (crédito aerolínea, no efectivo). Si cancelas pierdes casi todo.", consejo:"Solo si tienes seguro de viaje con cancelación total." },
+  { aerolinea:"SKY Light", riesgo:"Alto", color:"#e07070", resumen:"Sin reembolso de dinero en ninguna tarifa. Solo devuelven tasas de embarque (~15% del valor).", consejo:"Igual que JetSMART — complementar siempre con seguro." },
+];
+
+const ITINERARIO_FLN = [
+  { dia:"Día 1", plan:"Llegada FLN → check-in → atardecer en Lagoa da Conceição" },
+  { dia:"Día 2", plan:"Playa Ferradura — la más cristalina y tranquila de la isla" },
+  { dia:"Día 3", plan:"Paseo en barco por las playas del norte" },
+  { dia:"Día 4", plan:"Día relax total — spa, piscina, sin agenda" },
+  { dia:"Día 5", plan:"Jurerê Internacional — zona más boutique de la isla" },
+  { dia:"Día 6", plan:"Cena romántica frente al mar. Última noche" },
+  { dia:"Día 7", plan:"Checkout → vuelo de regreso a SCL" },
+];
+
+const ITINERARIO_BZC = [
+  { dia:"Día 1", plan:"Llegada GIG → transfer 2.5h → check-in Búzios → descanso" },
+  { dia:"Día 2", plan:"Playa João Fernandes — agua cristalina, snorkeling natural" },
+  { dia:"Día 3", plan:"Escuna por las 27 playas de la península" },
+  { dia:"Día 4", plan:"Día en el hotel — spa, playa privada, relax total" },
+  { dia:"Día 5", plan:"Playa Ferradurinha — la más pintoresca de Búzios" },
+  { dia:"Día 6", plan:"Atardecer en Rua das Pedras + cena romántica frente al mar" },
+  { dia:"Día 7", plan:"Checkout → transfer GIG → vuelo de regreso" },
+];
+
 function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=>void }) {
   const lista = data.items || [];
-  const [form, setForm] = useState<Partial<LunaItem>>({ categoria:"Vuelos" });
-  const [show, setShow] = useState(false);
+  const [subTab, setSubTab]   = useState<"plan"|"budget"|"gastos">("plan");
+  const [destino, setDestino] = useState<Destino>("bzc");
+  const [ventana, setVentana] = useState<Ventana>("ene");
+  const [form, setForm]       = useState<Partial<LunaItem>>({ categoria:"Vuelos" });
+  const [showForm, setShowForm] = useState(false);
+  const [showEstrategia, setShowEstrategia] = useState<number|null>(null);
+  const [showPolitica, setShowPolitica]     = useState<number|null>(null);
+
   const total  = lista.reduce((s,i)=>s+i.monto,0);
   const pagado = lista.filter(i=>i.confirmado).reduce((s,i)=>s+i.monto,0);
 
   const guardar = () => {
     if (!form.descripcion) return;
-    setData({items:[...lista,{id:Date.now(),categoria:form.categoria||"Otro",descripcion:form.descripcion!,monto:Number(form.monto)||0,confirmado:false,notas:form.notas||""}]});
-    setForm({categoria:"Vuelos"}); setShow(false);
+    setData({ items:[...lista,{ id:Date.now(), categoria:form.categoria||"Otro", descripcion:form.descripcion!, monto:Number(form.monto)||0, confirmado:false, notas:form.notas||"" }] });
+    setForm({ categoria:"Vuelos" }); setShowForm(false);
   };
-  const toggle   = (id:number) => setData({items:lista.map(i=>i.id===id?{...i,confirmado:!i.confirmado}:i)});
-  const eliminar = (id:number) => setData({items:lista.filter(i=>i.id!==id)});
+  const toggle   = (id:number) => setData({ items:lista.map(i=>i.id===id?{...i,confirmado:!i.confirmado}:i) });
+  const eliminar = (id:number) => setData({ items:lista.filter(i=>i.id!==id) });
+
+  const d   = DESTINOS[destino];
+  const v   = VENTANAS[ventana];
+  const pre = PRESUPUESTOS[destino][ventana];
+  const itinerario = destino === "fln" ? ITINERARIO_FLN : ITINERARIO_BZC;
+
+  const calcMin = () => pre.vuelos.min + pre.hotel.min + (pre.transfer?.min||0) + pre.comida.min + pre.actividades.min + pre.seguro.min;
+  const calcMax = () => pre.vuelos.max + pre.hotel.max + (pre.transfer?.max||0) + pre.comida.max + pre.actividades.max + pre.seguro.max;
+
+  const TAB_BTN = (id:"plan"|"budget"|"gastos", label:string, icon:string) => (
+    <button onClick={()=>setSubTab(id)} style={{ flex:1, background:subTab===id?"#c9956a":"#fdf8f3", border:`1.5px solid ${subTab===id?"#c9956a":"#e8d5c4"}`, color:subTab===id?"#fff":"#a07855", borderRadius:9, padding:"8px 4px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", flexDirection:"column" as const, alignItems:"center", gap:2 }}>
+      <span style={{ fontSize:16 }}>{icon}</span>{label}
+    </button>
+  );
 
   return (
     <div style={{ animation:"fadeUp .3s ease" }}>
       <Title icon="✈️" title="Luna de Miel"/>
-      <Card style={{ background:"linear-gradient(135deg,#e8f4ff,#d8e8ff)", marginBottom:16 }}>
-        <div style={{ display:"flex", justifyContent:"space-between" }}>
-          <div><div style={{ fontSize:12, color:"#7090c0" }}>Total</div><div style={{ fontSize:24, fontWeight:700, color:"#4070b0" }}>{fmt(total)}</div></div>
-          <div><div style={{ fontSize:12, color:"#7090c0" }}>Confirmado</div><div style={{ fontSize:24, fontWeight:700, color:"#6aaa96" }}>{fmt(pagado)}</div></div>
-        </div>
-      </Card>
-      {show && (
-        <Card style={{ marginBottom:16, border:"2px solid #e8d5c4" }}>
-          <div style={{ fontSize:14, fontWeight:700, color:"#5c3d2e", marginBottom:14 }}>Nuevo ítem</div>
-          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            <Sel value={form.categoria||"Vuelos"} onChange={v=>setForm({...form,categoria:v})} options={CATS_LUNA.map(c=>({value:c,label:c}))}/>
-            <Inp value={form.descripcion||""} onChange={v=>setForm({...form,descripcion:v})} placeholder="Descripción"/>
-            <Inp value={form.monto?.toString()||""} onChange={v=>setForm({...form,monto:Number(v)})} placeholder="Costo ($)" type="number"/>
-            <Inp value={form.notas||""} onChange={v=>setForm({...form,notas:v})} placeholder="Notas (fechas, referencias, etc.)"/>
-          </div>
-          <div style={{ display:"flex", gap:8, marginTop:14 }}>
-            <Btn onClick={guardar}>Guardar</Btn>
-            <Btn onClick={()=>{setShow(false);setForm({categoria:"Vuelos"});}} outline>Cancelar</Btn>
-          </div>
-        </Card>
-      )}
-      {!show && <Btn onClick={()=>setShow(true)} style={{ marginBottom:16 }}>+ Agregar</Btn>}
-      {CATS_LUNA.map(cat=>{
-        const items = lista.filter(i=>i.categoria===cat);
-        if (!items.length) return null;
-        return (
-          <div key={cat} style={{ marginBottom:16 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:"#7090c0", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>{cat}</div>
-            {items.map(i=>(
-              <Card key={i.id} style={{ padding:14, marginBottom:8, background:i.confirmado?"#f0f8f4":"#fff" }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e" }}>{i.descripcion}</div>
-                    {i.notas && <div style={{ fontSize:11, color:"#a07855", marginTop:2 }}>{i.notas}</div>}
-                    <div style={{ fontSize:14, fontWeight:700, color:"#4070b0", marginTop:4 }}>{fmt(i.monto)}</div>
+
+      {/* Sub-tabs */}
+      <div style={{ display:"flex", gap:6, marginBottom:16 }}>
+        {TAB_BTN("plan","Planificador","🗺️")}
+        {TAB_BTN("budget","Presupuesto","💰")}
+        {TAB_BTN("gastos","Mis Gastos","📋")}
+      </div>
+
+      {/* ── TAB: PLANIFICADOR ── */}
+      {subTab==="plan" && (
+        <div>
+          {/* Selector destino */}
+          <div style={{ fontSize:11, fontWeight:700, color:"#a07855", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>Elegir destino</div>
+          <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+            {(["fln","bzc"] as Destino[]).map(id=>{
+              const dest = DESTINOS[id];
+              const sel  = destino === id;
+              return (
+                <button key={id} onClick={()=>setDestino(id)} style={{ flex:1, background:sel?"linear-gradient(135deg,#c9956a,#e8b48a)":"#fff", border:`2px solid ${sel?"#c9956a":"#e8d5c4"}`, borderRadius:12, padding:"12px 8px", cursor:"pointer", fontFamily:"inherit", textAlign:"left" as const, transition:"all .2s" }}>
+                  <div style={{ fontSize:20, marginBottom:4 }}>{dest.emoji}</div>
+                  <div style={{ fontSize:13, fontWeight:700, color:sel?"#fff":"#5c3d2e" }}>{dest.nombre}</div>
+                  <div style={{ fontSize:10, color:sel?"#fde8d0":"#a07855", marginTop:2 }}>{dest.pais}</div>
+                  <div style={{ marginTop:6, background:sel?"rgba(255,255,255,.2)":dest.colorPerfil+"22", borderRadius:6, padding:"2px 6px", display:"inline-block" }}>
+                    <span style={{ fontSize:9, fontWeight:700, color:sel?"#fff":dest.colorPerfil }}>{dest.perfil}</span>
                   </div>
-                  <div style={{ display:"flex", gap:6 }}>
-                    <button onClick={()=>toggle(i.id)} style={{ background:i.confirmado?"#e8f5ec":"none", border:`1px solid ${i.confirmado?"#6aaa96":"#e8d5c4"}`, borderRadius:6, padding:"4px 8px", fontSize:11, color:i.confirmado?"#6aaa96":"#a07855", cursor:"pointer", fontFamily:"inherit" }}>{i.confirmado?"✓":"Confirmar"}</button>
-                    <button onClick={()=>eliminar(i.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Card destino seleccionado */}
+          <Card style={{ background:"linear-gradient(135deg,#fdf0e8,#fae8d8)", marginBottom:16, border:"1.5px solid #e8d5c4" }}>
+            <div style={{ fontSize:22, marginBottom:6 }}>{d.emoji}</div>
+            <div style={{ fontSize:15, fontWeight:700, color:"#5c3d2e", marginBottom:4 }}>{d.nombre}, {d.pais}</div>
+            <div style={{ fontSize:12, color:"#7a5c42", marginBottom:12, lineHeight:1.5 }}>{d.descripcion}</div>
+            <div style={{ display:"flex", gap:8 }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:10, fontWeight:700, color:"#6aaa96", marginBottom:4 }}>LO BUENO</div>
+                {d.pros.map((p,i)=><div key={i} style={{ fontSize:11, color:"#5c3d2e", marginBottom:3 }}>✓ {p}</div>)}
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:10, fontWeight:700, color:"#e07070", marginBottom:4 }}>A TENER EN CUENTA</div>
+                {d.contras.map((c,i)=><div key={i} style={{ fontSize:11, color:"#5c3d2e", marginBottom:3 }}>• {c}</div>)}
+              </div>
+            </div>
+          </Card>
+
+          {/* Selector fechas */}
+          <div style={{ fontSize:11, fontWeight:700, color:"#a07855", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>Elegir fechas</div>
+          <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+            {(["dic","ene"] as Ventana[]).map(id=>{
+              const ven = VENTANAS[id];
+              const sel = ventana === id;
+              return (
+                <button key={id} onClick={()=>setVentana(id)} style={{ flex:1, background:sel?"#fff":"#fdf8f3", border:`2px solid ${sel?"#c9956a":"#e8d5c4"}`, borderRadius:12, padding:"12px 8px", cursor:"pointer", fontFamily:"inherit", textAlign:"left" as const }}>
+                  <div style={{ fontSize:18, marginBottom:4 }}>{ven.icon}</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#5c3d2e" }}>{ven.label}</div>
+                  <div style={{ fontSize:10, color:"#a07855", marginTop:2 }}>{ven.titulo}</div>
+                  <div style={{ marginTop:6, background:ven.alertaColor+"22", borderRadius:6, padding:"3px 6px" }}>
+                    <span style={{ fontSize:9, fontWeight:700, color:ven.alertaColor }}>{ven.alerta}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Resumen rango de precios */}
+          <Card style={{ background:"linear-gradient(135deg,#e8f4ff,#d0e8ff)", marginBottom:16 }}>
+            <div style={{ fontSize:11, color:"#5070a0", fontWeight:700, marginBottom:6 }}>COSTO TOTAL ESTIMADO — PAREJA</div>
+            <div style={{ fontSize:28, fontWeight:700, color:"#3060a0" }}>{fmt(calcMin())} – {fmt(calcMax())}</div>
+            <div style={{ fontSize:11, color:"#7090c0", marginTop:4 }}>Todo incluido: vuelos + hotel 7 noches + comidas + actividades + seguro{pre.transfer?" + transfer":""}</div>
+            <div style={{ marginTop:10, padding:"8px 10px", background:"rgba(255,255,255,.5)", borderRadius:8 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:"#5070a0", marginBottom:4 }}>ESTRATEGIA DE COMPRA</div>
+              <div style={{ fontSize:11, color:"#5070a0" }}>Comprar pasajes en <strong>agosto–septiembre 2026</strong> (90 días antes = precio óptimo). Reservar hotel en octubre.</div>
+            </div>
+          </Card>
+
+          {/* Itinerario */}
+          <div style={{ fontSize:11, fontWeight:700, color:"#a07855", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>Itinerario sugerido — 7 días</div>
+          {itinerario.map((item,i)=>(
+            <div key={i} style={{ display:"flex", gap:10, marginBottom:8, alignItems:"flex-start" }}>
+              <div style={{ minWidth:44, background:"#c9956a22", borderRadius:8, padding:"4px 6px", textAlign:"center" as const }}>
+                <div style={{ fontSize:9, fontWeight:700, color:"#c9956a" }}>{item.dia}</div>
+              </div>
+              <div style={{ flex:1, fontSize:12, color:"#5c3d2e", paddingTop:4, lineHeight:1.4 }}>{item.plan}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── TAB: PRESUPUESTO ── */}
+      {subTab==="budget" && (
+        <div>
+          {/* Selector compacto destino+fecha */}
+          <div style={{ display:"flex", gap:6, marginBottom:14 }}>
+            <select value={destino} onChange={e=>setDestino(e.target.value as Destino)} style={{ flex:1, background:"#fdf8f3", border:"1.5px solid #e8d5c4", borderRadius:9, padding:"8px 10px", fontSize:12, color:"#5c3d2e", fontFamily:"inherit" }}>
+              <option value="fln">Florianópolis</option>
+              <option value="bzc">Búzios</option>
+            </select>
+            <select value={ventana} onChange={e=>setVentana(e.target.value as Ventana)} style={{ flex:1, background:"#fdf8f3", border:"1.5px solid #e8d5c4", borderRadius:9, padding:"8px 10px", fontSize:12, color:"#5c3d2e", fontFamily:"inherit" }}>
+              <option value="dic">20–27 Dic 2026</option>
+              <option value="ene">10–17 Ene 2027</option>
+            </select>
+          </div>
+
+          {/* Desglose ítem por ítem */}
+          {[
+            { icon:"✈️", label:"Vuelos", desc:"Ida + vuelta x2 personas", data:pre.vuelos, extra:pre.vuelos.nota },
+            ...(pre.transfer ? [{ icon:"🚌", label:"Transfer", desc:"Aeropuerto → destino x2", data:pre.transfer, extra:pre.transfer.nota }] : []),
+            { icon:"🏨", label:"Alojamiento", desc:`Hotel 7 noches — ${pre.hotel.tipo}`, data:pre.hotel, extra:pre.hotel.nota },
+            { icon:"🍽️", label:"Comida", desc:"7 días, pareja", data:pre.comida, extra:pre.comida.nota },
+            { icon:"🏄", label:"Actividades", desc:"Excursiones y tours", data:pre.actividades, extra:pre.actividades.nota },
+            { icon:"🛡️", label:"Seguro de viaje", desc:"Cancelación + médico", data:pre.seguro, extra:pre.seguro.nota },
+          ].map((item,i)=>(
+            <Card key={i} style={{ marginBottom:10, padding:14 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                <div style={{ display:"flex", gap:8, flex:1 }}>
+                  <span style={{ fontSize:20 }}>{item.icon}</span>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e" }}>{item.label}</div>
+                    <div style={{ fontSize:11, color:"#a07855" }}>{item.desc}</div>
+                    <div style={{ fontSize:10, color:"#c4a882", marginTop:2, lineHeight:1.4 }}>{item.extra}</div>
                   </div>
                 </div>
-              </Card>
-            ))}
+                <div style={{ textAlign:"right" as const, minWidth:90 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:"#3060a0" }}>{fmt(item.data.min)}</div>
+                  <div style={{ fontSize:10, color:"#7090c0" }}>hasta {fmt(item.data.max)}</div>
+                </div>
+              </div>
+              {"links" in item.data && (item.data as any).links?.length > 0 && (
+                <div style={{ marginTop:10, paddingTop:8, borderTop:"1px solid #f0e8e0" }}>
+                  <div style={{ fontSize:10, fontWeight:700, color:"#a07855", marginBottom:6 }}>COMPRAR AQUÍ:</div>
+                  <div style={{ display:"flex", flexWrap:"wrap" as const, gap:6 }}>
+                    {(item.data as any).links.map((lnk:{label:string;url:string},j:number)=>(
+                      <a key={j} href={lnk.url} target="_blank" rel="noreferrer" style={{ background:"#c9956a", color:"#fff", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, textDecoration:"none" }}>{lnk.label} →</a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Card>
+          ))}
+
+          {/* Total */}
+          <Card style={{ background:"linear-gradient(135deg,#3060a0,#4070c0)", marginBottom:16, padding:16 }}>
+            <div style={{ fontSize:11, color:"#a0c0e8", fontWeight:700, marginBottom:4 }}>TOTAL REAL PAREJA — {d.nombre} · {v.label}</div>
+            <div style={{ fontSize:30, fontWeight:700, color:"#fff" }}>{fmt(calcMin())}</div>
+            <div style={{ fontSize:13, color:"#c0d8f8" }}>hasta {fmt(calcMax())} dependiendo de fechas exactas</div>
+          </Card>
+
+          {/* Qué está incluido */}
+          <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:"#6aaa96", marginBottom:8 }}>QUÉ ESTÁ INCLUIDO</div>
+              {pre.incluido.map((item,i)=>(
+                <div key={i} style={{ fontSize:11, color:"#5c3d2e", marginBottom:5, display:"flex", gap:6 }}>
+                  <span style={{ color:"#6aaa96", fontWeight:700 }}>✓</span>{item}
+                </div>
+              ))}
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:"#e07070", marginBottom:8 }}>QUÉ NO INCLUYE</div>
+              {pre.noIncluido.map((item,i)=>(
+                <div key={i} style={{ fontSize:11, color:"#5c3d2e", marginBottom:5, display:"flex", gap:6 }}>
+                  <span style={{ color:"#e07070" }}>✗</span>{item}
+                </div>
+              ))}
+            </div>
           </div>
-        );
-      })}
-      {lista.length===0 && <div style={{ textAlign:"center", color:"#c4a882", padding:32 }}>Agrega los planes para tu luna de miel ✈️</div>}
+
+          {/* Estrategias de ahorro */}
+          <div style={{ fontSize:11, fontWeight:700, color:"#a07855", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>Estrategias para abaratar</div>
+          {ESTRATEGIAS.map((e,i)=>(
+            <Card key={i} style={{ marginBottom:8, padding:12, border:e.urgente?"2px solid #e07070":"1.5px solid #f0e8e0" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:"flex", gap:6, alignItems:"center", marginBottom:3 }}>
+                    {e.urgente && <span style={{ background:"#e0707022", color:"#e07070", borderRadius:5, padding:"1px 6px", fontSize:9, fontWeight:700 }}>URGENTE</span>}
+                    <div style={{ fontSize:12, fontWeight:700, color:"#5c3d2e" }}>{e.titulo}</div>
+                  </div>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#6aaa96" }}>{e.ahorro}</div>
+                  {showEstrategia===i && <div style={{ fontSize:11, color:"#7a5c42", marginTop:4, lineHeight:1.5 }}>{e.detalle}<br/><span style={{ color:"#a07855" }}>Vence: {e.vence}</span></div>}
+                </div>
+                <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+                  {e.url && <a href={e.url} target="_blank" rel="noreferrer" style={{ background:"#c9956a", color:"#fff", borderRadius:7, padding:"4px 8px", fontSize:10, fontWeight:700, textDecoration:"none" }}>Ver →</a>}
+                  <button onClick={()=>setShowEstrategia(showEstrategia===i?null:i)} style={{ background:"none", border:"1px solid #e8d5c4", borderRadius:7, padding:"4px 8px", fontSize:10, color:"#a07855", cursor:"pointer", fontFamily:"inherit" }}>{showEstrategia===i?"▲":"▼"}</button>
+                </div>
+              </div>
+            </Card>
+          ))}
+
+          {/* Riesgo cancelación */}
+          <div style={{ fontSize:11, fontWeight:700, color:"#a07855", margin:"16px 0 8px", textTransform:"uppercase", letterSpacing:"0.08em" }}>Riesgo si necesitas cancelar</div>
+          {POLITICAS.map((p,i)=>(
+            <Card key={i} style={{ marginBottom:8, padding:12 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:"#5c3d2e" }}>{p.aerolinea}</div>
+                  {showPolitica===i && <div style={{ fontSize:11, color:"#7a5c42", marginTop:4, lineHeight:1.5 }}>{p.resumen}<br/><span style={{ color:p.color, fontWeight:700 }}>Consejo: </span><span>{p.consejo}</span></div>}
+                </div>
+                <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                  <span style={{ background:p.color+"22", color:p.color, borderRadius:6, padding:"3px 8px", fontSize:10, fontWeight:700 }}>{p.riesgo}</span>
+                  <button onClick={()=>setShowPolitica(showPolitica===i?null:i)} style={{ background:"none", border:"1px solid #e8d5c4", borderRadius:7, padding:"4px 8px", fontSize:10, color:"#a07855", cursor:"pointer", fontFamily:"inherit" }}>{showPolitica===i?"▲":"▼"}</button>
+                </div>
+              </div>
+            </Card>
+          ))}
+
+          {/* Consejo final seguro */}
+          <Card style={{ background:"#fdf0e8", border:"1.5px solid #e8d5c4", marginTop:8 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:"#c9956a", marginBottom:4 }}>Recomendación para luna de miel</div>
+            <div style={{ fontSize:11, color:"#7a5c42", lineHeight:1.6 }}>Compra <strong>LATAM Light</strong> (incluye maleta) + <strong>Seguro de viaje con cancelación</strong> (~$70.000 CLP los dos). Esa combinación cubre casi cualquier imprevisto y sale más barato que LATAM Top.</div>
+            <a href="https://www.comparaonline.cl/seguro-viaje" target="_blank" rel="noreferrer" style={{ display:"inline-block", marginTop:8, background:"#c9956a", color:"#fff", borderRadius:8, padding:"6px 14px", fontSize:11, fontWeight:700, textDecoration:"none" }}>Ver seguros de viaje →</a>
+          </Card>
+        </div>
+      )}
+
+      {/* ── TAB: MIS GASTOS ── */}
+      {subTab==="gastos" && (
+        <div>
+          <Card style={{ background:"linear-gradient(135deg,#e8f4ff,#d8e8ff)", marginBottom:16 }}>
+            <div style={{ display:"flex", justifyContent:"space-between" }}>
+              <div><div style={{ fontSize:11, color:"#7090c0" }}>Total registrado</div><div style={{ fontSize:22, fontWeight:700, color:"#4070b0" }}>{fmt(total)}</div></div>
+              <div><div style={{ fontSize:11, color:"#7090c0" }}>Confirmado/Pagado</div><div style={{ fontSize:22, fontWeight:700, color:"#6aaa96" }}>{fmt(pagado)}</div></div>
+            </div>
+          </Card>
+          {showForm && (
+            <Card style={{ marginBottom:16, border:"2px solid #e8d5c4" }}>
+              <div style={{ fontSize:14, fontWeight:700, color:"#5c3d2e", marginBottom:14 }}>Nuevo gasto</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                <Sel value={form.categoria||"Vuelos"} onChange={v=>setForm({...form,categoria:v})} options={CATS_LUNA.map(c=>({value:c,label:c}))}/>
+                <Inp value={form.descripcion||""} onChange={v=>setForm({...form,descripcion:v})} placeholder="Descripción"/>
+                <Inp value={form.monto?.toString()||""} onChange={v=>setForm({...form,monto:Number(v)})} placeholder="Costo ($)" type="number"/>
+                <Inp value={form.notas||""} onChange={v=>setForm({...form,notas:v})} placeholder="Notas (fechas, aerolínea, etc.)"/>
+              </div>
+              <div style={{ display:"flex", gap:8, marginTop:14 }}>
+                <Btn onClick={guardar}>Guardar</Btn>
+                <Btn onClick={()=>{setShowForm(false);setForm({categoria:"Vuelos"});}} outline>Cancelar</Btn>
+              </div>
+            </Card>
+          )}
+          {!showForm && <Btn onClick={()=>setShowForm(true)} style={{ marginBottom:16 }}>+ Agregar gasto</Btn>}
+          {CATS_LUNA.map(cat=>{
+            const items = lista.filter(i=>i.categoria===cat);
+            if (!items.length) return null;
+            return (
+              <div key={cat} style={{ marginBottom:16 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:"#7090c0", marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>{cat}</div>
+                {items.map(i=>(
+                  <Card key={i.id} style={{ padding:14, marginBottom:8, background:i.confirmado?"#f0f8f4":"#fff" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e" }}>{i.descripcion}</div>
+                        {i.notas && <div style={{ fontSize:11, color:"#a07855", marginTop:2 }}>{i.notas}</div>}
+                        <div style={{ fontSize:14, fontWeight:700, color:"#4070b0", marginTop:4 }}>{fmt(i.monto)}</div>
+                      </div>
+                      <div style={{ display:"flex", gap:6 }}>
+                        <button onClick={()=>toggle(i.id)} style={{ background:i.confirmado?"#e8f5ec":"none", border:`1px solid ${i.confirmado?"#6aaa96":"#e8d5c4"}`, borderRadius:6, padding:"4px 8px", fontSize:11, color:i.confirmado?"#6aaa96":"#a07855", cursor:"pointer", fontFamily:"inherit" }}>{i.confirmado?"✓ Pagado":"Confirmar"}</button>
+                        <button onClick={()=>eliminar(i.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            );
+          })}
+          {lista.length===0 && <div style={{ textAlign:"center", color:"#c4a882", padding:32 }}>Aún no hay gastos registrados.<br/>Usa el Presupuesto para planificar ✈️</div>}
+        </div>
+      )}
     </div>
   );
 }
