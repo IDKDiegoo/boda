@@ -2521,15 +2521,83 @@ function CheckList() {
 // BODA CIVIL
 // ════════════════════════════════════════════════════════════════
 type CivilInvitado = { id:number; nombre:string; confirmado:boolean; notas?:string; };
-type CivilGasto    = { id:number; categoria:string; descripcion:string; cantidad:number; unidad:string; precioPorUnidad:number; notas?:string; };
-type CivilData     = { invitados:CivilInvitado[]; gastos:CivilGasto[]; };
+// `monto` = importe total del ítem (lo normal: "Decoración $50.000"). Los campos
+// cantidad/precioPorUnidad quedan opcionales, solo para lo que sí se calcula por kg o
+// por persona; los ítems viejos siguen funcionando porque el total cae a cantidad×precio.
+// `listo` es el tilde: sirve para ir marcando lo que ya está comprado.
+type CivilGasto    = { id:number; categoria:string; descripcion:string; cantidad:number; unidad:string; precioPorUnidad:number; notas?:string; monto?:number; listo?:boolean; };
+type CivilItem     = { id:number; texto:string; listo:boolean };                    // decoración y tips
+type CivilHora     = { id:number; hora:string; actividad:string };                  // cronograma del día
+type CivilTarea    = { id:number; cuando:string; texto:string; listo:boolean };     // checklist por plazo
+type CivilData     = { invitados:CivilInvitado[]; gastos:CivilGasto[]; deco?:CivilItem[]; cronograma?:CivilHora[]; tips?:CivilItem[]; tareas?:CivilTarea[] };
+// Total de un ítem: si tiene monto, manda el monto; si no, cantidad × precio unitario.
+const totalGasto = (g:CivilGasto) => (g.monto != null && g.monto > 0) ? g.monto : (Number(g.cantidad)||0)*(Number(g.precioPorUnidad)||0);
+const PLAZOS_CIVIL = ["2 meses antes","1 mes antes","1 semana antes","2 días antes","El día anterior","El día"];
 
-const CATS_CIVIL  = ["Lugar","Carnes","Acompañamientos","Bebidas","Servicios","Otro"];
+const CATS_CIVIL  = ["Lugar","Carnes","Acompañamientos","Pan","Bebidas","Alcohol","Picoteo","Torta","Insumos","Desechables","Decoración","Servicios","Otro"];
 const UNIDS_CIVIL = ["kg","lt","unid","persona","porción","hora"];
 
 const CAT_ICON_CIVIL: Record<string,string> = {
-  "Lugar":"🏡","Carnes":"🥩","Acompañamientos":"🥗","Bebidas":"🥤","Servicios":"👨‍🍳","Otro":"📦"
+  "Lugar":"🏡","Carnes":"🥩","Acompañamientos":"🥗","Pan":"🥖","Bebidas":"🥤","Alcohol":"🍷",
+  "Picoteo":"🧀","Torta":"🎂","Insumos":"🔥","Desechables":"🧻","Decoración":"🎀","Servicios":"👨‍🍳","Otro":"📦"
 };
+
+// Sugerencia base (40 personas, Chile). Se carga con un botón y después se edita todo:
+// textos, montos y cantidades. No pisa nada de lo que ya haya cargado.
+const SUG_GASTOS_CIVIL: {categoria:string; descripcion:string; monto:number; notas?:string}[] = [
+  { categoria:"Carnes",          descripcion:"Carnes",                     monto:220000, notas:"20–21 kg" },
+  { categoria:"Acompañamientos", descripcion:"Ensaladas y acompañamientos",monto:70000 },
+  { categoria:"Pan",             descripcion:"Pan",                        monto:18000 },
+  { categoria:"Bebidas",         descripcion:"Bebidas y agua",             monto:45000, notas:"Formato 3 L sale más barato" },
+  { categoria:"Alcohol",         descripcion:"Cervezas, vinos y espumantes",monto:120000, notas:"El vino por caja tiene descuento" },
+  { categoria:"Picoteo",         descripcion:"Picoteo",                    monto:45000 },
+  { categoria:"Torta",           descripcion:"Torta",                      monto:80000 },
+  { categoria:"Insumos",         descripcion:"Carbón e hielo",             monto:30000 },
+  { categoria:"Desechables",     descripcion:"Desechables y servilletas",  monto:35000 },
+  { categoria:"Decoración",      descripcion:"Decoración",                 monto:50000 },
+];
+const SUG_DECO_CIVIL = [
+  "Manteles de lino o color crudo",
+  "Flores de estación en frascos de vidrio reciclados",
+  "Guirnaldas de luces cálidas",
+  "Caminos de mesa de yute",
+  "Carteles de madera o acrílico",
+  "Velas LED para la tarde",
+  "Rincón de fotos con arco de madera y flores",
+];
+const SUG_CRONO_CIVIL = [
+  ["13:00","Recepción con jugos, bebidas y picoteo"],
+  ["14:00","Comienza el asado"],
+  ["15:00","Almuerzo"],
+  ["16:30","Brindis y palabras"],
+  ["17:00","Torta y café"],
+  ["17:30","Fotos y juegos"],
+  ["18:30","Música y baile"],
+  ["20:00","Cierre"],
+];
+const SUG_TIPS_CIVIL = [
+  "Comprar la carne en carnicería mayorista o a un distribuidor",
+  "Preferir bebidas en formato de 3 L",
+  "Hacer nosotros el pebre y las ensaladas",
+  "Arrendar la vajilla: suele lucir mejor que los desechables y la diferencia es poca",
+  "Comprar el vino por caja, que tiene descuento",
+];
+const SUG_TAREAS_CIVIL: [string,string][] = [
+  ["2 meses antes","Reservar el lugar"],
+  ["2 meses antes","Definir el menú"],
+  ["2 meses antes","Hacer la lista de invitados"],
+  ["1 mes antes","Comprar decoración"],
+  ["1 mes antes","Encargar la torta"],
+  ["1 mes antes","Confirmar asistencia"],
+  ["1 semana antes","Comprar bebidas y productos no perecibles"],
+  ["1 semana antes","Revisar mesas, sillas y parrilla"],
+  ["2 días antes","Comprar la carne"],
+  ["2 días antes","Comprar verduras y pan"],
+  ["2 días antes","Preparar adobos y aliños"],
+  ["El día anterior","Dejar todo organizado"],
+  ["El día anterior","Enfriar las bebidas"],
+  ["El día anterior","Preparar las mesas"],
+];
 
 function useCivil() {
   const [data, setLocal] = useState<CivilData>({ invitados:[], gastos:[] });
@@ -2549,7 +2617,7 @@ function BodaCivil() {
   const invitados = data.invitados || [];
   const gastos    = data.gastos    || [];
 
-  const [subTab, setSubTab] = useState<"presupuesto"|"invitados">("presupuesto");
+  const [subTab, setSubTab] = useState<"presupuesto"|"checklist"|"programa"|"invitados">("presupuesto");
 
   // ── Invitados ────────────────────────────────────────────────
   const [showFInv, setShowFInv] = useState(false);
@@ -2578,20 +2646,52 @@ function BodaCivil() {
   // ── Gastos ───────────────────────────────────────────────────
   const [showFG,   setShowFG]   = useState(false);
   const [editGId,  setEditGId]  = useState<number|null>(null);
-  const [fG, setFG] = useState({ categoria:"Carnes", descripcion:"", cantidad:"", unidad:"kg", precioPorUnidad:"", notas:"" });
+  const [fG, setFG] = useState({ categoria:"Carnes", descripcion:"", cantidad:"", unidad:"kg", precioPorUnidad:"", notas:"", monto:"" });
+  // "simple" = un monto total (lo habitual). "detalle" = cantidad × precio por unidad.
+  const [modoG, setModoG] = useState<"simple"|"detalle">("simple");
 
-  const totalGeneral = gastos.reduce((s,g)=>s+g.cantidad*g.precioPorUnidad,0);
-  const totalLugar   = gastos.filter(g=>g.categoria==="Lugar").reduce((s,g)=>s+g.cantidad*g.precioPorUnidad,0);
-  const totalComida  = gastos.filter(g=>["Carnes","Acompañamientos","Bebidas"].includes(g.categoria)).reduce((s,g)=>s+g.cantidad*g.precioPorUnidad,0);
-  const totalServ    = gastos.filter(g=>g.categoria==="Servicios").reduce((s,g)=>s+g.cantidad*g.precioPorUnidad,0);
+  const totalGeneral = gastos.reduce((s,g)=>s+totalGasto(g),0);
+  const totalLugar   = gastos.filter(g=>g.categoria==="Lugar").reduce((s,g)=>s+totalGasto(g),0);
+  const totalComida  = gastos.filter(g=>["Carnes","Acompañamientos","Pan","Bebidas","Alcohol","Picoteo","Torta"].includes(g.categoria)).reduce((s,g)=>s+totalGasto(g),0);
+  const totalServ    = gastos.filter(g=>g.categoria==="Servicios").reduce((s,g)=>s+totalGasto(g),0);
+  const totalListo   = gastos.filter(g=>g.listo).reduce((s,g)=>s+totalGasto(g),0);   // lo ya comprado
+  // ── Listas de la organización (decoración, cronograma, tips y checklist) ──
+  const deco   = data.deco   || [];
+  const crono  = data.cronograma || [];
+  const tips   = data.tips   || [];
+  const tareas = data.tareas || [];
+  const hechas = tareas.filter(t=>t.listo).length;
+  const togglear = (campo:"deco"|"tips", id:number) =>
+    guardar({ ...data, [campo]: (data[campo]||[]).map(x=>x.id===id?{...x,listo:!x.listo}:x) });
+  const editarTexto = (campo:"deco"|"tips", id:number, texto:string) =>
+    guardar({ ...data, [campo]: (data[campo]||[]).map(x=>x.id===id?{...x,texto}:x) });
+  const borrarDe = (campo:"deco"|"tips"|"tareas"|"cronograma", id:number) =>
+    guardar({ ...data, [campo]: ((data[campo] as any[]) || []).filter((x:any)=>x.id!==id) });
+  const agregarA = (campo:"deco"|"tips", texto="") =>
+    guardar({ ...data, [campo]: [...(data[campo]||[]), { id:Date.now(), texto, listo:false }] });
+  // Carga la sugerencia SOLO en las secciones que estén vacías (nunca pisa lo cargado)
+  const cargarSugerencia = () => {
+    const base = Date.now();
+    guardar({
+      ...data,
+      gastos:     gastos.length ? gastos : SUG_GASTOS_CIVIL.map((g,i)=>({ id:base+i, categoria:g.categoria, descripcion:g.descripcion, cantidad:0, unidad:"unid", precioPorUnidad:0, monto:g.monto, notas:g.notas||"", listo:false })),
+      deco:       deco.length   ? deco   : SUG_DECO_CIVIL.map((t,i)=>({ id:base+100+i, texto:t, listo:false })),
+      cronograma: crono.length  ? crono  : SUG_CRONO_CIVIL.map((c,i)=>({ id:base+200+i, hora:c[0], actividad:c[1] })),
+      tips:       tips.length   ? tips   : SUG_TIPS_CIVIL.map((t,i)=>({ id:base+300+i, texto:t, listo:false })),
+      tareas:     tareas.length ? tareas : SUG_TAREAS_CIVIL.map((t,i)=>({ id:base+400+i, cuando:t[0], texto:t[1], listo:false })),
+    });
+  };
 
-  const abrirNuevoG = () => { setEditGId(null); setFG({ categoria:"Carnes", descripcion:"", cantidad:"", unidad:"kg", precioPorUnidad:"", notas:"" }); setShowFG(true); };
-  const abrirEditG  = (g: CivilGasto) => { setEditGId(g.id); setFG({ categoria:g.categoria, descripcion:g.descripcion, cantidad:String(g.cantidad), unidad:g.unidad, precioPorUnidad:String(g.precioPorUnidad), notas:g.notas||"" }); setShowFG(true); };
+  const abrirNuevoG = () => { setEditGId(null); setFG({ categoria:"Carnes", descripcion:"", cantidad:"", unidad:"kg", precioPorUnidad:"", notas:"", monto:"" }); setModoG("simple"); setShowFG(true); };
+  const abrirEditG  = (g: CivilGasto) => { setEditGId(g.id); const simple = (g.monto!=null && g.monto>0); setModoG(simple?"simple":"detalle"); setFG({ categoria:g.categoria, descripcion:g.descripcion, cantidad:g.cantidad?String(g.cantidad):"", unidad:g.unidad||"kg", precioPorUnidad:g.precioPorUnidad?String(g.precioPorUnidad):"", notas:g.notas||"", monto:simple?String(g.monto):"" }); setShowFG(true); };
   const cerrarFG    = () => { setShowFG(false); setEditGId(null); };
 
   const guardarGasto = () => {
-    if (!fG.descripcion.trim()||!fG.cantidad||!fG.precioPorUnidad) return;
-    const item = { categoria:fG.categoria, descripcion:fG.descripcion.trim(), cantidad:Number(fG.cantidad), unidad:fG.unidad, precioPorUnidad:Number(fG.precioPorUnidad), notas:fG.notas };
+    if (!fG.descripcion.trim()) return;
+    if (modoG==="simple" ? !fG.monto : (!fG.cantidad || !fG.precioPorUnidad)) return;
+    const item = modoG==="simple"
+      ? { categoria:fG.categoria, descripcion:fG.descripcion.trim(), cantidad:0, unidad:fG.unidad, precioPorUnidad:0, monto:Number(fG.monto), notas:fG.notas }
+      : { categoria:fG.categoria, descripcion:fG.descripcion.trim(), cantidad:Number(fG.cantidad), unidad:fG.unidad, precioPorUnidad:Number(fG.precioPorUnidad), monto:0, notas:fG.notas };
     if (editGId !== null) {
       guardar({ ...data, gastos:gastos.map(g=>g.id===editGId?{...g,...item}:g) });
     } else {
@@ -2605,7 +2705,7 @@ function BodaCivil() {
   const precioArriendo = 8000;
   const sugerenciaLugar = (confirmados || invitados.length || 37) * precioArriendo;
 
-  const SUB = (id:"presupuesto"|"invitados", label:string, icon:string) => (
+  const SUB = (id:"presupuesto"|"checklist"|"programa"|"invitados", label:string, icon:string) => (
     <button onClick={()=>setSubTab(id)} style={{ flex:1, background:subTab===id?"#c9956a":"#fdf8f3", border:`1.5px solid ${subTab===id?"#c9956a":"#e8d5c4"}`, color:subTab===id?"#fff":"#a07855", borderRadius:9, padding:"8px 4px", fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", flexDirection:"column" as const, alignItems:"center", gap:2 }}>
       <span style={{ fontSize:15 }}>{icon}</span>{label}
     </button>
@@ -2618,10 +2718,25 @@ function BodaCivil() {
       {/* Sub-tabs */}
       <div style={{ display:"flex", gap:5, marginBottom:16 }}>
         {SUB("presupuesto","Presupuesto","💰")}
+        {SUB("checklist","Checklist","✅")}
+        {SUB("programa","Programa","🕐")}
         {SUB("invitados","Invitados","👥")}
       </div>
 
       {/* ══ PRESUPUESTO ══ */}
+      {(gastos.length===0 && deco.length===0 && tareas.length===0) && (
+        <Card style={{ background:"#fff8f0", marginBottom:14, border:"1px dashed #e8c8a0" }}>
+          <div style={{ fontSize:12, fontWeight:800, color:"#c9956a", marginBottom:4 }}>✨ Empezar con una base</div>
+          <div style={{ fontSize:11, color:"#a07855", lineHeight:1.5, marginBottom:10 }}>
+            Carga un presupuesto estimado para 40 personas, ideas de decoración, el programa del día,
+            tips para ahorrar y el checklist por plazos. <strong>Después editás todo</strong>: textos, montos y cantidades.
+          </div>
+          <button onClick={cargarSugerencia} style={{ background:"#c9956a", color:"#fff", border:"none", borderRadius:9, padding:"11px 16px", fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:"inherit", width:"100%" }}>
+            Cargar sugerencia
+          </button>
+        </Card>
+      )}
+
       {subTab==="presupuesto" && (
         <div>
           {/* Resumen */}
@@ -2633,6 +2748,18 @@ function BodaCivil() {
               <div style={{ fontSize:10, color:"#a07855" }}>🍽️ Comida: <strong>{fmt(totalComida)}</strong></div>
               <div style={{ fontSize:10, color:"#a07855" }}>👨‍🍳 Servicios: <strong>{fmt(totalServ)}</strong></div>
             </div>
+            {/* Avance de compras: lo tildado sobre el total */}
+            {gastos.length>0 && (
+              <div style={{ marginTop:10 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:"#8c4820", fontWeight:700, marginBottom:4 }}>
+                  <span>✓ Ya comprado: {fmt(totalListo)}</span>
+                  <span>Falta: {fmt(Math.max(0,totalGeneral-totalListo))}</span>
+                </div>
+                <div style={{ height:8, background:"#fff", borderRadius:5, overflow:"hidden" }}>
+                  <div style={{ height:"100%", width:`${totalGeneral?Math.round(totalListo/totalGeneral*100):0}%`, background:"#7aa87a", borderRadius:5, transition:"width .3s ease" }}/>
+                </div>
+              </div>
+            )}
             <div style={{ fontSize:10, color:"#c4a882", marginTop:8 }}>
               {invitados.length} invitados · {confirmados} confirmados
             </div>
@@ -2669,20 +2796,31 @@ function BodaCivil() {
               <div style={{ display:"flex", flexDirection:"column" as const, gap:9 }}>
                 <Sel value={fG.categoria} onChange={v=>setFG({...fG,categoria:v})} options={CATS_CIVIL.map(c=>({value:c,label:`${CAT_ICON_CIVIL[c]} ${c}`}))}/>
                 <Inp value={fG.descripcion} onChange={v=>setFG({...fG,descripcion:v})} placeholder="Descripción (ej: Lomo vetado, Arroz, Gaseosas)"/>
-                <div style={{ display:"flex", gap:8 }}>
-                  <div style={{ flex:1 }}>
-                    <Inp value={fG.cantidad} onChange={v=>setFG({...fG,cantidad:v})} placeholder="Cantidad" type="number"/>
-                  </div>
-                  <div style={{ flex:1 }}>
-                    <Sel value={fG.unidad} onChange={v=>setFG({...fG,unidad:v})} options={UNIDS_CIVIL.map(u=>({value:u,label:u}))}/>
-                  </div>
+                {/* La mayoría de los ítems son un monto y punto ("Decoración $50.000").
+                    El cálculo por cantidad queda para lo que sí se compra por kg o por persona. */}
+                <div style={{ display:"flex", gap:5, background:"#fdf8f3", border:"1.5px solid #e8d5c4", borderRadius:9, padding:4 }}>
+                  {([["simple","Monto total"],["detalle","Por cantidad"]] as const).map(([m,l])=>(
+                    <button key={m} onClick={()=>setModoG(m)} style={{ flex:1, background:modoG===m?"#c9956a":"transparent", color:modoG===m?"#fff":"#a07855", border:"none", borderRadius:7, padding:"8px 4px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>{l}</button>
+                  ))}
                 </div>
-                <Inp value={fG.precioPorUnidad} onChange={v=>setFG({...fG,precioPorUnidad:v})} placeholder={`Precio por ${fG.unidad} ($)`} type="number"/>
-                {fG.cantidad && fG.precioPorUnidad && (
-                  <div style={{ background:"#fdf0e8", borderRadius:8, padding:"8px 12px", fontSize:12, fontWeight:700, color:"#c9956a" }}>
-                    Total: {fmt(Number(fG.cantidad)*Number(fG.precioPorUnidad))}
+                {modoG==="simple" ? (
+                  <Inp value={fG.monto} onChange={v=>setFG({...fG,monto:v})} placeholder="Monto ($)" type="number"/>
+                ) : (<>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <div style={{ flex:1 }}>
+                      <Inp value={fG.cantidad} onChange={v=>setFG({...fG,cantidad:v})} placeholder="Cantidad" type="number"/>
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <Sel value={fG.unidad} onChange={v=>setFG({...fG,unidad:v})} options={UNIDS_CIVIL.map(u=>({value:u,label:u}))}/>
+                    </div>
                   </div>
-                )}
+                  <Inp value={fG.precioPorUnidad} onChange={v=>setFG({...fG,precioPorUnidad:v})} placeholder={`Precio por ${fG.unidad} ($)`} type="number"/>
+                  {fG.cantidad && fG.precioPorUnidad && (
+                    <div style={{ background:"#fdf0e8", borderRadius:8, padding:"8px 12px", fontSize:12, fontWeight:700, color:"#c9956a" }}>
+                      Total: {fmt(Number(fG.cantidad)*Number(fG.precioPorUnidad))}
+                    </div>
+                  )}
+                </>)}
                 <Inp value={fG.notas} onChange={v=>setFG({...fG,notas:v})} placeholder="Notas (opcional)"/>
               </div>
               <div style={{ display:"flex", gap:8, marginTop:12 }}>
@@ -2702,7 +2840,7 @@ function BodaCivil() {
           {CATS_CIVIL.map(cat=>{
             const items = gastos.filter(g=>g.categoria===cat);
             if (!items.length) return null;
-            const subtotal = items.reduce((s,g)=>s+g.cantidad*g.precioPorUnidad,0);
+            const subtotal = items.reduce((s,g)=>s+totalGasto(g),0);
             return (
               <div key={cat} style={{ marginBottom:20 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
@@ -2712,15 +2850,21 @@ function BodaCivil() {
                   <div style={{ fontSize:12, fontWeight:700, color:"#c9956a" }}>{fmt(subtotal)}</div>
                 </div>
                 {items.map(g=>{
-                  const total = g.cantidad * g.precioPorUnidad;
+                  const total = totalGasto(g);
+                  const porCantidad = !(g.monto != null && g.monto > 0) && g.cantidad > 0;
                   return (
-                    <Card key={g.id} style={{ padding:12, marginBottom:8 }}>
+                    <Card key={g.id} style={{ padding:12, marginBottom:8, opacity:g.listo?0.62:1 }}>
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
-                        <div style={{ flex:1 }}>
-                          <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e" }}>{g.descripcion}</div>
-                          <div style={{ fontSize:11, color:"#a07855", marginTop:2 }}>
-                            {g.cantidad} {g.unidad} × {fmt(g.precioPorUnidad)}/{g.unidad}
-                          </div>
+                        {/* Tilde para ir marcando lo que YA está comprado */}
+                        <button onClick={()=>guardar({ ...data, gastos:gastos.map(x=>x.id===g.id?{...x,listo:!x.listo}:x) })}
+                          style={{ width:26, height:26, flexShrink:0, marginTop:1, borderRadius:8, cursor:"pointer", background:g.listo?"#7aa87a":"#fff", border:`2px solid ${g.listo?"#7aa87a":"#e8d5c4"}`, color:"#fff", fontSize:14, fontWeight:900, lineHeight:1, fontFamily:"inherit" }}>{g.listo?"✓":""}</button>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", textDecoration:g.listo?"line-through":"none" }}>{g.descripcion}</div>
+                          {porCantidad && (
+                            <div style={{ fontSize:11, color:"#a07855", marginTop:2 }}>
+                              {g.cantidad} {g.unidad} × {fmt(g.precioPorUnidad)}/{g.unidad}
+                            </div>
+                          )}
                           {g.notas && <div style={{ fontSize:10, color:"#c4a882", marginTop:2 }}>{g.notas}</div>}
                         </div>
                         <div style={{ textAlign:"right" as const, flexShrink:0 }}>
@@ -2741,6 +2885,105 @@ function BodaCivil() {
       )}
 
       {/* ══ INVITADOS ══ */}
+      {/* ── CHECKLIST: tareas por plazo + decoración + tips, todo tildeable ── */}
+      {subTab==="checklist" && (
+        <div>
+          <Card style={{ background:"linear-gradient(135deg,#fdf0e8,#fae0cc)", marginBottom:14 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:"#8c4820", letterSpacing:"0.06em", marginBottom:6 }}>ORGANIZACIÓN</div>
+            <div style={{ fontSize:26, fontWeight:900, color:"#c9956a" }}>{hechas}<span style={{ fontSize:15, color:"#a07855" }}> / {tareas.length}</span></div>
+            <div style={{ height:8, background:"#fff", borderRadius:5, overflow:"hidden", marginTop:8 }}>
+              <div style={{ height:"100%", width:`${tareas.length?Math.round(hechas/tareas.length*100):0}%`, background:"#c9956a", borderRadius:5, transition:"width .3s ease" }}/>
+            </div>
+            <div style={{ fontSize:10, color:"#a07855", marginTop:6 }}>Tocá cada tarea para marcarla lista</div>
+          </Card>
+
+          {PLAZOS_CIVIL.filter(pl=>tareas.some(t=>t.cuando===pl)).map(pl=>{
+            const ts = tareas.filter(t=>t.cuando===pl);
+            return (
+              <Card key={pl} style={{ marginBottom:12 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                  <div style={{ fontSize:12, fontWeight:800, color:"#8c4820", flex:1 }}>{pl}</div>
+                  <div style={{ fontSize:10, color:"#c4a882" }}>{ts.filter(t=>t.listo).length}/{ts.length}</div>
+                </div>
+                {ts.map(t=>(
+                  <div key={t.id} style={{ display:"flex", alignItems:"center", gap:9, padding:"9px 0", borderTop:"1px solid #f4e6d8" }}>
+                    <button onClick={()=>guardar({ ...data, tareas:tareas.map(x=>x.id===t.id?{...x,listo:!x.listo}:x) })}
+                      style={{ width:26, height:26, flexShrink:0, borderRadius:8, cursor:"pointer", background:t.listo?"#c9956a":"#fff", border:`2px solid ${t.listo?"#c9956a":"#e8d5c4"}`, color:"#fff", fontSize:14, fontWeight:900, lineHeight:1, fontFamily:"inherit" }}>{t.listo?"✓":""}</button>
+                    <input value={t.texto} onChange={e=>guardar({ ...data, tareas:tareas.map(x=>x.id===t.id?{...x,texto:e.target.value}:x) })}
+                      style={{ flex:1, minWidth:0, border:"none", background:"transparent", fontSize:12.5, color:t.listo?"#c4a882":"#6b4423", textDecoration:t.listo?"line-through":"none", fontFamily:"inherit", outline:"none", padding:0 }}/>
+                    <button onClick={()=>borrarDe("tareas",t.id)} style={{ background:"none", border:"none", color:"#e0c0a0", fontSize:15, cursor:"pointer", padding:"0 2px", fontFamily:"inherit" }}>✕</button>
+                  </div>
+                ))}
+                <button onClick={()=>guardar({ ...data, tareas:[...tareas,{ id:Date.now(), cuando:pl, texto:"", listo:false }] })}
+                  style={{ marginTop:8, background:"#fdf8f3", border:"1.5px dashed #e8d5c4", color:"#a07855", borderRadius:8, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", width:"100%" }}>+ Agregar tarea</button>
+              </Card>
+            );
+          })}
+          {tareas.length===0 && (
+            <Card style={{ marginBottom:12, textAlign:"center" as const }}>
+              <div style={{ fontSize:11, color:"#a07855", marginBottom:10 }}>Todavía no hay tareas cargadas.</div>
+              <button onClick={cargarSugerencia} style={{ background:"#c9956a", color:"#fff", border:"none", borderRadius:9, padding:"10px 16px", fontSize:11.5, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>Cargar checklist sugerido</button>
+            </Card>
+          )}
+
+          {/* Decoración */}
+          <Card style={{ marginBottom:12 }}>
+            <div style={{ fontSize:12, fontWeight:800, color:"#8c4820", marginBottom:8 }}>🎀 Decoración campestre</div>
+            {deco.map(d=>(
+              <div key={d.id} style={{ display:"flex", alignItems:"center", gap:9, padding:"9px 0", borderTop:"1px solid #f4e6d8" }}>
+                <button onClick={()=>togglear("deco",d.id)} style={{ width:26, height:26, flexShrink:0, borderRadius:8, cursor:"pointer", background:d.listo?"#c9956a":"#fff", border:`2px solid ${d.listo?"#c9956a":"#e8d5c4"}`, color:"#fff", fontSize:14, fontWeight:900, lineHeight:1, fontFamily:"inherit" }}>{d.listo?"✓":""}</button>
+                <input value={d.texto} onChange={e=>editarTexto("deco",d.id,e.target.value)}
+                  style={{ flex:1, minWidth:0, border:"none", background:"transparent", fontSize:12.5, color:d.listo?"#c4a882":"#6b4423", textDecoration:d.listo?"line-through":"none", fontFamily:"inherit", outline:"none", padding:0 }}/>
+                <button onClick={()=>borrarDe("deco",d.id)} style={{ background:"none", border:"none", color:"#e0c0a0", fontSize:15, cursor:"pointer", padding:"0 2px", fontFamily:"inherit" }}>✕</button>
+              </div>
+            ))}
+            <button onClick={()=>agregarA("deco")} style={{ marginTop:8, background:"#fdf8f3", border:"1.5px dashed #e8d5c4", color:"#a07855", borderRadius:8, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", width:"100%" }}>+ Agregar idea</button>
+          </Card>
+
+          {/* Tips para ahorrar */}
+          <Card>
+            <div style={{ fontSize:12, fontWeight:800, color:"#8c4820", marginBottom:8 }}>💡 Para ahorrar sin que se note</div>
+            {tips.map(t=>(
+              <div key={t.id} style={{ display:"flex", alignItems:"center", gap:9, padding:"9px 0", borderTop:"1px solid #f4e6d8" }}>
+                <button onClick={()=>togglear("tips",t.id)} style={{ width:26, height:26, flexShrink:0, borderRadius:8, cursor:"pointer", background:t.listo?"#c9956a":"#fff", border:`2px solid ${t.listo?"#c9956a":"#e8d5c4"}`, color:"#fff", fontSize:14, fontWeight:900, lineHeight:1, fontFamily:"inherit" }}>{t.listo?"✓":""}</button>
+                <input value={t.texto} onChange={e=>editarTexto("tips",t.id,e.target.value)}
+                  style={{ flex:1, minWidth:0, border:"none", background:"transparent", fontSize:12.5, color:t.listo?"#c4a882":"#6b4423", textDecoration:t.listo?"line-through":"none", fontFamily:"inherit", outline:"none", padding:0 }}/>
+                <button onClick={()=>borrarDe("tips",t.id)} style={{ background:"none", border:"none", color:"#e0c0a0", fontSize:15, cursor:"pointer", padding:"0 2px", fontFamily:"inherit" }}>✕</button>
+              </div>
+            ))}
+            <button onClick={()=>agregarA("tips")} style={{ marginTop:8, background:"#fdf8f3", border:"1.5px dashed #e8d5c4", color:"#a07855", borderRadius:8, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", width:"100%" }}>+ Agregar tip</button>
+          </Card>
+        </div>
+      )}
+
+      {/* ── PROGRAMA DEL DÍA: hora + actividad, editable ── */}
+      {subTab==="programa" && (
+        <div>
+          <Card style={{ marginBottom:12 }}>
+            <div style={{ fontSize:12, fontWeight:800, color:"#8c4820", marginBottom:4 }}>🕐 Cronograma del día</div>
+            <div style={{ fontSize:10.5, color:"#a07855", marginBottom:10 }}>Tocá la hora o el texto para editarlos.</div>
+            {[...crono].sort((a,b)=>String(a.hora).localeCompare(String(b.hora))).map(c=>(
+              <div key={c.id} style={{ display:"flex", alignItems:"center", gap:9, padding:"9px 0", borderTop:"1px solid #f4e6d8" }}>
+                <input value={c.hora} onChange={e=>guardar({ ...data, cronograma:crono.map(x=>x.id===c.id?{...x,hora:e.target.value}:x) })}
+                  style={{ width:62, flexShrink:0, border:"1.5px solid #e8d5c4", borderRadius:7, background:"#fdf8f3", fontSize:12, fontWeight:800, color:"#c9956a", fontFamily:"inherit", outline:"none", padding:"6px 4px", textAlign:"center" as const }}/>
+                <input value={c.actividad} onChange={e=>guardar({ ...data, cronograma:crono.map(x=>x.id===c.id?{...x,actividad:e.target.value}:x) })}
+                  style={{ flex:1, minWidth:0, border:"none", background:"transparent", fontSize:12.5, color:"#6b4423", fontFamily:"inherit", outline:"none", padding:0 }}/>
+                <button onClick={()=>borrarDe("cronograma",c.id)} style={{ background:"none", border:"none", color:"#e0c0a0", fontSize:15, cursor:"pointer", padding:"0 2px", fontFamily:"inherit" }}>✕</button>
+              </div>
+            ))}
+            <button onClick={()=>guardar({ ...data, cronograma:[...crono,{ id:Date.now(), hora:"00:00", actividad:"" }] })}
+              style={{ marginTop:8, background:"#fdf8f3", border:"1.5px dashed #e8d5c4", color:"#a07855", borderRadius:8, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", width:"100%" }}>+ Agregar horario</button>
+          </Card>
+          {crono.length===0 && (
+            <Card style={{ textAlign:"center" as const }}>
+              <div style={{ fontSize:11, color:"#a07855", marginBottom:10 }}>Sin cronograma todavía.</div>
+              <button onClick={cargarSugerencia} style={{ background:"#c9956a", color:"#fff", border:"none", borderRadius:9, padding:"10px 16px", fontSize:11.5, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>Cargar programa sugerido</button>
+            </Card>
+          )}
+        </div>
+      )}
+
+
       {subTab==="invitados" && (
         <div>
           {/* Resumen */}
