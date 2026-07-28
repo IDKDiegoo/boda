@@ -2526,12 +2526,28 @@ type CivilInvitado = { id:number; nombre:string; confirmado:boolean; notas?:stri
 // por persona; los ítems viejos siguen funcionando porque el total cae a cantidad×precio.
 // `listo` es el tilde: sirve para ir marcando lo que ya está comprado.
 type CivilGasto    = { id:number; categoria:string; descripcion:string; cantidad:number; unidad:string; precioPorUnidad:number; notas?:string; monto?:number; listo?:boolean; };
-type CivilItem     = { id:number; texto:string; listo:boolean };                    // decoración y tips
+type CivilItem     = { id:number; texto:string; listo:boolean; fotos?:string[] };    // decoración y tips
 type CivilHora     = { id:number; hora:string; actividad:string };                  // cronograma del día
-type CivilTarea    = { id:number; cuando:string; texto:string; listo:boolean };     // checklist por plazo
+type CivilTarea    = { id:number; cuando:string; texto:string; listo:boolean; fotos?:string[] };  // checklist por plazo
 type CivilData     = { invitados:CivilInvitado[]; gastos:CivilGasto[]; deco?:CivilItem[]; cronograma?:CivilHora[]; tips?:CivilItem[]; tareas?:CivilTarea[] };
 // Total de un ítem: si tiene monto, manda el monto; si no, cantidad × precio unitario.
 const totalGasto = (g:CivilGasto) => (g.monto != null && g.monto > 0) ? g.monto : (Number(g.cantidad)||0)*(Number(g.precioPorUnidad)||0);
+// Comprime una imagen antes de subirla (las fotos del celular pesan varios MB).
+const comprimirImg = (file: File): Promise<Blob> => new Promise((resolve, reject) => {
+  const img = new Image();
+  img.onload = () => {
+    const MAX = 1280;
+    const r = Math.min(MAX/img.naturalWidth, MAX/img.naturalHeight, 1);
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(img.naturalWidth*r));
+    c.height = Math.max(1, Math.round(img.naturalHeight*r));
+    c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+    c.toBlob(b => b ? resolve(b) : reject(new Error("No se pudo procesar la imagen")), "image/jpeg", 0.82);
+    URL.revokeObjectURL(img.src);
+  };
+  img.onerror = () => reject(new Error("No se pudo cargar la imagen"));
+  img.src = URL.createObjectURL(file);
+});
 const PLAZOS_CIVIL = ["2 meses antes","1 mes antes","1 semana antes","2 días antes","El día anterior","El día"];
 
 const CATS_CIVIL  = ["Lugar","Carnes","Acompañamientos","Pan","Bebidas","Alcohol","Picoteo","Torta","Insumos","Desechables","Decoración","Servicios","Otro"];
@@ -2670,6 +2686,59 @@ function BodaCivil() {
   const agregarA = (campo:"deco"|"tips", texto="") =>
     guardar({ ...data, [campo]: [...(data[campo]||[]), { id:Date.now(), texto, listo:false }] });
   // Carga la sugerencia SOLO en las secciones que estén vacías (nunca pisa lo cargado)
+  // ── Fotos en el checklist (tareas y decoración) ──
+  const [subiendoFoto, setSubiendoFoto] = useState<number|null>(null);   // id del item que está subiendo
+  const [zoomFoto, setZoomFoto]         = useState<string|null>(null);   // foto abierta a pantalla completa
+  const fotoDestino = useRef<{campo:"tareas"|"deco"|"tips"; id:number}|null>(null);
+  const fotoInputRef = useRef<HTMLInputElement|null>(null);
+
+  const pedirFoto = (campo:"tareas"|"deco"|"tips", id:number) => {
+    fotoDestino.current = { campo, id };
+    fotoInputRef.current?.click();
+  };
+  const onFotoElegida = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []); e.target.value = "";
+    const dest = fotoDestino.current; fotoDestino.current = null;
+    if (!files.length || !dest) return;
+    setSubiendoFoto(dest.id);
+    try {
+      const urls: string[] = [];
+      for (const f of files) {
+        const blob = await comprimirImg(f);
+        const r = ref(stor, `boda-civil/${dest.campo}_${dest.id}_${Date.now()}_${urls.length}.jpg`);
+        await uploadBytes(r, blob, { contentType:"image/jpeg" });
+        urls.push(await getDownloadURL(r));
+      }
+      const lista = ((data[dest.campo] as any[]) || []).map((x:any) =>
+        x.id === dest.id ? { ...x, fotos:[...(x.fotos||[]), ...urls] } : x);
+      await guardar({ ...data, [dest.campo]: lista });
+    } catch (err:any) { alert("No se pudo subir la foto: " + (err?.message || "error")); }
+    finally { setSubiendoFoto(null); }
+  };
+  const quitarFoto = (campo:"tareas"|"deco"|"tips", id:number, url:string) => {
+    // Se saca de la lista; el archivo queda en Storage (no se borra por si está en otro item)
+    const lista = ((data[campo] as any[]) || []).map((x:any) =>
+      x.id === id ? { ...x, fotos:(x.fotos||[]).filter((u:string)=>u!==url) } : x);
+    guardar({ ...data, [campo]: lista });
+  };
+  // Tira de miniaturas + botón de agregar. Tamaño intermedio: se ve qué es sin comerse la pantalla.
+  const fotosDe = (campo:"tareas"|"deco"|"tips", item:{id:number; fotos?:string[]}) => (
+    <div style={{ display:"flex", gap:6, flexWrap:"wrap" as const, alignItems:"center", marginTop:7, paddingLeft:35 }}>
+      {(item.fotos||[]).map(u=>(
+        <div key={u} style={{ position:"relative" as const }}>
+          <img src={u} alt="" onClick={()=>setZoomFoto(u)} loading="lazy"
+            style={{ width:68, height:68, objectFit:"cover" as const, borderRadius:9, border:"1.5px solid #e8d5c4", cursor:"pointer", display:"block" }}/>
+          <button onClick={()=>quitarFoto(campo,item.id,u)}
+            style={{ position:"absolute" as const, top:-6, right:-6, width:21, height:21, borderRadius:"50%", background:"#e07070", border:"2px solid #fff", color:"#fff", fontSize:10, fontWeight:900, cursor:"pointer", lineHeight:1, fontFamily:"inherit", padding:0 }}>✕</button>
+        </div>
+      ))}
+      <button onClick={()=>pedirFoto(campo,item.id)} disabled={subiendoFoto===item.id}
+        style={{ width:68, height:68, borderRadius:9, background:"#fdf8f3", border:"1.5px dashed #e8d5c4", color:"#c9956a", fontSize:subiendoFoto===item.id?10:19, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column" as const, gap:2, padding:0 }}>
+        {subiendoFoto===item.id ? "subiendo…" : <>📷<span style={{ fontSize:8.5, fontWeight:700 }}>Foto</span></>}
+      </button>
+    </div>
+  );
+
   const cargarSugerencia = () => {
     const base = Date.now();
     guardar({
@@ -2714,6 +2783,15 @@ function BodaCivil() {
   return (
     <div style={{ animation:"fadeUp .3s ease" }}>
       <Title icon="💒" title="Boda Civil"/>
+      <input ref={fotoInputRef} type="file" accept="image/*" multiple onChange={onFotoElegida} style={{ display:"none" }}/>
+      {zoomFoto && (
+        <div onClick={()=>setZoomFoto(null)}
+          style={{ position:"fixed" as const, inset:0, background:"rgba(0,0,0,.9)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <img src={zoomFoto} alt="" style={{ maxWidth:"100%", maxHeight:"100%", borderRadius:10 }}/>
+          <button onClick={()=>setZoomFoto(null)}
+            style={{ position:"absolute" as const, top:16, right:16, width:38, height:38, borderRadius:"50%", background:"rgba(0,0,0,.55)", border:"none", color:"#fff", fontSize:18, cursor:"pointer", fontFamily:"inherit" }}>✕</button>
+        </div>
+      )}
 
       {/* Sub-tabs */}
       <div style={{ display:"flex", gap:5, marginBottom:16 }}>
@@ -2906,12 +2984,15 @@ function BodaCivil() {
                   <div style={{ fontSize:10, color:"#c4a882" }}>{ts.filter(t=>t.listo).length}/{ts.length}</div>
                 </div>
                 {ts.map(t=>(
-                  <div key={t.id} style={{ display:"flex", alignItems:"center", gap:9, padding:"9px 0", borderTop:"1px solid #f4e6d8" }}>
+                  <div key={t.id} style={{ padding:"9px 0", borderTop:"1px solid #f4e6d8" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:9 }}>
                     <button onClick={()=>guardar({ ...data, tareas:tareas.map(x=>x.id===t.id?{...x,listo:!x.listo}:x) })}
                       style={{ width:26, height:26, flexShrink:0, borderRadius:8, cursor:"pointer", background:t.listo?"#c9956a":"#fff", border:`2px solid ${t.listo?"#c9956a":"#e8d5c4"}`, color:"#fff", fontSize:14, fontWeight:900, lineHeight:1, fontFamily:"inherit" }}>{t.listo?"✓":""}</button>
                     <input value={t.texto} onChange={e=>guardar({ ...data, tareas:tareas.map(x=>x.id===t.id?{...x,texto:e.target.value}:x) })}
                       style={{ flex:1, minWidth:0, border:"none", background:"transparent", fontSize:12.5, color:t.listo?"#c4a882":"#6b4423", textDecoration:t.listo?"line-through":"none", fontFamily:"inherit", outline:"none", padding:0 }}/>
                     <button onClick={()=>borrarDe("tareas",t.id)} style={{ background:"none", border:"none", color:"#e0c0a0", fontSize:15, cursor:"pointer", padding:"0 2px", fontFamily:"inherit" }}>✕</button>
+                  </div>
+                  {fotosDe("tareas", t)}
                   </div>
                 ))}
                 <button onClick={()=>guardar({ ...data, tareas:[...tareas,{ id:Date.now(), cuando:pl, texto:"", listo:false }] })}
@@ -2930,11 +3011,14 @@ function BodaCivil() {
           <Card style={{ marginBottom:12 }}>
             <div style={{ fontSize:12, fontWeight:800, color:"#8c4820", marginBottom:8 }}>🎀 Decoración campestre</div>
             {deco.map(d=>(
-              <div key={d.id} style={{ display:"flex", alignItems:"center", gap:9, padding:"9px 0", borderTop:"1px solid #f4e6d8" }}>
+              <div key={d.id} style={{ padding:"9px 0", borderTop:"1px solid #f4e6d8" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:9 }}>
                 <button onClick={()=>togglear("deco",d.id)} style={{ width:26, height:26, flexShrink:0, borderRadius:8, cursor:"pointer", background:d.listo?"#c9956a":"#fff", border:`2px solid ${d.listo?"#c9956a":"#e8d5c4"}`, color:"#fff", fontSize:14, fontWeight:900, lineHeight:1, fontFamily:"inherit" }}>{d.listo?"✓":""}</button>
                 <input value={d.texto} onChange={e=>editarTexto("deco",d.id,e.target.value)}
                   style={{ flex:1, minWidth:0, border:"none", background:"transparent", fontSize:12.5, color:d.listo?"#c4a882":"#6b4423", textDecoration:d.listo?"line-through":"none", fontFamily:"inherit", outline:"none", padding:0 }}/>
                 <button onClick={()=>borrarDe("deco",d.id)} style={{ background:"none", border:"none", color:"#e0c0a0", fontSize:15, cursor:"pointer", padding:"0 2px", fontFamily:"inherit" }}>✕</button>
+              </div>
+              {fotosDe("deco", d)}
               </div>
             ))}
             <button onClick={()=>agregarA("deco")} style={{ marginTop:8, background:"#fdf8f3", border:"1.5px dashed #e8d5c4", color:"#a07855", borderRadius:8, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", width:"100%" }}>+ Agregar idea</button>
