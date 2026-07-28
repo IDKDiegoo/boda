@@ -111,7 +111,10 @@ type Regalo    = { id:number; nombre:string; precio:number; prioridad:"alta"|"me
 type LunaItem  = { id:number; categoria:string; descripcion:string; monto:number; confirmado:boolean; notas?:string; };
 type MesaPos   = { id:number; numero:number; x:number; y:number; forma:"circular"|"rectangular"|"cuadrada"; };
 type Foto      = { url:string; nombre:string; };
-type DecoItem  = { id:number; nombre:string; categoria:string; cantidad:number; precio:number; foto?:string; videoUrl?:string; notas?:string; comprado:boolean; };
+// `checks` = lo que hace falta para montar ESA decoración (trípode, cuadro, flores…).
+// Se agregan a mano, los que cada una necesite.
+type DecoCheck = { id:number; texto:string; listo:boolean };
+type DecoItem  = { id:number; nombre:string; categoria:string; cantidad:number; precio:number; foto?:string; videoUrl?:string; notas?:string; comprado:boolean; checks?:DecoCheck[]; };
 
 // ── Error Boundary ───────────────────────────────────────────────
 export class ErrorBoundary extends React.Component<{children:React.ReactNode},{error:string|null}> {
@@ -2034,6 +2037,14 @@ function Decoraciones({ data, setData }: { data:{items:DecoItem[]}; setData:(d:a
   const toggleComprado = (id: number) =>
     setData({ items: lista.map(i => i.id === id ? { ...i, comprado: !i.comprado } : i) });
 
+  // ── Lo que se necesita para montar cada decoración ──
+  const mapChecks = (itemId:number, fn:(cs:DecoCheck[])=>DecoCheck[]) =>
+    setData({ items: lista.map(i => i.id === itemId ? { ...i, checks: fn(i.checks || []) } : i) });
+  const addCheck    = (itemId:number) => mapChecks(itemId, cs => [...cs, { id:Date.now(), texto:"", listo:false }]);
+  const toggleCheck = (itemId:number, cid:number) => mapChecks(itemId, cs => cs.map(c => c.id===cid ? {...c, listo:!c.listo} : c));
+  const textoCheck  = (itemId:number, cid:number, t:string) => mapChecks(itemId, cs => cs.map(c => c.id===cid ? {...c, texto:t} : c));
+  const delCheck    = (itemId:number, cid:number) => mapChecks(itemId, cs => cs.filter(c => c.id!==cid));
+
   return (
     <div style={{ animation:"fadeUp .3s ease" }}>
       <Title icon="🌸" title="Decoraciones"/>
@@ -2171,6 +2182,42 @@ function Decoraciones({ data, setData }: { data:{items:DecoItem[]}; setData:(d:a
                       <button onClick={()=>eliminar(item.id)} style={{ background:"#fef2f2", border:"none", borderRadius:6, padding:"4px 7px", fontSize:12, cursor:"pointer" }}>🗑️</button>
                     </div>
                   </div>
+
+                  {/* Lo que hace falta para montar esta decoración. Solo aparece si tiene checks;
+                      el botón de agregar queda siempre, discreto. */}
+                  {(() => {
+                    const cs = item.checks || [];
+                    const ok = cs.filter(c=>c.listo).length;
+                    return (
+                      <div style={{ marginTop:10, paddingTop:9, borderTop:"1px solid #f4e6d8" }}>
+                        {cs.length > 0 && (
+                          <>
+                            <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:6 }}>
+                              <span style={{ fontSize:10, fontWeight:800, color:"#a07855", letterSpacing:"0.04em" }}>QUÉ NECESITO</span>
+                              <span style={{ fontSize:10, fontWeight:800, color:ok===cs.length?"#6aaa96":"#c9956a" }}>{ok}/{cs.length}</span>
+                              <div style={{ flex:1, height:5, background:"#f4e6d8", borderRadius:3, overflow:"hidden" }}>
+                                <div style={{ height:"100%", width:`${Math.round(ok/cs.length*100)}%`, background:ok===cs.length?"#6aaa96":"#c9956a", borderRadius:3, transition:"width .3s ease" }}/>
+                              </div>
+                            </div>
+                            {cs.map(c=>(
+                              <div key={c.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"4px 0" }}>
+                                <button onClick={()=>toggleCheck(item.id, c.id)}
+                                  style={{ width:22, height:22, flexShrink:0, borderRadius:7, cursor:"pointer", background:c.listo?"#6aaa96":"#fff", border:`2px solid ${c.listo?"#6aaa96":"#e8d5c4"}`, color:"#fff", fontSize:12, fontWeight:900, lineHeight:1, fontFamily:"inherit", padding:0 }}>{c.listo?"✓":""}</button>
+                                <input value={c.texto} onChange={e=>textoCheck(item.id, c.id, e.target.value)} placeholder="Ej: trípode, flores, cuadro…"
+                                  style={{ flex:1, minWidth:0, border:"none", background:"transparent", fontSize:12, color:c.listo?"#c4a882":"#6b4423", textDecoration:c.listo?"line-through":"none", fontFamily:"inherit", outline:"none", padding:0 }}/>
+                                <button onClick={()=>delCheck(item.id, c.id)}
+                                  style={{ background:"none", border:"none", color:"#e0c0a0", fontSize:14, cursor:"pointer", padding:"0 2px", fontFamily:"inherit", flexShrink:0 }}>✕</button>
+                              </div>
+                            ))}
+                          </>
+                        )}
+                        <button onClick={()=>addCheck(item.id)}
+                          style={{ marginTop:cs.length?6:0, background:"none", border:"none", color:"#c9956a", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", padding:"3px 0" }}>
+                          + Añadir check
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </Card>
               );
             })}
