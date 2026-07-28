@@ -2721,23 +2721,37 @@ function BodaCivil() {
       x.id === id ? { ...x, fotos:(x.fotos||[]).filter((u:string)=>u!==url) } : x);
     guardar({ ...data, [campo]: lista });
   };
-  // Tira de miniaturas + botón de agregar. Tamaño intermedio: se ve qué es sin comerse la pantalla.
-  const fotosDe = (campo:"tareas"|"deco"|"tips", item:{id:number; fotos?:string[]}) => (
-    <div style={{ display:"flex", gap:6, flexWrap:"wrap" as const, alignItems:"center", marginTop:7, paddingLeft:35 }}>
-      {(item.fotos||[]).map(u=>(
-        <div key={u} style={{ position:"relative" as const }}>
-          <img src={u} alt="" onClick={()=>setZoomFoto(u)} loading="lazy"
-            style={{ width:68, height:68, objectFit:"cover" as const, borderRadius:9, border:"1.5px solid #e8d5c4", cursor:"pointer", display:"block" }}/>
-          <button onClick={()=>quitarFoto(campo,item.id,u)}
-            style={{ position:"absolute" as const, top:-6, right:-6, width:21, height:21, borderRadius:"50%", background:"#e07070", border:"2px solid #fff", color:"#fff", fontSize:10, fontWeight:900, cursor:"pointer", lineHeight:1, fontFamily:"inherit", padding:0 }}>✕</button>
-        </div>
-      ))}
-      <button onClick={()=>pedirFoto(campo,item.id)} disabled={subiendoFoto===item.id}
-        style={{ width:68, height:68, borderRadius:9, background:"#fdf8f3", border:"1.5px dashed #e8d5c4", color:"#c9956a", fontSize:subiendoFoto===item.id?10:19, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column" as const, gap:2, padding:0 }}>
-        {subiendoFoto===item.id ? "subiendo…" : <>📷<span style={{ fontSize:8.5, fontWeight:700 }}>Foto</span></>}
+  // Botón chico de cámara, dentro de la fila. Va siempre, pero discreto: si el item ya
+  // tiene fotos muestra la cantidad. Antes el recuadro punteado de "agregar" aparecía en
+  // TODAS las filas y ensuciaba el checklist, porque la mayoría no lleva foto.
+  const botonFoto = (campo:"tareas"|"deco"|"tips", item:{id:number; fotos?:string[]}) => {
+    const n = (item.fotos||[]).length;
+    return (
+      <button onClick={()=>pedirFoto(campo,item.id)} disabled={subiendoFoto===item.id} title="Agregar foto"
+        style={{ background:n?"#fdf0e8":"transparent", border:"none", borderRadius:7, cursor:"pointer",
+                 color:n?"#c9956a":"#dcc9b6", fontSize:13, fontFamily:"inherit", padding:"3px 6px",
+                 display:"flex", alignItems:"center", gap:3, flexShrink:0 }}>
+        {subiendoFoto===item.id ? <span style={{ fontSize:9 }}>…</span> : <>📷{n>0 && <span style={{ fontSize:9.5, fontWeight:800 }}>{n}</span>}</>}
       </button>
-    </div>
-  );
+    );
+  };
+  // Miniaturas: SOLO si el item tiene fotos.
+  const tiraFotos = (campo:"tareas"|"deco"|"tips", item:{id:number; fotos?:string[]}) => {
+    const fs = item.fotos || [];
+    if (!fs.length) return null;
+    return (
+      <div style={{ display:"flex", gap:6, flexWrap:"wrap" as const, marginTop:7, paddingLeft:35 }}>
+        {fs.map(u=>(
+          <div key={u} style={{ position:"relative" as const }}>
+            <img src={u} alt="" onClick={()=>setZoomFoto(u)} loading="lazy"
+              style={{ width:68, height:68, objectFit:"cover" as const, borderRadius:9, border:"1.5px solid #e8d5c4", cursor:"pointer", display:"block" }}/>
+            <button onClick={()=>quitarFoto(campo,item.id,u)}
+              style={{ position:"absolute" as const, top:-6, right:-6, width:21, height:21, borderRadius:"50%", background:"#e07070", border:"2px solid #fff", color:"#fff", fontSize:10, fontWeight:900, cursor:"pointer", lineHeight:1, fontFamily:"inherit", padding:0 }}>✕</button>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const cargarSugerencia = () => {
     const base = Date.now();
@@ -2990,9 +3004,10 @@ function BodaCivil() {
                       style={{ width:26, height:26, flexShrink:0, borderRadius:8, cursor:"pointer", background:t.listo?"#c9956a":"#fff", border:`2px solid ${t.listo?"#c9956a":"#e8d5c4"}`, color:"#fff", fontSize:14, fontWeight:900, lineHeight:1, fontFamily:"inherit" }}>{t.listo?"✓":""}</button>
                     <input value={t.texto} onChange={e=>guardar({ ...data, tareas:tareas.map(x=>x.id===t.id?{...x,texto:e.target.value}:x) })}
                       style={{ flex:1, minWidth:0, border:"none", background:"transparent", fontSize:12.5, color:t.listo?"#c4a882":"#6b4423", textDecoration:t.listo?"line-through":"none", fontFamily:"inherit", outline:"none", padding:0 }}/>
+                    {botonFoto("tareas", t)}
                     <button onClick={()=>borrarDe("tareas",t.id)} style={{ background:"none", border:"none", color:"#e0c0a0", fontSize:15, cursor:"pointer", padding:"0 2px", fontFamily:"inherit" }}>✕</button>
                   </div>
-                  {fotosDe("tareas", t)}
+                  {tiraFotos("tareas", t)}
                   </div>
                 ))}
                 <button onClick={()=>guardar({ ...data, tareas:[...tareas,{ id:Date.now(), cuando:pl, texto:"", listo:false }] })}
@@ -3016,9 +3031,10 @@ function BodaCivil() {
                 <button onClick={()=>togglear("deco",d.id)} style={{ width:26, height:26, flexShrink:0, borderRadius:8, cursor:"pointer", background:d.listo?"#c9956a":"#fff", border:`2px solid ${d.listo?"#c9956a":"#e8d5c4"}`, color:"#fff", fontSize:14, fontWeight:900, lineHeight:1, fontFamily:"inherit" }}>{d.listo?"✓":""}</button>
                 <input value={d.texto} onChange={e=>editarTexto("deco",d.id,e.target.value)}
                   style={{ flex:1, minWidth:0, border:"none", background:"transparent", fontSize:12.5, color:d.listo?"#c4a882":"#6b4423", textDecoration:d.listo?"line-through":"none", fontFamily:"inherit", outline:"none", padding:0 }}/>
+                {botonFoto("deco", d)}
                 <button onClick={()=>borrarDe("deco",d.id)} style={{ background:"none", border:"none", color:"#e0c0a0", fontSize:15, cursor:"pointer", padding:"0 2px", fontFamily:"inherit" }}>✕</button>
               </div>
-              {fotosDe("deco", d)}
+              {tiraFotos("deco", d)}
               </div>
             ))}
             <button onClick={()=>agregarA("deco")} style={{ marginTop:8, background:"#fdf8f3", border:"1.5px dashed #e8d5c4", color:"#a07855", borderRadius:8, padding:"8px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", width:"100%" }}>+ Agregar idea</button>
