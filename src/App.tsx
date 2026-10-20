@@ -3521,7 +3521,7 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
             <div style={{ display:"flex", gap:6, marginTop:9 }}>
               <button onClick={()=>whatsapp(p)} style={{ ...mini("#25a35a"), flex:1 }}>WhatsApp</button>
               <button onClick={()=>copiar(p)} style={{ ...mini("#fdf3ea","#c9956a"), flex:1 }}>Copiar link</button>
-              <a href={`${origenVista()}/i/${p.codigo}?admin=1`} target="_blank" rel="noopener noreferrer" style={{ ...mini("#fdf3ea","#a07855"), textDecoration:"none" }}>Ver</a>
+              <a href={`${origenVista()}/i/${p.codigo}#vista`} target="_blank" rel="noopener noreferrer" style={{ ...mini("#fdf3ea","#a07855"), textDecoration:"none" }}>Ver</a>
               <button onClick={()=>borrar(p)} style={mini("transparent","#e0a0a0")}>✕</button>
             </div>
           </Card>

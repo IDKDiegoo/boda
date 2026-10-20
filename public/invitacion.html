@@ -1027,7 +1027,8 @@ window.Grabado = (() => {
     const s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(s);
     if (!document.body.classList.contains("cerrada")) boton.hidden = false;   // si la carta ya se abrió
   }
-  const vistaAdmin = new URLSearchParams(location.search).has("admin");   // «Ver» desde la app: no cuenta ni guarda
+  // «Ver» desde la app (#vista, o ?admin=1 en links viejos): no cuenta como abierta ni guarda respuestas
+  const vistaAdmin = location.hash.includes("vista") || new URLSearchParams(location.search).has("admin");
   try {
     const cfg = (await getDoc(doc(db, "boda", "invitacion"))).data() || {};
     if (cfg.lugarNombre) $("#lugar-nombre").textContent = cfg.lugarNombre;
