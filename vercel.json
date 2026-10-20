@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/i/:codigo", "destination": "/invitacion.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
