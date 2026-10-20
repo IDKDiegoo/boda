@@ -796,6 +796,7 @@ window.Grabado = (() => {
   const abrir = () => {
     if (sobre.classList.contains("abriendo")) return;
     sobre.classList.add("abriendo");
+    if (!window.__inv.alAbrir) window.__diag?.("sello tocado ANTES de que cargara la música");
     window.__inv.alAbrir?.();   // la música parte con este mismo toque (los navegadores exigen un toque para sonar)
     setTimeout(() => { document.documentElement.classList.remove("cerrada"); document.body.classList.remove("cerrada"); scrollTo(0, 0); empezar(); }, quieto ? 0 : 1350);
     setTimeout(() => sobre.remove(), quieto ? 0 : 2600);
@@ -981,6 +982,12 @@ window.Grabado = (() => {
   const $ = (s) => document.querySelector(s);
   const codigo = (location.pathname.match(/\/i\/([A-Za-z0-9_-]+)/) || [])[1] || new URLSearchParams(location.search).get("i");
   const nota = (t) => { $("#nota-guardado").textContent = t; };
+  // ── DIAGNÓSTICO TEMPORAL de la música (20-oct): se guarda en boda/diagnostico/musica ──
+  const diag = { ua: navigator.userAgent.slice(0, 160), pagina: location.pathname + location.hash, inicio: Date.now(), eventos: [] };
+  const anota = (e) => { diag.eventos.push(`${((Date.now() - diag.inicio) / 1000).toFixed(1)}s ${e}`); };
+  window.__diag = anota;
+  const subirDiag = () => { import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js").then(({ collection, addDoc }) =>
+    addDoc(collection(db, "boda", "diagnostico", "musica"), { ...diag, fecha: new Date().toISOString() })).catch(() => {}); };
 
   // ── Música de YouTube: se carga escondida y parte al tocar el sello ──
   // Acepta youtu.be/ID, youtube.com/watch?v=ID, /shorts/ID y music.youtube.com. Inicio en «1:05» o segundos.
@@ -989,6 +996,9 @@ window.Grabado = (() => {
   // Archivo propio (MP3/M4A): play() dentro del toque del sello funciona en todos los teléfonos, iPhone incluido.
   function prepararAudio(url, inicio) {
     const ini = segundos(inicio), boton = $("#musica"), audio = new Audio();
+    anota("audio preparado");
+    ["loadedmetadata", "canplay", "playing", "pause", "stalled", "waiting"].forEach((ev) => audio.addEventListener(ev, () => anota(`audio ${ev} t=${audio.currentTime.toFixed(1)}`)));
+    audio.addEventListener("error", () => anota(`audio ERROR ${audio.error?.code} ${audio.error?.message || ""}`));
     audio.preload = "auto"; audio.src = url + (ini ? `#t=${ini}` : ""); audio.setAttribute("playsinline", "");
     let empezo = false;
     const pintar = () => { const suena = !audio.paused; boton.classList.toggle("suena", suena); boton.classList.toggle("espera", !suena && empezo === "bloqueado");
@@ -1002,8 +1012,9 @@ window.Grabado = (() => {
     // iPhone en silencio (interruptor del costado): con «playback» suena igual, como una app de música (Safari 16.4+)
     const sesion = () => { try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {} };
     const tocar = () => { sesion(); alInicio(); const p = audio.play(); subir(); empezo = true;
-      if (p) p.then(pintar).catch(() => { empezo = "bloqueado"; pintar(); }); };
-    window.__inv.alAbrir = () => { boton.hidden = false; tocar(); };
+      anota(`play() pedido · sesión=${navigator.audioSession?.type ?? "n/a"} · listo=${audio.readyState}`);
+      if (p) p.then(() => { anota("play() aceptado"); pintar(); }).catch((e) => { anota(`play() RECHAZADO ${e.name}: ${e.message}`); empezo = "bloqueado"; pintar(); }); };
+    window.__inv.alAbrir = () => { anota("sello tocado (con música lista)"); boton.hidden = false; tocar(); setTimeout(subirDiag, 7000); };
     // El botón llama a play()/pause() en el mismo toque: así el iPhone siempre lo permite
     boton.addEventListener("click", () => { if (audio.paused) tocar(); else audio.pause(); });
     if (!document.body.classList.contains("cerrada")) { boton.hidden = false; empezo = "bloqueado"; pintar(); }   // la carta se abrió antes de cargar
