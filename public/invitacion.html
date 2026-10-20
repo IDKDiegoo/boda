@@ -977,6 +977,25 @@ window.Grabado = (() => {
   // Acepta youtu.be/ID, youtube.com/watch?v=ID, /shorts/ID y music.youtube.com. Inicio en «1:05» o segundos.
   const idDe = (url) => { const x = String(url).match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([A-Za-z0-9_-]{11})/); return x ? x[1] : null; };
   const segundos = (t) => { if (!t) return 0; const p = String(t).trim().split(":").map(Number); return p.some(isNaN) ? 0 : p.reduce((a, b) => a * 60 + b, 0); };
+  // Archivo propio (MP3/M4A): play() dentro del toque del sello funciona en todos los teléfonos, iPhone incluido.
+  function prepararAudio(url, inicio) {
+    const ini = segundos(inicio), boton = $("#musica"), audio = new Audio();
+    audio.preload = "auto"; audio.src = url + (ini ? `#t=${ini}` : ""); audio.setAttribute("playsinline", "");
+    let empezo = false;
+    const pintar = () => { const suena = !audio.paused; boton.classList.toggle("suena", suena); boton.classList.toggle("espera", !suena && empezo === "bloqueado");
+      boton.setAttribute("aria-label", suena ? "Pausar la música" : "Poner la música"); };
+    const alInicio = () => { if (ini && audio.currentTime < ini - .5) { try { audio.currentTime = ini; } catch (e) {} } };
+    audio.addEventListener("loadedmetadata", () => { if (!empezo) alInicio(); });
+    audio.addEventListener("ended", () => { audio.currentTime = ini; audio.play().catch(() => {}); });
+    ["play", "pause", "playing"].forEach((ev) => audio.addEventListener(ev, pintar));
+    const subir = () => { audio.volume = 0; let v = 0; const t = setInterval(() => { v = Math.min(1, v + .07); audio.volume = v; if (v >= 1) clearInterval(t); }, 110); };
+    const tocar = () => { alInicio(); const p = audio.play(); subir(); empezo = true;
+      if (p) p.then(pintar).catch(() => { empezo = "bloqueado"; pintar(); }); };
+    window.__inv.alAbrir = () => { boton.hidden = false; tocar(); };
+    // El botón llama a play()/pause() en el mismo toque: así el iPhone siempre lo permite
+    boton.addEventListener("click", () => { if (audio.paused) tocar(); else audio.pause(); });
+    if (!document.body.classList.contains("cerrada")) { boton.hidden = false; empezo = "bloqueado"; pintar(); }   // la carta se abrió antes de cargar
+  }
   function prepararMusica(url, inicio) {
     const id = idDe(url); if (!id) return;
     const boton = $("#musica"); let player = null, listo = false, quiere = false, sonando = false;
@@ -1011,7 +1030,8 @@ window.Grabado = (() => {
     const ini = `20261218T${String(h + 3).padStart(2, "0")}${String(m || 0).padStart(2, "0")}00Z`;
     $("#cal").href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("Boda civil de Diego y Camila")}&dates=${ini}%2F20261218T230000Z&location=${q}&details=${encodeURIComponent("Te esperamos desde las " + (cfg.hora || "13:00") + ".")}`;
     if (Array.isArray(cfg.programa) && cfg.programa.length) window.__inv.pintarPrograma(cfg.programa);
-    if (cfg.musicaUrl) prepararMusica(cfg.musicaUrl, cfg.musicaInicio);
+    if (cfg.musicaArchivo) prepararAudio(cfg.musicaArchivo, cfg.musicaInicio);
+    else if (cfg.musicaUrl) prepararMusica(cfg.musicaUrl, cfg.musicaInicio);
   } catch (e) { console.warn("config", e); }
 
   const ponerNombre = (t) => document.querySelectorAll("[data-para]").forEach((e) => { e.textContent = t; });

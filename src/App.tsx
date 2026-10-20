@@ -3209,7 +3209,7 @@ function BodaCivil() {
 // Cada invitado tiene un código propio, así cada link es distinto y su respuesta llega acá.
 // ════════════════════════════════════════════════════════════════
 type InvItem   = { hora:string; actividad:string; detalle?:string; icono:string };
-type InvConfig = { lugarNombre:string; direccion:string; comoLlegar:string; mapsUrl:string; hora:string; limite:string; mensaje:string; programa:InvItem[]; musicaUrl:string; musicaInicio:string };
+type InvConfig = { lugarNombre:string; direccion:string; comoLlegar:string; mapsUrl:string; hora:string; limite:string; mensaje:string; programa:InvItem[]; musicaUrl:string; musicaInicio:string; musicaArchivo?:string; musicaNombre?:string };
 type InvRespuesta = { asiste:boolean; comida?:string[]; cancion?:string; deseo?:string; fecha:string };
 type InvPersona = { codigo:string; para:string; invitadoId?:number; enviada?:boolean; vistas?:number; abierta?:any; respuesta?:InvRespuesta };
 
@@ -3255,6 +3255,25 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
     return () => { u1(); u2(); };
   }, []);
   const avisar = (t:string) => { setAviso(t); window.setTimeout(()=>setAviso(""), 2200); };
+  // Canción como archivo propio: es lo único que el iPhone deja sonar con el toque del sello
+  const [subiendoMusica, setSubiendoMusica] = useState(false);
+  const subirMusica = async (f:File|undefined) => {
+    if (!f || !borr) return;
+    if (!/audio|mpeg|mp3|m4a|aac|wav/i.test(f.type + f.name)) { alert("Elige un archivo de audio (MP3 o M4A)."); return; }
+    if (f.size > 15 * 1024 * 1024) { alert("El archivo pesa más de 15 MB. Usa uno más liviano (un MP3 normal pesa 4 a 8 MB)."); return; }
+    setSubiendoMusica(true);
+    try {
+      const ext = (f.name.split(".").pop() || "mp3").toLowerCase();
+      const r = ref(stor, `boda-civil/musica_${Date.now()}.${ext}`);
+      // Cache largo: los 40 invitados la bajan una sola vez cada uno (ver costo de Storage)
+      const tipo = ext === "m4a" || ext === "aac" ? "audio/mp4" : ext === "mp3" ? "audio/mpeg" : (f.type || "audio/mpeg");   // Safari reconoce mejor audio/mp4
+      await uploadBytes(r, f, { contentType: tipo, cacheControl: "public, max-age=31536000, immutable" });
+      const url = await getDownloadURL(r);
+      setBorr({ ...borr, musicaArchivo:url, musicaNombre:f.name });
+      avisar("✓ Canción subida: falta tocar «Guardar cambios»");
+    } catch (e:any) { alert("No se pudo subir la canción: " + (e?.message || "error")); }
+    finally { setSubiendoMusica(false); }
+  };
 
   if (!cfg || !borr) return <div style={{ textAlign:"center" as const, color:"#c4a882", padding:30, fontSize:12 }}>Cargando…</div>;
 
@@ -3400,20 +3419,31 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
 
       {/* Música */}
       <Card style={{ marginBottom:10, padding:"14px 16px" }}>
-        <Seccion id="musica" icono="🎵" titulo="Música al abrir la carta" resumen={idYoutube(borr.musicaUrl) ? `Suena al tocar el sello${borr.musicaInicio ? ` · desde ${borr.musicaInicio}` : ""}` : "Sin canción todavía"}/>
+        <Seccion id="musica" icono="🎵" titulo="Música al abrir la carta" resumen={borr.musicaArchivo ? `${borr.musicaNombre || "Canción subida"}${borr.musicaInicio ? ` · desde ${borr.musicaInicio}` : ""}` : idYoutube(borr.musicaUrl) ? "YouTube (en iPhone puede no sonar)" : "Sin canción todavía"}/>
         {abierto==="musica" && (
           <div style={{ display:"flex", flexDirection:"column" as const, gap:10, marginTop:14 }}>
-            <div><span style={lbl}>Link de la canción en YouTube</span><Inp value={borr.musicaUrl} onChange={v=>setBorr({...borr,musicaUrl:v.trim()})} placeholder="https://youtu.be/…"/></div>
-            <div><span style={lbl}>Desde qué minuto parte (opcional, ej. 0:45)</span><Inp value={borr.musicaInicio} onChange={v=>setBorr({...borr,musicaInicio:v.trim()})} placeholder="0:00"/></div>
-            {borr.musicaUrl && !idYoutube(borr.musicaUrl) && <div style={{ fontSize:11, color:"#e07070", fontWeight:700 }}>No reconozco ese link. Cópialo desde YouTube con «Compartir».</div>}
-            {idYoutube(borr.musicaUrl) && (
-              <div style={{ display:"flex", gap:10, alignItems:"center", background:"#fdf8f3", borderRadius:10, padding:8 }}>
-                <img src={`https://img.youtube.com/vi/${idYoutube(borr.musicaUrl)}/mqdefault.jpg`} alt="" style={{ width:96, height:54, objectFit:"cover" as const, borderRadius:6 }}/>
-                <div style={{ fontSize:11, color:"#5c3d2e", lineHeight:1.45 }}>✓ Canción reconocida. Empieza al tocar el sello y queda un botón para pausarla.
-                  <a href={`https://www.youtube.com/watch?v=${idYoutube(borr.musicaUrl)}&t=${(borr.musicaInicio||"0").split(":").reduce((a,b)=>a*60+Number(b||0),0)}s`} target="_blank" rel="noopener noreferrer" style={{ display:"block", color:"#c9956a", fontWeight:700, marginTop:2 }}>Escuchar desde ese punto →</a></div>
+            <div style={{ fontSize:11, color:"#5c3d2e", background:"#f0f6f1", border:"1px solid #cfe3d6", borderRadius:9, padding:"8px 10px", lineHeight:1.5 }}>
+              <b>Sube el archivo de la canción (MP3 o M4A).</b> Es lo que suena en todos los teléfonos. Con un link de YouTube, el iPhone no la deja sonar al tocar el sello.
+            </div>
+            {borr.musicaArchivo ? (
+              <div style={{ background:"#fdf8f3", borderRadius:10, padding:10 }}>
+                <div style={{ fontSize:12, fontWeight:800, color:"#5c3d2e", marginBottom:6 }}>🎵 {borr.musicaNombre || "Canción subida"}</div>
+                <audio controls src={borr.musicaArchivo} style={{ width:"100%" }}/>
+                <button onClick={()=>setBorr({ ...borr, musicaArchivo:"", musicaNombre:"" })} style={{ ...mini("transparent","#e07070"), marginTop:6, padding:"4px 0" }}>Quitar esta canción</button>
               </div>
+            ) : (
+              <label style={{ ...mini("#c9956a"), padding:"11px", textAlign:"center" as const, display:"block", opacity:subiendoMusica?.6:1 }}>
+                {subiendoMusica ? "Subiendo canción…" : "Subir canción (MP3 o M4A)"}
+                <input type="file" accept="audio/*,.mp3,.m4a" disabled={subiendoMusica} onChange={e=>{ subirMusica(e.target.files?.[0]); e.target.value=""; }} style={{ display:"none" }}/>
+              </label>
             )}
-            <div style={{ fontSize:10, color:"#c4a882", lineHeight:1.5 }}>Mejor YouTube que Spotify: Spotify solo toca 30 segundos a quien no tiene sesión y no deja que parta sola.</div>
+            <div><span style={lbl}>Desde qué minuto parte (opcional, ej. 0:20)</span><Inp value={borr.musicaInicio} onChange={v=>setBorr({...borr,musicaInicio:v.trim()})} placeholder="0:00"/></div>
+            <details style={{ fontSize:11, color:"#a07855" }}>
+              <summary style={{ cursor:"pointer", fontWeight:700 }}>O usar un link de YouTube (solo de respaldo)</summary>
+              <div style={{ marginTop:8 }}><Inp value={borr.musicaUrl} onChange={v=>setBorr({...borr,musicaUrl:v.trim()})} placeholder="https://youtu.be/…"/></div>
+              {borr.musicaUrl && !idYoutube(borr.musicaUrl) && <div style={{ color:"#e07070", fontWeight:700, marginTop:4 }}>No reconozco ese link.</div>}
+              <div style={{ marginTop:6, lineHeight:1.5 }}>Se usa solo si no hay archivo. Suena en Android y computador; en iPhone, no.</div>
+            </details>
           </div>
         )}
       </Card>
