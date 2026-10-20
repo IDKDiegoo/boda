@@ -3299,7 +3299,18 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
   const cambiarPara = (p:InvPersona, para:string) => { if (para.trim() && para.trim()!==p.para) setDoc(doc(db,"boda","invitacion","invitados",p.codigo), { para:para.trim() }, { merge:true }); };
   const marcarEnviada = (p:InvPersona) => { if (!p.enviada) setDoc(doc(db,"boda","invitacion","invitados",p.codigo), { enviada:true }, { merge:true }); };
   const copiar = async (p:InvPersona) => { try { await navigator.clipboard.writeText(linkDe(p.codigo)); avisar(`✓ Link de ${p.para} copiado`); marcarEnviada(p); } catch { window.prompt("Copia el link:", linkDe(p.codigo)); } };
-  const textoWsp = (p:InvPersona) => `${p.para}, con mucho cariño te invitamos a nuestro matrimonio civil 💍 el viernes 18 de diciembre. Abre tu invitación y confírmanos aquí: ${linkDe(p.codigo)}`;
+  // Mensaje que se abre en WhatsApp (texto de Diego y Camila); el link es el de cada invitado
+  const textoWsp = (p:InvPersona) => [
+    "🤍💍 ¡Nos casamos!",
+    "",
+    "Con mucho cariño, les compartimos nuestra invitación para celebrar este día tan especial junto a nosotros. ✨",
+    "",
+    `🔗 Invitación: ${linkDe(p.codigo)}`,
+    "",
+    "Les pedimos confirmar su asistencia. ¡Esperamos contar con ustedes! 🥂",
+    "",
+    "Diego & Camila ♡",
+  ].join("\n");
   const whatsapp = (p:InvPersona) => { window.open(`https://wa.me/?text=${encodeURIComponent(textoWsp(p))}`, "_blank"); marcarEnviada(p); };
   const borrar = (p:InvPersona) => { if (window.confirm(`¿Borrar la invitación de ${p.para}? Su link deja de funcionar.`)) deleteDoc(doc(db,"boda","invitacion","invitados",p.codigo)); };
   const copiarTodos = async () => {
