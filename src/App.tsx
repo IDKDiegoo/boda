@@ -31,13 +31,14 @@ async function initFCM() {
     if (permission !== "granted") return;
     const token = await getToken(messaging, { vapidKey: VAPID_KEY });
     if (!token) return;
+    // Un registro por teléfono: si el token se renueva, se reemplaza el del mismo teléfono (antes se acumulaban
+    // y la misma notificación llegaba 2 y 3 veces). El token se saca de la lista vieja `tokens`.
     const docRef = doc(db, "boda", "notif");
-    const { getDoc } = await import("firebase/firestore");
-    const snap = await getDoc(docRef);
-    const tokens: string[] = snap.exists() ? (snap.data().tokens || []) : [];
-    if (!tokens.includes(token)) {
-      await setDoc(docRef, { tokens: [...tokens, token] }, { merge: true });
-    }
+    let disp = localStorage.getItem("boda_dispositivo");
+    if (!disp) { disp = Math.random().toString(36).slice(2, 12); localStorage.setItem("boda_dispositivo", disp); }
+    const { updateDoc, arrayRemove } = await import("firebase/firestore");
+    await setDoc(docRef, { dispositivos: { [disp]: { token, fecha: new Date().toISOString() } } }, { merge: true });
+    await updateDoc(docRef, { tokens: arrayRemove(token) }).catch(() => {});
   } catch(e) { console.error("FCM boda:", e); }
 }
 
