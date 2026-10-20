@@ -3305,7 +3305,7 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
     "",
     "Con mucho cariño, les compartimos nuestra invitación para celebrar este día tan especial junto a nosotros. ✨",
     "",
-    `🔗 Invitación: ${linkDe(p.codigo)}`,
+    `🔗 Invitación: [${linkDe(p.codigo)}]`,
     "",
     "Les pedimos confirmar su asistencia. ¡Esperamos contar con ustedes! 🥂",
     "",
