@@ -1016,8 +1016,8 @@ window.Grabado = (() => {
       if (p) p.then(() => { anota("play() aceptado"); pintar(); }).catch((e) => { anota(`play() RECHAZADO ${e.name}: ${e.message}`); empezo = "bloqueado"; pintar(); }); };
     window.__inv.alAbrir = () => { anota("sello tocado (con música lista)"); boton.hidden = false; tocar(); setTimeout(subirDiag, 7000); };
     // El botón llama a play()/pause() en el mismo toque: así el iPhone siempre lo permite
-    boton.addEventListener("click", () => { if (audio.paused) tocar(); else audio.pause(); });
-    if (!document.body.classList.contains("cerrada")) { boton.hidden = false; empezo = "bloqueado"; pintar(); }   // la carta se abrió antes de cargar
+    boton.addEventListener("click", () => { anota("botón del disco tocado"); if (audio.paused) tocar(); else audio.pause(); });
+    if (!document.body.classList.contains("cerrada")) { anota("música cargó DESPUÉS de abrir la carta"); boton.hidden = false; empezo = "bloqueado"; pintar(); setTimeout(subirDiag, 9000); }   // la carta se abrió antes de cargar
   }
   function prepararMusica(url, inicio) {
     const id = idDe(url); if (!id) return;
