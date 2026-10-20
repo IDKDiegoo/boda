@@ -48,22 +48,22 @@
                  transform-origin:50% 0;transition:transform 1.1s cubic-bezier(.55,0,.25,1) .45s}
   .solapa{position:absolute;inset:0;clip-path:polygon(0 0,100% 0,50% 100%);background:var(--salvia-2) center/cover no-repeat}
   .solapa-borde{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-  .monograma-sobre{position:absolute;left:50%;top:8.5%;transform:translateX(-50%);z-index:3;display:flex;align-items:flex-start;pointer-events:none;line-height:.78;transition:opacity .5s .3s}
-  .monograma-sobre span{font-family:var(--mano);font-size:clamp(116px,31vmin,210px);
+  .monograma-sobre{position:absolute;left:50%;top:calc(8.5% - .12 * clamp(116px,31vmin,210px));transform:translateX(-50%);z-index:3;display:flex;align-items:flex-start;pointer-events:none;line-height:.78;transition:opacity .5s .3s}
+  .monograma-sobre span{font-family:var(--mano);font-size:clamp(116px,31vmin,210px);padding:.18em .42em .3em .34em;
     background:linear-gradient(160deg,#fbf8f0 0%,#e6dfcf 45%,#f6f1e6 60%,#d8d0bd 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
     filter:drop-shadow(0 -1px 0 rgba(40,50,30,.35)) drop-shadow(0 1.5px 0 rgba(255,255,255,.35)) drop-shadow(0 8px 10px rgba(25,32,20,.3))}
-  .monograma-sobre .c{margin:.44em 0 0 -.32em}
+  .monograma-sobre .c{margin:.44em 0 0 -1.08em}
   .toca{position:absolute;left:50%;top:calc(56% - clamp(100px,23vmin,124px));z-index:3;transform:translateX(-50%);white-space:nowrap;text-align:center;font-family:var(--grabado);font-weight:500;letter-spacing:.26em;font-size:12.5px;color:#f6f2e8;
         padding:6px 14px;border-radius:999px;background:rgba(75,88,62,.38);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);text-shadow:0 1px 2px rgba(30,40,22,.5);transition:opacity .4s}
   .sello-btn{position:absolute;left:50%;top:56%;z-index:4;width:clamp(118px,30vmin,168px);aspect-ratio:1;transform:translate(-50%,-50%);border:0;padding:0;background:none;cursor:pointer;border-radius:50%;
              filter:drop-shadow(0 10px 12px rgba(25,32,20,.5)) drop-shadow(0 2px 2px rgba(25,32,20,.35));transition:transform .6s cubic-bezier(.3,1.4,.5,1),opacity .45s .12s;animation:latido 2.8s ease-in-out infinite}
   .sello-btn:hover{transform:translate(-50%,-50%) scale(1.04)}
   @keyframes latido{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.03)}}
-  .sello-img{display:block;width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 38% 32%,#fbf8f1,#e6dfd0 55%,#bfb5a0)}
+  .sello-img{display:block;width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 40% 35%,#f1ece1,#e2dbcc 70%,#c9c0ad)}
   .sello-img[src]{background:none;border-radius:0}
   .para-sobre{position:absolute;left:0;right:0;bottom:max(8%,calc(env(safe-area-inset-bottom,0px) + 36px));z-index:3;text-align:center;color:#f3efe4;transition:opacity .4s}
-  .para-sobre .cap{font-size:11px;opacity:.85}
-  .para-sobre b{display:block;min-height:1.2em;font-family:var(--mano);font-weight:400;font-size:clamp(40px,10vw,56px);line-height:1.2;text-shadow:0 -1px 0 rgba(40,50,30,.35),0 4px 10px rgba(25,32,20,.25)}
+  .para-sobre .cap{font-size:11px;opacity:.95;text-shadow:0 0 10px rgba(40,52,32,.8)}
+  .para-sobre b{display:block;min-height:1.2em;font-family:var(--mano);font-weight:400;font-size:clamp(40px,10vw,56px);line-height:1.2;text-shadow:0 -1px 0 rgba(40,50,30,.4),0 0 14px rgba(40,52,32,.7),0 4px 10px rgba(25,32,20,.4)}
   .sobre.abriendo .sello-btn{animation:none;transform:translate(-50%,-64%) scale(1.22) rotate(-8deg);opacity:0}
   .sobre.abriendo .toca,.sobre.abriendo .monograma-sobre,.sobre.abriendo .para-sobre{opacity:0}
   .sobre.abriendo .solapa-sombra{transform:perspective(1100px) rotateX(178deg)}
@@ -629,33 +629,45 @@ window.Grabado = (() => {
       img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
     });
   }
-  // Sello de cera: disco irregular, cara cóncava, anillo y ramita en relieve
+  // Sello de cera como el de la referencia: disco liso, borde levantado parejo, centro plano y una ramita
+  // delicada de hojas finas y alargadas (contorno + nervio), en relieve suave y mate.
   function mapaSello(S, s) {
     semilla = s; const c = S / 2; let d = "";
-    const N = 36;
-    for (let i = 0; i <= N; i++) { const a = i / N * Math.PI * 2, r = S * .46 + Math.sin(i * 2.3) * S * .012 + (azar() - .5) * S * .018;
+    const N = 90;
+    for (let i = 0; i <= N; i++) { const a = i / N * Math.PI * 2, r = S * .47 * (1 + Math.sin(a * 3 + 1) * .006 + Math.sin(a * 7) * .004);
       d += (i ? "L" : "M") + f(c + Math.cos(a) * r) + " " + f(c + Math.sin(a) * r); }
-    const k = S / 120;
-    const rama = [`M${f(58 * k)} ${f(88 * k)} C${f(59 * k)} ${f(72 * k)} ${f(60 * k)} ${f(56 * k)} ${f(64 * k)} ${f(34 * k)}`];
-    [[82, -1], [75, 1], [68, -1], [61, 1], [54, -1], [47, 1], [40, -1]].forEach(([y, lado], j) => {
-      const x = 58.6 + (88 - y) * .15, L = 15 - j * 1.2;
-      rama.push(`M${f(x * k)} ${f(y * k)} q${f(lado * L * .5 * k)} ${f(-L * .2 * k)} ${f(lado * L * k)} ${f(-L * .95 * k)} q${f(-lado * L * .62 * k)} ${f(L * .1 * k)} ${f(-lado * L * k)} ${f(L * .95 * k)}`);
-    });
-    return `<defs><radialGradient id="cara" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#9a9a9a"/><stop offset=".8" stop-color="#b5b5b5"/><stop offset=".9" stop-color="#e6e6e6"/><stop offset="1" stop-color="#cfcfcf"/></radialGradient></defs>
-      <path d="${d}Z" fill="#d6d6d6"/><circle cx="${c}" cy="${c}" r="${f(S * .35)}" fill="url(#cara)"/>
-      <circle cx="${c}" cy="${c}" r="${f(S * .35)}" fill="none" stroke="#fff" stroke-width="${f(S * .018)}"/>
-      <path d="${rama.join(" ")}" fill="none" stroke="#fff" stroke-width="${f(S * .028)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    // tallo levemente curvo, de abajo hacia arriba
+    const P = (t) => [c - S * .025 + Math.sin(t * Math.PI) * S * .04, c + S * .27 - t * S * .54];
+    let tallo = ""; for (let i = 0; i <= 20; i++) { const [x, y] = P(i / 20); tallo += (i ? "L" : "M") + f(x) + " " + f(y); }
+    let hojas = "", nervios = "";
+    const n = 9;
+    for (let k = 0; k < n; k++) {
+      const t = .06 + k * .095, [x, y] = P(t), lado = k % 2 ? 1 : -1;
+      const L = S * (.165 - k * .008), W = L * .15, ang = (lado > 0 ? 44 : -44) + (k * 1.6) * -lado;
+      const g = `translate(${f(x)} ${f(y)}) rotate(${f(ang)})`;
+      hojas += `<path transform="${g}" d="M0 0 C${f(W)} ${f(-L * .3)} ${f(W * .9)} ${f(-L * .75)} 0 ${f(-L)} C${f(-W * .9)} ${f(-L * .75)} ${f(-W)} ${f(-L * .3)} 0 0Z"/>`;
+      nervios += `<path transform="${g}" d="M0 ${f(-L * .05)} L0 ${f(-L * .9)}"/>`;
+    }
+    const [tx, ty] = P(1), L = S * .1, W = L * .22;
+    hojas += `<path transform="translate(${f(tx)} ${f(ty)}) rotate(-6)" d="M0 0 C${f(W)} ${f(-L * .3)} ${f(W * .9)} ${f(-L * .75)} 0 ${f(-L)} C${f(-W * .9)} ${f(-L * .75)} ${f(-W)} ${f(-L * .3)} 0 0Z"/>`;
+    return `<defs><radialGradient id="borde" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color="#9c9c9c"/><stop offset=".76" stop-color="#9c9c9c"/><stop offset=".8" stop-color="#cfcfcf"/>
+        <stop offset=".9" stop-color="#d6d6d6"/><stop offset=".97" stop-color="#bdbdbd"/><stop offset="1" stop-color="#8a8a8a"/></radialGradient></defs>
+      <path d="${d}Z" fill="url(#borde)"/>
+      <path d="${tallo}" fill="none" stroke="#c4c4c4" stroke-width="${f(S * .013)}" stroke-linecap="round"/>
+      <g fill="#b9b9b9" stroke="#d2d2d2" stroke-width="${f(S * .007)}" stroke-linejoin="round">${hojas}</g>
+      <g fill="none" stroke="#cdcdcd" stroke-width="${f(S * .005)}" stroke-linecap="round">${nervios}</g>`;
   }
   async function sello(S, base, s) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${S * dpr}" height="${S * dpr}" viewBox="0 0 ${S} ${S}">
       <filter id="g" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
         <feColorMatrix in="SourceGraphic" type="luminanceToAlpha" result="alto"/>
-        <feGaussianBlur in="alto" stdDeviation="${f(S * .012)}" result="suave"/>
-        <feDiffuseLighting in="suave" surfaceScale="${f(S * .05)}" diffuseConstant="1.15" lighting-color="#fff" result="luz"><feDistantLight azimuth="230" elevation="50"/></feDiffuseLighting>
-        <feSpecularLighting in="suave" surfaceScale="${f(S * .05)}" specularConstant=".55" specularExponent="22" lighting-color="#fff" result="brillo"><feDistantLight azimuth="230" elevation="45"/></feSpecularLighting>
-        <feFlood flood-color="${base}"/><feComposite in2="luz" operator="arithmetic" k1="1.06" result="tinta"/>
-        <feComposite in="tinta" in2="brillo" operator="arithmetic" k2="1" k3=".8" result="pintado"/>
+        <feGaussianBlur in="alto" stdDeviation="${f(S * .005)}" result="suave"/>
+        <feDiffuseLighting in="suave" surfaceScale="${f(S * .028)}" diffuseConstant="1.12" lighting-color="#fff" result="luz"><feDistantLight azimuth="235" elevation="58"/></feDiffuseLighting>
+        <feSpecularLighting in="suave" surfaceScale="${f(S * .028)}" specularConstant=".12" specularExponent="30" lighting-color="#fff" result="brillo"><feDistantLight azimuth="235" elevation="50"/></feSpecularLighting>
+        <feFlood flood-color="${base}"/><feComposite in2="luz" operator="arithmetic" k1="1.08" result="tinta"/>
+        <feComposite in="tinta" in2="brillo" operator="arithmetic" k2="1" k3=".6" result="pintado"/>
         <feComposite in="pintado" in2="SourceAlpha" operator="in"/>
       </filter>
       <g filter="url(#g)">${mapaSello(S, s)}</g></svg>`;
@@ -688,7 +700,7 @@ window.Grabado = (() => {
     const [fondo, solapa, crema, verde] = await Promise.all([
       Grabado.pintar(W, H, Grabado.mapaFlores(W, H, 7), "#7d8a6a"),
       Grabado.pintar(Math.round(W * 1.44), Math.round(H * .56), Grabado.mapaFlores(Math.round(W * 1.44), Math.round(H * .56), 23), "#889577"),
-      Grabado.sello(170, "#ebe5d7", 31), Grabado.sello(170, "#4a573f", 31),
+      Grabado.sello(180, "#e9e3d5", 31), Grabado.sello(180, "#4c5543", 31),
     ]);
     if (fondo && sobre.isConnected) sobre.style.backgroundImage = `url(${fondo})`;
     if (solapa) $("#solapa").style.backgroundImage = `url(${solapa})`;
