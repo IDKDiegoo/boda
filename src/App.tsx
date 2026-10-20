@@ -3234,6 +3234,10 @@ const INV_BASE: InvConfig = {
 // Códigos sin letras que se confunden (0/o, 1/l)
 const nuevoCodigo = () => Array.from({length:7}, ()=>"abcdefghijkmnpqrstuvwxyz23456789"[Math.floor(Math.random()*32)]).join("");
 const linkDe = (codigo:string) => `${window.location.origin}/i/${codigo}`;
+// Vista previa por el OTRO dominio de la app: así el iPhone la abre en Safari y no dentro de la app instalada
+// en el inicio (ahí no suena la música con el teléfono en silencio). Ambos dominios son el mismo sitio.
+const DOMINIOS_BODA = ["https://boda-4ype.vercel.app", "https://boda-eight-psi.vercel.app"];
+const origenVista = () => DOMINIOS_BODA.find(d => d !== window.location.origin) || window.location.origin;
 // Mismo criterio que la página de la invitación para reconocer el video
 const idYoutube = (url:string) => (String(url).match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([A-Za-z0-9_-]{11})/) || [])[1] || null;
 
@@ -3359,7 +3363,7 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
             <div style={{ fontSize:11, fontWeight:700, color:"#9e4f56", letterSpacing:"0.06em" }}>INVITACIONES</div>
             <div style={{ fontSize:26, fontWeight:900, color:"#9e4f56", lineHeight:1.1, marginTop:2 }}>{si.length} <span style={{ fontSize:13, fontWeight:700 }}>confirmaron</span></div>
           </div>
-          <a href="/invitacion.html" target="_blank" rel="noopener noreferrer" style={{ ...mini("#fff","#9e4f56"), textDecoration:"none" }}>👁 Ver muestra</a>
+          <a href={`${origenVista()}/invitacion.html`} target="_blank" rel="noopener noreferrer" style={{ ...mini("#fff","#9e4f56"), textDecoration:"none" }}>👁 Ver muestra</a>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, marginTop:12 }}>
           {[["Creadas",personas.length],["Abiertas",abiertas],["No vienen",no.length],["Sin responder",sinResp.length]].map(([t,n])=>(
@@ -3517,7 +3521,7 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
             <div style={{ display:"flex", gap:6, marginTop:9 }}>
               <button onClick={()=>whatsapp(p)} style={{ ...mini("#25a35a"), flex:1 }}>WhatsApp</button>
               <button onClick={()=>copiar(p)} style={{ ...mini("#fdf3ea","#c9956a"), flex:1 }}>Copiar link</button>
-              <a href={`/i/${p.codigo}?admin=1`} target="_blank" rel="noopener noreferrer" style={{ ...mini("#fdf3ea","#a07855"), textDecoration:"none" }}>Ver</a>
+              <a href={`${origenVista()}/i/${p.codigo}?admin=1`} target="_blank" rel="noopener noreferrer" style={{ ...mini("#fdf3ea","#a07855"), textDecoration:"none" }}>Ver</a>
               <button onClick={()=>borrar(p)} style={mini("transparent","#e0a0a0")}>✕</button>
             </div>
           </Card>
