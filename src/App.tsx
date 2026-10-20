@@ -3209,7 +3209,7 @@ function BodaCivil() {
 // Cada invitado tiene un código propio, así cada link es distinto y su respuesta llega acá.
 // ════════════════════════════════════════════════════════════════
 type InvItem   = { hora:string; actividad:string; detalle?:string; icono:string };
-type InvConfig = { lugarNombre:string; direccion:string; comoLlegar:string; mapsUrl:string; hora:string; limite:string; mensaje:string; programa:InvItem[] };
+type InvConfig = { lugarNombre:string; direccion:string; comoLlegar:string; mapsUrl:string; hora:string; limite:string; mensaje:string; programa:InvItem[]; musicaUrl:string; musicaInicio:string };
 type InvRespuesta = { asiste:boolean; comida?:string[]; cancion?:string; deseo?:string; fecha:string };
 type InvPersona = { codigo:string; para:string; invitadoId?:number; enviada?:boolean; vistas?:number; abierta?:any; respuesta?:InvRespuesta };
 
@@ -3227,12 +3227,14 @@ const iconoPara = (t:string) => {
 };
 const INV_BASE: InvConfig = {
   lugarNombre:"Parcela en Lampa", direccion:"Lampa, Región Metropolitana", comoLlegar:"A unos 40 minutos de Santiago",
-  mapsUrl:"", hora:"13:00", limite:"1 de diciembre", mensaje:"Queremos que estés con nosotros el día en que unimos nuestras vidas.",
+  mapsUrl:"", hora:"13:00", limite:"1 de diciembre", mensaje:"Queremos que estés con nosotros el día en que unimos nuestras vidas.", musicaUrl:"", musicaInicio:"",
   programa: SUG_CRONO_CIVIL.map(([hora,actividad])=>({ hora, actividad, detalle:"", icono:iconoPara(actividad) })),
 };
 // Códigos sin letras que se confunden (0/o, 1/l)
 const nuevoCodigo = () => Array.from({length:7}, ()=>"abcdefghijkmnpqrstuvwxyz23456789"[Math.floor(Math.random()*32)]).join("");
 const linkDe = (codigo:string) => `${window.location.origin}/i/${codigo}`;
+// Mismo criterio que la página de la invitación para reconocer el video
+const idYoutube = (url:string) => (String(url).match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([A-Za-z0-9_-]{11})/) || [])[1] || null;
 
 function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilData)=>Promise<void> }) {
   const [cfg, setCfg]       = useState<InvConfig|null>(null);   // lo guardado
@@ -3240,7 +3242,7 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
   const [personas, setPersonas] = useState<InvPersona[]>([]);
   const [aviso, setAviso]   = useState("");
   const [filtro, setFiltro] = useState<"todas"|"sin"|"si"|"no">("todas");
-  const [abierto, setAbierto] = useState<"datos"|"programa"|null>(null);
+  const [abierto, setAbierto] = useState<"datos"|"programa"|"musica"|null>(null);
   const [vista, setVista]     = useState<"invitaciones"|"respuestas">("invitaciones");
 
   useEffect(() => {
@@ -3303,7 +3305,7 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
     : (p.abierta || p.vistas) ? ["👀 La abrió","#c9956a","#fdf3ea"] : p.enviada ? ["Enviada","#a07855","#f6efe8"] : ["Sin enviar","#c4a882","#fbf7f2"];
   const lbl = { fontSize:10, fontWeight:700, color:"#a07855", marginBottom:3, display:"block" } as React.CSSProperties;
   const mini = (bg:string, color="#fff") => ({ background:bg, color, border:"none", borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" as const });
-  const Seccion = ({ id, icono, titulo, resumen }: { id:"datos"|"programa"; icono:string; titulo:string; resumen:string }) => (
+  const Seccion = ({ id, icono, titulo, resumen }: { id:"datos"|"programa"|"musica"; icono:string; titulo:string; resumen:string }) => (
     <button onClick={()=>setAbierto(abierto===id?null:id)}
       style={{ width:"100%", display:"flex", alignItems:"center", gap:10, background:"none", border:"none", padding:0, cursor:"pointer", fontFamily:"inherit", textAlign:"left" as const }}>
       <span style={{ fontSize:20 }}>{icono}</span>
@@ -3392,6 +3394,26 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
                 <button onClick={()=>setBorr({...borr,programa:(data.cronograma||[]).map(c=>({ hora:c.hora, actividad:c.actividad, detalle:"", icono:iconoPara(c.actividad) }))})} style={mini("#fdf3ea","#a07855")}>Traer de la pestaña Programa</button>
               )}
             </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Música */}
+      <Card style={{ marginBottom:10, padding:"14px 16px" }}>
+        <Seccion id="musica" icono="🎵" titulo="Música al abrir la carta" resumen={idYoutube(borr.musicaUrl) ? `Suena al tocar el sello${borr.musicaInicio ? ` · desde ${borr.musicaInicio}` : ""}` : "Sin canción todavía"}/>
+        {abierto==="musica" && (
+          <div style={{ display:"flex", flexDirection:"column" as const, gap:10, marginTop:14 }}>
+            <div><span style={lbl}>Link de la canción en YouTube</span><Inp value={borr.musicaUrl} onChange={v=>setBorr({...borr,musicaUrl:v.trim()})} placeholder="https://youtu.be/…"/></div>
+            <div><span style={lbl}>Desde qué minuto parte (opcional, ej. 0:45)</span><Inp value={borr.musicaInicio} onChange={v=>setBorr({...borr,musicaInicio:v.trim()})} placeholder="0:00"/></div>
+            {borr.musicaUrl && !idYoutube(borr.musicaUrl) && <div style={{ fontSize:11, color:"#e07070", fontWeight:700 }}>No reconozco ese link. Cópialo desde YouTube con «Compartir».</div>}
+            {idYoutube(borr.musicaUrl) && (
+              <div style={{ display:"flex", gap:10, alignItems:"center", background:"#fdf8f3", borderRadius:10, padding:8 }}>
+                <img src={`https://img.youtube.com/vi/${idYoutube(borr.musicaUrl)}/mqdefault.jpg`} alt="" style={{ width:96, height:54, objectFit:"cover" as const, borderRadius:6 }}/>
+                <div style={{ fontSize:11, color:"#5c3d2e", lineHeight:1.45 }}>✓ Canción reconocida. Empieza al tocar el sello y queda un botón para pausarla.
+                  <a href={`https://www.youtube.com/watch?v=${idYoutube(borr.musicaUrl)}&t=${(borr.musicaInicio||"0").split(":").reduce((a,b)=>a*60+Number(b||0),0)}s`} target="_blank" rel="noopener noreferrer" style={{ display:"block", color:"#c9956a", fontWeight:700, marginTop:2 }}>Escuchar desde ese punto →</a></div>
+              </div>
+            )}
+            <div style={{ fontSize:10, color:"#c4a882", lineHeight:1.5 }}>Mejor YouTube que Spotify: Spotify solo toca 30 segundos a quien no tiene sesión y no deja que parta sola.</div>
           </div>
         )}
       </Card>
