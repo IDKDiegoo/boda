@@ -48,6 +48,11 @@
   @keyframes gira{to{transform:rotate(360deg)}}
   @keyframes onda{from{transform:scale(.9);opacity:.8}to{transform:scale(1.35);opacity:0}}
   @keyframes llama{0%,100%{box-shadow:0 0 0 0 rgba(93,105,78,.35)}50%{box-shadow:0 0 0 10px rgba(93,105,78,0)}}
+  .musica-aviso{position:fixed;right:calc(max(16px,env(safe-area-inset-right,0px)) + 58px);bottom:calc(27px + env(safe-area-inset-bottom,0px));z-index:60;
+          font-family:var(--grabado);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--salvia-osc);background:rgba(248,246,240,.95);
+          border:.75px solid rgba(93,105,78,.3);border-radius:999px;padding:6px 12px;box-shadow:0 8px 18px -12px rgba(40,45,30,.6);pointer-events:none;animation:aparece .5s ease}
+  .musica-aviso[hidden]{display:none!important}
+  @keyframes aparece{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
   #yt{position:fixed;left:-9999px;top:0;width:200px;height:120px;pointer-events:none}
   h1,h2,h3,p{margin:0;font-weight:400;text-wrap:balance}
   button{font-family:inherit}
@@ -564,6 +569,7 @@
 </main>
 <canvas id="petalos" aria-hidden="true"></canvas>
 <div id="yt" aria-hidden="true"></div>
+<div class="musica-aviso" id="musica-aviso" hidden>♪ Toca para escuchar</div>
 <button class="musica" id="musica" hidden aria-label="Pausar la música"><span class="onda"></span>
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="2.6"/><path d="M12 5.5a6.5 6.5 0 0 1 6.5 6.5M12 8a4 4 0 0 1 4 4"/></svg>
 </button>
@@ -983,13 +989,16 @@ window.Grabado = (() => {
     audio.preload = "auto"; audio.src = url + (ini ? `#t=${ini}` : ""); audio.setAttribute("playsinline", "");
     let empezo = false;
     const pintar = () => { const suena = !audio.paused; boton.classList.toggle("suena", suena); boton.classList.toggle("espera", !suena && empezo === "bloqueado");
+      document.querySelector("#musica-aviso").hidden = !(!suena && empezo === "bloqueado");
       boton.setAttribute("aria-label", suena ? "Pausar la música" : "Poner la música"); };
     const alInicio = () => { if (ini && audio.currentTime < ini - .5) { try { audio.currentTime = ini; } catch (e) {} } };
     audio.addEventListener("loadedmetadata", () => { if (!empezo) alInicio(); });
     audio.addEventListener("ended", () => { audio.currentTime = ini; audio.play().catch(() => {}); });
     ["play", "pause", "playing"].forEach((ev) => audio.addEventListener(ev, pintar));
     const subir = () => { audio.volume = 0; let v = 0; const t = setInterval(() => { v = Math.min(1, v + .07); audio.volume = v; if (v >= 1) clearInterval(t); }, 110); };
-    const tocar = () => { alInicio(); const p = audio.play(); subir(); empezo = true;
+    // iPhone en silencio (interruptor del costado): con «playback» suena igual, como una app de música (Safari 16.4+)
+    const sesion = () => { try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {} };
+    const tocar = () => { sesion(); alInicio(); const p = audio.play(); subir(); empezo = true;
       if (p) p.then(pintar).catch(() => { empezo = "bloqueado"; pintar(); }); };
     window.__inv.alAbrir = () => { boton.hidden = false; tocar(); };
     // El botón llama a play()/pause() en el mismo toque: así el iPhone siempre lo permite
