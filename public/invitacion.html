@@ -796,13 +796,22 @@ window.Grabado = (() => {
   const abrir = () => {
     if (sobre.classList.contains("abriendo")) return;
     sobre.classList.add("abriendo");
-    if (!window.__inv.alAbrir) window.__diag?.("sello tocado ANTES de que cargara la música");
+    window.__inv.quiereMusica = true;
+    if (!window.__inv.alAbrir) {
+      window.__diag?.("sello tocado ANTES de que cargara la música: se desbloquea el audio");
+      try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+      if (!audioInv.src) { audioInv.src = SILENCIO; audioInv.play().catch(() => {}); }
+    }
     window.__inv.alAbrir?.();   // la música parte con este mismo toque (los navegadores exigen un toque para sonar)
     setTimeout(() => { document.documentElement.classList.remove("cerrada"); document.body.classList.remove("cerrada"); scrollTo(0, 0); empezar(); }, quieto ? 0 : 1350);
     setTimeout(() => sobre.remove(), quieto ? 0 : 2600);
   };
   $("#abrir").addEventListener("click", abrir);
-  window.__inv = { abrir };
+  // Audio único: si el sello se toca antes de saber qué canción va, igual se desbloquea con ese toque
+  // (un silencio cortito) y la canción parte apenas carga. Sin esto, iPhone no la deja partir después.
+  const audioInv = new Audio(); audioInv.setAttribute("playsinline", ""); audioInv.preload = "auto";
+  const SILENCIO = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+  window.__inv = { abrir, audio: audioInv, quiereMusica: false };
 
   // Al abrir: las tarjetas se acomodan, los íconos se dibujan y caen pétalos (siempre visibles; solo se mueven)
   const revela = [...document.querySelectorAll(".revela")];
@@ -995,12 +1004,12 @@ window.Grabado = (() => {
   const segundos = (t) => { if (!t) return 0; const p = String(t).trim().split(":").map(Number); return p.some(isNaN) ? 0 : p.reduce((a, b) => a * 60 + b, 0); };
   // Archivo propio (MP3/M4A): play() dentro del toque del sello funciona en todos los teléfonos, iPhone incluido.
   function prepararAudio(url, inicio) {
-    const ini = segundos(inicio), boton = $("#musica"), audio = new Audio();
+    const ini = segundos(inicio), boton = $("#musica"), audio = window.__inv.audio || new Audio();
     anota("audio preparado");
     ["loadedmetadata", "canplay", "playing", "pause", "stalled", "waiting"].forEach((ev) => audio.addEventListener(ev, () => anota(`audio ${ev} t=${audio.currentTime.toFixed(1)}`)));
     audio.addEventListener("error", () => anota(`audio ERROR ${audio.error?.code} ${audio.error?.message || ""}`));
     audio.preload = "auto"; audio.src = url + (ini ? `#t=${ini}` : ""); audio.setAttribute("playsinline", "");
-    let empezo = false;
+    let empezo = false, quiere = false;
     const pintar = () => { const suena = !audio.paused; boton.classList.toggle("suena", suena); boton.classList.toggle("espera", !suena && empezo === "bloqueado");
       document.querySelector("#musica-aviso").hidden = !(!suena && empezo === "bloqueado");
       boton.setAttribute("aria-label", suena ? "Pausar la música" : "Poner la música"); };
@@ -1011,13 +1020,19 @@ window.Grabado = (() => {
     const subir = () => { audio.volume = 0; let v = 0; const t = setInterval(() => { v = Math.min(1, v + .07); audio.volume = v; if (v >= 1) clearInterval(t); }, 110); };
     // iPhone en silencio (interruptor del costado): con «playback» suena igual, como una app de música (Safari 16.4+)
     const sesion = () => { try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {} };
-    const tocar = () => { sesion(); alInicio(); const p = audio.play(); subir(); empezo = true;
+    // Safari a veces acepta el play() pero se queda «esperando» si la canción no había bajado: al poder sonar, se insiste
+    audio.addEventListener("canplay", () => { if (quiere && audio.paused) { anota("reintento al poder sonar"); audio.play().catch(() => {}); } });
+    const tocar = () => { quiere = true; sesion(); alInicio(); const p = audio.play(); subir(); empezo = true;
+      setTimeout(() => { if (quiere && audio.paused && audio.readyState >= 2) { anota("reintento a los 2,5 s"); audio.play().catch(() => {}); } }, 2500);
       anota(`play() pedido · sesión=${navigator.audioSession?.type ?? "n/a"} · listo=${audio.readyState}`);
       if (p) p.then(() => { anota("play() aceptado"); pintar(); }).catch((e) => { anota(`play() RECHAZADO ${e.name}: ${e.message}`); empezo = "bloqueado"; pintar(); }); };
     window.__inv.alAbrir = () => { anota("sello tocado (con música lista)"); boton.hidden = false; tocar(); setTimeout(subirDiag, 7000); };
     // El botón llama a play()/pause() en el mismo toque: así el iPhone siempre lo permite
-    boton.addEventListener("click", () => { anota("botón del disco tocado"); if (audio.paused) tocar(); else audio.pause(); });
-    if (!document.body.classList.contains("cerrada")) { anota("música cargó DESPUÉS de abrir la carta"); boton.hidden = false; empezo = "bloqueado"; pintar(); setTimeout(subirDiag, 9000); }   // la carta se abrió antes de cargar
+    boton.addEventListener("click", () => { anota("botón del disco tocado"); if (audio.paused) tocar(); else { quiere = false; audio.pause(); } });
+    if (!document.body.classList.contains("cerrada") || window.__inv.quiereMusica) {
+      // la carta se abrió antes de cargar: el audio ya quedó desbloqueado con ese toque, así que se intenta sonar
+      anota("música cargó DESPUÉS de abrir la carta: se intenta sonar"); boton.hidden = false; tocar(); setTimeout(subirDiag, 9000);
+    }
   }
   function prepararMusica(url, inicio) {
     const id = idDe(url); if (!id) return;
