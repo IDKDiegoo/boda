@@ -3212,7 +3212,11 @@ function BodaCivil() {
 type InvItem   = { hora:string; actividad:string; detalle?:string; icono:string };
 type InvConfig = { lugarNombre:string; direccion:string; comoLlegar:string; mapsUrl:string; hora:string; limite:string; mensaje:string; programa:InvItem[]; musicaUrl:string; musicaInicio:string; musicaArchivo?:string; musicaNombre?:string };
 type InvRespuesta = { asiste:boolean; comida?:string[]; cancion?:string; deseo?:string; fecha:string };
-type InvPersona = { codigo:string; para:string; invitadoId?:number; enviada?:boolean; vistas?:number; abierta?:any; respuesta?:InvRespuesta };
+// `acompanantes`: personas de la lista que van con esta invitación (un niño con su mamá, un abuelito con su hija).
+// No tienen link propio: cuando responde la persona principal, la respuesta vale para todos.
+type InvAcomp = { invitadoId:number; nombre:string };
+type InvPersona = { codigo:string; para:string; invitadoId?:number; enviada?:boolean; vistas?:number; abierta?:any; respuesta?:InvRespuesta; acompanantes?:InvAcomp[] };
+const cuantos = (p:InvPersona) => 1 + (p.acompanantes?.length || 0);
 
 const INV_ICONOS: [string,string][] = [["anillos","💍 Anillos"],["parrilla","🔥 Parrilla"],["plato","🍽️ Plato"],["copas","🥂 Copas"],["torta","🎂 Torta"],["camara","📷 Cámara"],["musica","🎵 Música"],["atardecer","🌅 Atardecer"]];
 const iconoPara = (t:string) => {
@@ -3249,6 +3253,7 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
   const [filtro, setFiltro] = useState<"todas"|"sin"|"si"|"no">("todas");
   const [abierto, setAbierto] = useState<"datos"|"programa"|"musica"|null>(null);
   const [vista, setVista]     = useState<"invitaciones"|"respuestas">("invitaciones");
+  const [sumando, setSumando] = useState<string|null>(null);   // invitación a la que se le está sumando un acompañante
 
   useEffect(() => {
     const u1 = onSnapshot(doc(db,"boda","invitacion"), snap => {
@@ -3293,7 +3298,7 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
 
   // ── Invitaciones ──
   const invitados = data.invitados || [];
-  const conInv = new Set(personas.map(p=>p.invitadoId).filter(Boolean));
+  const conInv = new Set(personas.flatMap(p=>[p.invitadoId, ...(p.acompanantes||[]).map(a=>a.invitadoId)]).filter(Boolean));
   const faltan = invitados.filter(i=>!conInv.has(i.id));
   const crearFaltantes = async () => {
     const b = writeBatch(db);
@@ -3329,9 +3334,24 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
   const lista = personas.filter(p => filtro==="todas" || (filtro==="sin" && !p.respuesta) || (filtro==="si" && p.respuesta?.asiste===true) || (filtro==="no" && p.respuesta?.asiste===false))
     .sort((a,b)=>a.para.localeCompare(b.para));
   const nombreReal = (p:InvPersona) => invitados.find(i=>i.id===p.invitadoId)?.nombre;
-  const porConfirmar = si.filter(p=>{ const i = invitados.find(x=>x.id===p.invitadoId); return i && !i.confirmado; });
+  const idsDe = (p:InvPersona) => [p.invitadoId, ...(p.acompanantes||[]).map(a=>a.invitadoId)].filter(Boolean) as number[];
+  const porConfirmar = si.flatMap(idsDe).filter(id=>{ const i = invitados.find(x=>x.id===id); return i && !i.confirmado; });
+  const personasSi = si.reduce((n,p)=>n+cuantos(p),0), personasNo = no.reduce((n,p)=>n+cuantos(p),0);
+  // Acompañantes: sumar a alguien de la lista a una invitación (su link propio, si no se ha mandado, se borra)
+  const sumarAcomp = async (p:InvPersona, invitadoId:number) => {
+    const i = invitados.find(x=>x.id===invitadoId); if (!i) return;
+    const propia = personas.find(x=>x.invitadoId===invitadoId);
+    if (propia && (propia.enviada || propia.respuesta || propia.vistas) && !window.confirm(`${i.nombre} ya tiene su propia invitación enviada. ¿Juntarla igual con la de ${p.para}? Su link deja de funcionar.`)) return;
+    await setDoc(doc(db,"boda","invitacion","invitados",p.codigo), { acompanantes:[...(p.acompanantes||[]), { invitadoId, nombre:i.nombre }] }, { merge:true });
+    if (propia) await deleteDoc(doc(db,"boda","invitacion","invitados",propia.codigo));
+    setSumando(null); avisar(`✓ ${i.nombre} va con ${p.para}`);
+  };
+  const sacarAcomp = async (p:InvPersona, invitadoId:number) => {
+    await setDoc(doc(db,"boda","invitacion","invitados",p.codigo), { acompanantes:(p.acompanantes||[]).filter(a=>a.invitadoId!==invitadoId) }, { merge:true });
+    avisar("Separado: si quieres, créale su propia invitación con el botón de arriba");
+  };
   const pasarConfirmados = () => {
-    const ids = new Set(porConfirmar.map(p=>p.invitadoId));
+    const ids = new Set(porConfirmar);
     guardar({ ...data, invitados: invitados.map(i=>ids.has(i.id)?{ ...i, confirmado:true }:i) });
     avisar(`✓ ${ids.size} marcados como confirmados en Invitados`);
   };
@@ -3361,12 +3381,12 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10 }}>
           <div>
             <div style={{ fontSize:11, fontWeight:700, color:"#9e4f56", letterSpacing:"0.06em" }}>INVITACIONES</div>
-            <div style={{ fontSize:26, fontWeight:900, color:"#9e4f56", lineHeight:1.1, marginTop:2 }}>{si.length} <span style={{ fontSize:13, fontWeight:700 }}>confirmaron</span></div>
+            <div style={{ fontSize:26, fontWeight:900, color:"#9e4f56", lineHeight:1.1, marginTop:2 }}>{personasSi} <span style={{ fontSize:13, fontWeight:700 }}>{personasSi===1?"persona viene":"personas vienen"}</span></div>
           </div>
           <a href={`${origenVista()}/invitacion.html`} target="_blank" rel="noopener noreferrer" style={{ ...mini("#fff","#9e4f56"), textDecoration:"none" }}>👁 Ver muestra</a>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, marginTop:12 }}>
-          {[["Creadas",personas.length],["Abiertas",abiertas],["No vienen",no.length],["Sin responder",sinResp.length]].map(([t,n])=>(
+          {[["Invitaciones",personas.length],["Abiertas",abiertas],["No vienen",personasNo],["Sin responder",sinResp.length]].map(([t,n])=>(
             <div key={t as string} style={{ background:"rgba(255,255,255,.65)", borderRadius:10, padding:"7px 4px", textAlign:"center" as const }}>
               <div style={{ fontSize:17, fontWeight:900, color:"#5c3d2e" }}>{n}</div>
               <div style={{ fontSize:9, color:"#9e4f56", fontWeight:700 }}>{t}</div>
@@ -3509,8 +3529,26 @@ function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilDa
               </div>
               <span style={{ fontSize:10, fontWeight:800, color:col, background:fondo, borderRadius:20, padding:"4px 9px", whiteSpace:"nowrap" as const }}>{et}</span>
             </div>
+            {/* Acompañantes */}
+            <div style={{ display:"flex", flexWrap:"wrap" as const, gap:5, alignItems:"center", marginTop:7 }}>
+              {(p.acompanantes||[]).map(a=>(
+                <span key={a.invitadoId} style={{ fontSize:10.5, fontWeight:700, color:"#6a7d5c", background:"#eef3ea", borderRadius:20, padding:"3px 4px 3px 9px", display:"inline-flex", alignItems:"center", gap:4 }}>
+                  + {a.nombre}<button onClick={()=>sacarAcomp(p,a.invitadoId)} title="Separar" style={{ background:"none", border:"none", color:"#9aab8c", cursor:"pointer", fontSize:11, padding:"0 3px" }}>✕</button></span>
+              ))}
+              {sumando===p.codigo ? (
+                <select autoFocus defaultValue="" onChange={e=>{ if (e.target.value) sumarAcomp(p, Number(e.target.value)); }} onBlur={()=>setSumando(null)}
+                  style={{ fontSize:11, border:"1px solid #e8d5c4", borderRadius:8, padding:"4px 6px", background:"#fff", color:"#5c3d2e", fontFamily:"inherit" }}>
+                  <option value="">¿Quién va con {p.para}?</option>
+                  {invitados.filter(i=>i.id!==p.invitadoId && !personas.some(x=>(x.acompanantes||[]).some(a=>a.invitadoId===i.id)) && !personas.some(x=>x.invitadoId===i.id && (x.acompanantes||[]).length))
+                    .sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(i=><option key={i.id} value={i.id}>{i.nombre}{i.notas?` · ${i.notas}`:""}</option>)}
+                </select>
+              ) : (
+                <button onClick={()=>setSumando(p.codigo)} style={{ fontSize:10.5, fontWeight:700, color:"#a07855", background:"transparent", border:"1px dashed #e8d5c4", borderRadius:20, padding:"3px 9px", cursor:"pointer", fontFamily:"inherit" }}>+ Acompañante</button>
+              )}
+            </div>
             {p.respuesta && (
               <div style={{ fontSize:11, color:"#a07855", background:"#fdf8f3", borderRadius:8, padding:"7px 9px", marginTop:8, lineHeight:1.5 }}>
+                {cuantos(p)>1 && <div style={{ fontWeight:800, color:p.respuesta.asiste?"#4f8a73":"#c05050" }}>{p.respuesta.asiste?`Vienen ${cuantos(p)}`:`No vienen (${cuantos(p)})`}</div>}
                 {p.respuesta.asiste ? <>
                   🍽️ {(p.respuesta.comida||[]).join(", ")||"Come de todo"}
                   {p.respuesta.cancion && <> · 🎵 {p.respuesta.cancion}</>}
@@ -3545,21 +3583,25 @@ function RespuestasInv({ personas, recordar, avisar }: { personas:InvPersona[]; 
   const [todasFaltan, setTodasFaltan] = useState(false);
   const resp = personas.filter(p=>p.respuesta).sort((a,b)=>(b.respuesta!.fecha||"").localeCompare(a.respuesta!.fecha||""));
   const vienen = resp.filter(p=>p.respuesta!.asiste), noVienen = resp.filter(p=>!p.respuesta!.asiste);
+  const nVienen = vienen.reduce((n,p)=>n+cuantos(p),0), nNo = noVienen.reduce((n,p)=>n+cuantos(p),0), nFaltan = personas.filter(p=>!p.respuesta).reduce((n,p)=>n+cuantos(p),0);
+  const conQuien = (p:InvPersona) => p.acompanantes?.length ? ` + ${p.acompanantes.map(a=>a.nombre).join(" y ")}` : "";
   const faltan = personas.filter(p=>!p.respuesta).sort((a,b)=>a.para.localeCompare(b.para));
   const total = personas.length || 1;
 
   // Comida: cada restricción con quiénes la tienen
   const dietas = new Map<string,string[]>(); const alergias: [string,string][] = [];
   vienen.forEach(p => (p.respuesta!.comida?.length ? p.respuesta!.comida : ["Como de todo"]).forEach(c => {
-    if (c.startsWith("Alergia")) { alergias.push([p.para, c.replace(/^Alergia:?\s*/,"") || "sin detalle"]); return; }
-    const k = c==="Como de todo" ? "Come de todo" : c; dietas.set(k, [...(dietas.get(k)||[]), p.para]);
+    // En una invitación con acompañantes la pregunta es por la comida de todos ellos
+    const nombres = [p.para, ...(p.acompanantes||[]).map(a=>a.nombre)];
+    if (c.startsWith("Alergia")) { alergias.push([nombres.join(" / "), c.replace(/^Alergia:?\s*/,"") || "sin detalle"]); return; }
+    const k = c==="Como de todo" ? "Come de todo" : c; dietas.set(k, [...(dietas.get(k)||[]), ...nombres]);
   }));
   const ordenDietas = Array.from(dietas.entries()).sort((a,b)=> (a[0]==="Come de todo"?1:0)-(b[0]==="Come de todo"?1:0) || b[1].length-a[1].length);
   const canciones = vienen.filter(p=>p.respuesta!.cancion);
   const deseos = resp.filter(p=>p.respuesta!.deseo);
 
   const copiar = async (t:string, ok:string) => { try { await navigator.clipboard.writeText(t); avisar(ok); } catch { window.prompt("Copia el texto:", t); } };
-  const resumenComida = () => [`Comida — ${vienen.length} personas confirmadas`, ...ordenDietas.map(([k,v])=>`• ${k}: ${v.length} (${v.join(", ")})`),
+  const resumenComida = () => [`Comida — ${nVienen} personas confirmadas`, ...ordenDietas.map(([k,v])=>`• ${k}: ${v.length} (${v.join(", ")})`),
     ...alergias.map(([n,a])=>`• Alergia de ${n}: ${a}`)].join("\n");
 
   const titulo = (icono:string, t:string, extra?:React.ReactNode) => (
@@ -3582,10 +3624,12 @@ function RespuestasInv({ personas, recordar, avisar }: { personas:InvPersona[]; 
           <div style={{ width:`${vienen.length/total*100}%`, background:"#6aaa96" }}/>
           <div style={{ width:`${noVienen.length/total*100}%`, background:"#e07070" }}/>
         </div>
+        <div style={{ fontSize:10, color:"#c4a882", marginTop:5 }}>Contando acompañantes: {nVienen+nNo+nFaltan} personas en total
+        </div>
         <div style={{ display:"flex", gap:14, marginTop:8, fontSize:11, color:"#5c3d2e", flexWrap:"wrap" as const }}>
-          <span><b style={{ color:"#6aaa96" }}>●</b> Vienen <b>{vienen.length}</b></span>
-          <span><b style={{ color:"#e07070" }}>●</b> No vienen <b>{noVienen.length}</b></span>
-          <span><b style={{ color:"#d8c6b4" }}>●</b> Faltan <b>{faltan.length}</b></span>
+          <span><b style={{ color:"#6aaa96" }}>●</b> Vienen <b>{nVienen}</b></span>
+          <span><b style={{ color:"#e07070" }}>●</b> No vienen <b>{nNo}</b></span>
+          <span><b style={{ color:"#d8c6b4" }}>●</b> Faltan <b>{nFaltan}</b></span>
         </div>
       </Card>
 
@@ -3638,7 +3682,7 @@ function RespuestasInv({ personas, recordar, avisar }: { personas:InvPersona[]; 
             <button onClick={()=>setAbierta(ab?null:p.codigo)} style={{ width:"100%", display:"flex", alignItems:"center", gap:9, background:"none", border:"none", padding:"9px 0", cursor:"pointer", fontFamily:"inherit", textAlign:"left" as const }}>
               <span style={{ width:26, height:26, borderRadius:"50%", background:r.asiste?"#6aaa96":"#e07070", color:"#fff", fontSize:12, fontWeight:900, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{r.asiste?"✓":"✕"}</span>
               <span style={{ flex:1, minWidth:0 }}>
-                <span style={{ display:"block", fontSize:13, fontWeight:800, color:"#5c3d2e" }}>{p.para}</span>
+                <span style={{ display:"block", fontSize:13, fontWeight:800, color:"#5c3d2e" }}>{p.para}{conQuien(p)}</span>
                 <span style={{ display:"block", fontSize:10.5, color:"#c4a882" }}>{r.asiste ? ((r.comida||[]).join(", ")||"Come de todo") : "No podrá venir"} · {fechaCorta(r.fecha)}</span>
               </span>
               <span style={{ fontSize:11, color:"#c9956a", transform:ab?"rotate(180deg)":"none" }}>▾</span>
@@ -3674,7 +3718,7 @@ function RespuestasInv({ personas, recordar, avisar }: { personas:InvPersona[]; 
       {noVienen.length>0 && (
         <Card style={{ marginBottom:12, padding:"14px 16px" }}>
           {titulo("💔", `No podrán venir · ${noVienen.length}`)}
-          <div style={{ display:"flex", gap:5, flexWrap:"wrap" as const }}>{noVienen.map(p=>chipNombre(p.para))}</div>
+          <div style={{ display:"flex", gap:5, flexWrap:"wrap" as const }}>{noVienen.map(p=>chipNombre(p.para+conQuien(p)))}</div>
         </Card>
       )}
     </div>

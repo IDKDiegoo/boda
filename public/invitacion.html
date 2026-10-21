@@ -411,13 +411,13 @@
   <div class="monograma-sobre" aria-hidden="true"><span class="d">D</span><span class="c">C</span></div>
   <div class="toca">Toca el sello para abrir</div>
   <button class="sello-btn" id="abrir" aria-label="Abrir la invitación"><img class="sello-img" data-sello="crema" alt=""></button>
-  <div class="para-sobre"><div class="cap">Para</div><b data-para>&nbsp;</b></div>
+  <div class="para-sobre"><div class="cap">Para</div><b data-para>&nbsp;</b><div class="cap" id="para-con-sobre" hidden></div></div>
 </div>
 
 <canvas id="caen" aria-hidden="true"></canvas>
 <main id="contenido">
   <section class="escena" aria-label="Invitación">
-    <div class="saludo"><span class="cap chica">Con todo nuestro cariño, para</span><b id="para" data-para>&nbsp;</b></div>
+    <div class="saludo"><span class="cap chica">Con todo nuestro cariño, para</span><b id="para" data-para>&nbsp;</b><span class="cap chica" id="para-con" hidden></span></div>
     
     <article class="tarjeta verde principal revela">
       <span class="filete" aria-hidden="true"></span>
@@ -512,7 +512,7 @@
       <div class="progreso" aria-hidden="true"><i class="hecho"></i><i></i><i></i><i></i></div>
       <div class="pregunta" data-paso="1">
         <div class="n">Pregunta 1 de 4</div>
-        <div class="q">¿Nos acompañas el <em>18 de diciembre</em>?</div>
+        <div class="q" id="q-asiste">¿Nos acompañas el <em>18 de diciembre</em>?</div>
         <div class="arena" id="arena">
           <button class="btn si" id="btn-si">Sí, ahí estaré</button>
           <button class="btn no" id="btn-no" aria-label="No (pruébalo)">No</button>
@@ -522,7 +522,7 @@
       </div>
       <div class="pregunta" data-paso="2" hidden>
         <div class="n">Pregunta 2 de 4</div>
-        <div class="q">¿Algo que debamos saber <em>de tu comida</em>?</div>
+        <div class="q" id="q-comida">¿Algo que debamos saber <em>de tu comida</em>?</div>
         <p class="ayuda">Marca lo que corresponda.</p>
         <div class="chips" id="dietas" role="group" aria-label="Alimentación">
           <button class="chip" aria-pressed="true" data-v="Sin restricciones">Como de todo</button>
@@ -538,14 +538,9 @@
       </div>
       <div class="pregunta" data-paso="3" hidden>
         <div class="n">Pregunta 3 de 4</div>
-        <div class="q">¿Qué canción te hace salir <em>a bailar</em>?</div>
+        <div class="q" id="q-cancion">¿Qué canción te hace salir <em>a bailar</em>?</div>
+        <p class="ayuda">Es a libre elección: escribe la que tú quieras y la ponemos.</p>
         <input class="campo" id="cancion" placeholder="Canción y artista">
-        <div class="sugerencias" aria-label="Ideas"><span class="ayuda" style="margin:0">Ideas:</span>
-          <button data-c="La Bamba — Ritchie Valens">La Bamba</button>
-          <button data-c="Vivir mi vida — Marc Anthony">Vivir mi vida</button>
-          <button data-c="September — Earth, Wind & Fire">September</button>
-          <button data-c="Mil horas — Los Abuelos de la Nada">Mil horas</button>
-        </div>
         <div class="acciones"><button class="btn claro" data-atras>Volver</button><button class="btn" data-sigue>Seguir</button></div>
       </div>
       <div class="pregunta" data-paso="4" hidden>
@@ -931,7 +926,6 @@ window.Grabado = (() => {
     else { c.setAttribute("aria-pressed", String(on)); chips[0].setAttribute("aria-pressed", String(!chips.some((x) => x !== chips[0] && x.getAttribute("aria-pressed") === "true"))); }
     $("#alergia").hidden = chips.find((x) => x.dataset.v === "Alergia").getAttribute("aria-pressed") !== "true";
   }));
-  document.querySelectorAll(".sugerencias [data-c]").forEach((b) => b.addEventListener("click", () => { $("#cancion").value = b.dataset.c; $("#cancion").focus(); }));
 
   const fila = (k, v) => `<div><dt>${k}</dt><dd>${String(v).replace(/</g, "&lt;")}</dd></div>`;
   $("#enviar").addEventListener("click", () => {
@@ -1083,6 +1077,16 @@ window.Grabado = (() => {
       else {
         const inv = snap.data();
         ponerNombre(inv.para || "ti");
+        // Invitación para varios (con acompañantes): se nombra a todos y las preguntas van en plural
+        const acomp = (inv.acompanantes || []).map((x) => x.nombre).filter(Boolean);
+        if (acomp.length) {
+          const y = acomp.length === 1 ? acomp[0] : acomp.slice(0, -1).join(", ") + " y " + acomp[acomp.length - 1];
+          for (const id of ["#para-con", "#para-con-sobre"]) { const e = $(id); e.textContent = `y ${y}`; e.hidden = false; }
+          $("#q-asiste").innerHTML = "¿Nos acompañan el <em>18 de diciembre</em>?";
+          $("#q-comida").innerHTML = "¿Algo que debamos saber <em>de su comida</em>?";
+          $("#q-cancion").innerHTML = "¿Qué canción los hace salir <em>a bailar</em>?";
+          $("#btn-si").textContent = "Sí, ahí estaremos";
+        }
         document.title = `${inv.para ? inv.para + " · " : ""}Diego & Camila`;
         nota("Tu respuesta les llega directo a Diego y Camila.");
         if (inv.respuesta) window.__inv.mostrarRespuesta(inv.respuesta);
