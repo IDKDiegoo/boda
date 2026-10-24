@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App, { ErrorBoundary } from './App';
+import App from './App';
+import { ErrorBoundary } from './ui/base';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(
