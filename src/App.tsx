@@ -1,7 +1,8 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { onMessage } from "firebase/messaging";
-import { diasFaltantes } from "./base/config";
-import { initFCM, messaging } from "./base/firebase";
+import { EMAIL_NOVIOS, diasFaltantes } from "./base/config";
+import { auth, messaging } from "./base/firebase";
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { useData } from "./base/hooks";
 import { Dashboard } from "./pantallas/Dashboard";
 import { Invitados } from "./pantallas/Invitados";
@@ -28,11 +29,33 @@ const Cargando = () => <div style={{ textAlign:"center", padding:40, color:"#c4a
 // APP
 // ════════════════════════════════════════════════════════════════
 export default function App() {
-  const [acceso, setAcceso] = useState<null|"admin"|"fotos">(() => {
-    const p = new URLSearchParams(window.location.search);
-    if (p.get("fotos")==="1") return null;
-    return localStorage.getItem("boda_acceso") as any || null;
-  });
+  // undefined = todavía se sabe si hay sesión · null = sin sesión de los novios
+  const [usuario, setUsuario] = useState<User|null|undefined>(undefined);
+  const [fotos, setFotos] = useState(false);
+  // El QR de los invitados abre con ?fotos=1: ahí siempre se pide el código de fotos.
+  const [desdeQr, setDesdeQr] = useState(() => new URLSearchParams(window.location.search).get("fotos")==="1");
+  useEffect(() => onAuthStateChanged(auth, u => setUsuario(u && u.email===EMAIL_NOVIOS ? u : null)), []);
+
+  if (fotos) return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#fff5ee,#fde8d8)", padding:20 }}>
+      <S/>
+      <div style={{ maxWidth:480, margin:"0 auto" }}>
+        <div style={{ textAlign:"center", marginBottom:24 }}>
+          <img src="/pareja.jpg" alt="Boda" style={{ width:70, height:70, borderRadius:"50%", objectFit:"cover", border:"3px solid #c9956a" }}/>
+          <div style={{ fontSize:18, color:"#5c3d2e", marginTop:10 }}>Diego & Camila 💍</div>
+        </div>
+        <Suspense fallback={<Cargando/>}><Fotos esAdmin={false}/></Suspense>
+      </div>
+    </div>
+  );
+  if (usuario===undefined) return <Cargando/>;
+  if (!usuario || desdeQr) return <PantallaLogin onFotos={()=>setFotos(true)} onEntrar={()=>setDesdeQr(false)}/>;
+  return <Panel onSalir={()=>{ localStorage.removeItem("boda_acceso"); signOut(auth); }}/>;
+}
+
+// El panel de los novios. Va aparte para que sus datos se pidan recién con la sesión abierta
+// (antes de entrar, las reglas de la base no dejan leer nada).
+function Panel({ onSalir }: { onSalir:()=>void }) {
   const [tab, setTab]     = useState("dashboard");
   const [sidebar, setSidebar] = useState(false);
 
@@ -45,38 +68,17 @@ export default function App() {
   const [mesasPosData,setMesasPosData]= useData<{mesas:MesaPos[]}>("mesaspos",           {mesas:[]});
   const [decoraciones,setDecoraciones]= useData<{items:DecoItem[]}>("decoraciones",       {items:[]});
 
-  const login = (tipo:"admin"|"fotos") => {
-    setAcceso(tipo);
-    if (tipo==="admin") { localStorage.setItem("boda_acceso","admin"); initFCM(); }
-    if (tipo==="fotos") setTab("fotos");
-  };
-
   // Notificaciones en primer plano
   useEffect(() => {
-    if (acceso !== "admin" || !messaging) return;
+    if (!messaging) return;
     const unsub = onMessage(messaging, payload => {
       const title = payload.notification?.title || "💍 Boda";
       const body  = payload.notification?.body  || "";
       alert(`${title}\n${body}`);
     });
     return unsub;
-  }, [acceso]);
-  const logout = () => { localStorage.removeItem("boda_acceso"); setAcceso(null); };
-
-  if (!acceso) return <PantallaLogin onLogin={login}/>;
-
-  if (acceso==="fotos") return (
-    <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#fff5ee,#fde8d8)", padding:20 }}>
-      <S/>
-      <div style={{ maxWidth:480, margin:"0 auto" }}>
-        <div style={{ textAlign:"center", marginBottom:24 }}>
-          <img src="/pareja.jpg" alt="Boda" style={{ width:70, height:70, borderRadius:"50%", objectFit:"cover", border:"3px solid #c9956a" }}/>
-          <div style={{ fontSize:18, color:"#5c3d2e", marginTop:10 }}>Diego & Camila 💍</div>
-        </div>
-        <Suspense fallback={<Cargando/>}><Fotos esAdmin={false}/></Suspense>
-      </div>
-    </div>
-  );
+  }, []);
+  const logout = onSalir;
 
   const TABS_MAIN = [
     { id:"dashboard",   icon:"💍", label:"Inicio" },
