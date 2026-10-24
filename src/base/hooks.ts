@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { guardarFusionando } from "./guardar";
 import { BODA_FECHA } from "./config";
 import { db } from "./firebase";
 
@@ -38,18 +39,21 @@ export function useCuentaRegresiva() {
 }
 
 export function useData<T>(coleccion: string, inicial: T) {
-  const [data, setData] = useState<T>(inicial);
+  const [data, setDataLocal] = useState<T>(inicial);
+  const actual = useRef<T>(inicial);   // lo que este teléfono tiene a la vista (base del cambio)
+  const setData = useCallback((d: T) => { actual.current = d; setDataLocal(d); }, []);
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "boda", coleccion), snap => {
       if (snap.exists()) setData(snap.data() as T);
     });
     return unsub;
-  }, [coleccion]);
+  }, [coleccion, setData]);
 
   const guardar = async (nuevo: T) => {
+    const antes = actual.current;
     setData(nuevo);
-    await setDoc(doc(db, "boda", coleccion), nuevo as object);
+    await guardarFusionando(doc(db, "boda", coleccion), antes as object, nuevo as object);
   };
 
   return [data, guardar] as const;

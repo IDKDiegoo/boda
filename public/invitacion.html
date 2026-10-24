@@ -985,12 +985,12 @@ window.Grabado = (() => {
   const $ = (s) => document.querySelector(s);
   const codigo = (location.pathname.match(/\/i\/([A-Za-z0-9_-]+)/) || [])[1] || new URLSearchParams(location.search).get("i");
   const nota = (t) => { $("#nota-guardado").textContent = t; };
-  // ── DIAGNÓSTICO TEMPORAL de la música (20-oct): se guarda en boda/diagnostico/musica ──
-  const diag = { ua: navigator.userAgent.slice(0, 160), pagina: location.pathname + location.hash, inicio: Date.now(), eventos: [] };
+  // Registro de la música: el diagnóstico del 20-oct ya cumplió (la música suena en todos los
+  // teléfonos) y dejó de subirse a la base. Los eventos quedan solo en memoria, por si se vuelve a necesitar.
+  const diag = { inicio: Date.now(), eventos: [] };
   const anota = (e) => { diag.eventos.push(`${((Date.now() - diag.inicio) / 1000).toFixed(1)}s ${e}`); };
   window.__diag = anota;
-  const subirDiag = () => { import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js").then(({ collection, addDoc }) =>
-    addDoc(collection(db, "boda", "diagnostico", "musica"), { ...diag, fecha: new Date().toISOString() })).catch(() => {}); };
+  const subirDiag = () => {};
 
   // ── Música de YouTube: se carga escondida y parte al tocar el sello ──
   // Acepta youtu.be/ID, youtube.com/watch?v=ID, /shorts/ID y music.youtube.com. Inicio en «1:05» o segundos.

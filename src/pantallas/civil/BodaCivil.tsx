@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { guardarFusionando } from "../../base/guardar";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { fmt } from "../../base/config";
 import { db, stor } from "../../base/firebase";
@@ -9,15 +10,17 @@ import { CATS_CIVIL, CAT_ICON_CIVIL, CivilData, CivilGasto, CivilInvitado, PLAZO
 import { Btn, Card, Inp, Sel, Title } from "../../ui/base";
 
 export function useCivil() {
-  const [data, setLocal] = useState<CivilData>({ invitados:[], gastos:[] });
+  const [data, setLocalEstado] = useState<CivilData>({ invitados:[], gastos:[] });
+  const actual = useRef<CivilData>({ invitados:[], gastos:[] });   // base del cambio (ver base/fusionar.js)
+  const setLocal = useCallback((d:CivilData) => { actual.current = d; setLocalEstado(d); }, []);
   useEffect(()=>{
     const unsub = onSnapshot(doc(db,"boda","civil"), snap=>{
       if (snap.exists()) setLocal(snap.data() as CivilData);
       else setLocal({ invitados:[], gastos:[] });
     });
     return unsub;
-  },[]);
-  const guardar = async (d:CivilData) => { setLocal(d); await setDoc(doc(db,"boda","civil"),d); };
+  },[setLocal]);
+  const guardar = async (d:CivilData) => { const antes = actual.current; setLocal(d); await guardarFusionando(doc(db,"boda","civil"), antes, d); };
   return { data, guardar };
 }
 

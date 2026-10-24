@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { guardarFusionando } from "../../base/guardar";
 import { fmt } from "../../base/config";
 import { db } from "../../base/firebase";
 import { Paquete, PaquetesData, ViajeConfig, ViajesData } from "./datosViaje";
@@ -7,17 +8,20 @@ import { LunaItem } from "../../tipos";
 import { Card } from "../../ui/base";
 
 export function useViajesConfig() {
-  const [data, setData] = useState<ViajesData>({ viajes: [] });
+  const [data, setDataEstado] = useState<ViajesData>({ viajes: [] });
+  const actual = useRef<ViajesData>({ viajes: [] });
+  const setData = useCallback((d: ViajesData) => { actual.current = d; setDataEstado(d); }, []);
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "boda", "viajes_config"), snap => {
       if (snap.exists()) setData(snap.data() as ViajesData);
       else setData({ viajes: [] });
     });
     return unsub;
-  }, []);
+  }, [setData]);
   const guardar = async (nuevo: ViajesData) => {
+    const antes = actual.current;
     setData(nuevo);
-    await setDoc(doc(db, "boda", "viajes_config"), nuevo);
+    await guardarFusionando(doc(db, "boda", "viajes_config"), antes, nuevo);
   };
   return { data, guardar };
 }
