@@ -3,8 +3,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { fmt } from "../base/config";
 import { stor } from "../base/firebase";
 import { getVideoInfo } from "../base/hooks";
-import { Presupuesto } from "./Presupuesto";
-import { DecoCheck, DecoItem, Foto } from "../tipos";
+import { DecoCheck, DecoItem } from "../tipos";
 import { Btn, Card, Inp, Sel, Title } from "../ui/base";
 
 // ════════════════════════════════════════════════════════════════

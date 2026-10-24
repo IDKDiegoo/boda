@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { fmt } from "../base/config";
-import { Fotos } from "./Fotos";
 import { Proveedor } from "../tipos";
 import { Badge, Btn, Card, Inp, Sel, Title } from "../ui/base";
 

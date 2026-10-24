@@ -1,8 +1,5 @@
 import { useState } from "react";
 import { fmt } from "../base/config";
-import { Fotos } from "./Fotos";
-import { Invitados } from "./Invitados";
-import { Proveedores } from "./Proveedores";
 import { GastoExtra, Invitado, Proveedor } from "../tipos";
 import { Btn, Card, Inp, Sel, Title } from "../ui/base";
 

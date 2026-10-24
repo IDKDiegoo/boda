@@ -1,9 +1,6 @@
 import { fmt } from "../base/config";
 import { useCuentaRegresiva } from "../base/hooks";
 import { BannerNotificaciones } from "../componentes/BannerNotificaciones";
-import { Invitados } from "./Invitados";
-import { Presupuesto } from "./Presupuesto";
-import { Proveedores } from "./Proveedores";
 import { GastoExtra, Invitado, Proveedor } from "../tipos";
 import { Card, Title } from "../ui/base";
 

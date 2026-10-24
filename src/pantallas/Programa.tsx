@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { app } from "../base/firebase";
 import { Cancion } from "../tipos";
 import { Btn, Card, Inp, Sel, Title } from "../ui/base";
 

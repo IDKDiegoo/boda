@@ -2,7 +2,10 @@
 """Parte src/App.tsx en módulos SIN reescribir el código (24-oct-2026).
 Cada pieza de nivel superior va al archivo de su rango; los imports se calculan por los nombres
 que usa cada archivo (los de librerías salen de los import de App.tsx; los propios, del archivo
-donde quedó cada nombre). Después: `npx tsc --noEmit` tiene que dar limpio."""
+donde quedó cada nombre). Después: `npx tsc --noEmit` tiene que dar limpio.
+🔴 Busca nombres por palabra, así que un texto como "Fotos" en pantalla agrega un import de más
+(y Vercel, con CI=true, falla por el aviso). Se limpian con `npx tsc --noEmit --noUnusedLocals`
+(TS6133) y se compila con `CI=true npm run build` antes de subir."""
 import re, os, sys
 SRC = "src/App.tsx"
 lines = open(SRC).read().split("\n")

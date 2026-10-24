@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ref } from "firebase/storage";
 import { Invitado, MesaPos } from "../tipos";
 import { Badge, Btn, Card, Title } from "../ui/base";
 
