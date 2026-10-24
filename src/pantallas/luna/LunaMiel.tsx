@@ -2,7 +2,6 @@ import { useState } from "react";
 import { doc, setDoc } from "firebase/firestore";
 import { fmt } from "../../base/config";
 import { db } from "../../base/firebase";
-import { Presupuesto } from "../Presupuesto";
 import { PaquetesTab, PresupuestoViaje, usePaquetes, useViajesConfig } from "./Paquetes";
 import { CATS_LUNA, DESTINOS, Destino, ITINERARIO_BZC, ITINERARIO_FLN, PRESUPUESTOS, VENTANAS, Ventana, ViajeConfig } from "./datosViaje";
 import { LunaItem } from "../../tipos";

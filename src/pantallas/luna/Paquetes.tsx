@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { fmt } from "../../base/config";
-import { app, db } from "../../base/firebase";
+import { db } from "../../base/firebase";
 import { Paquete, PaquetesData, ViajeConfig, ViajesData } from "./datosViaje";
 import { LunaItem } from "../../tipos";
 import { Card } from "../../ui/base";

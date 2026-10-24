@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import { doc, onSnapshot, setDoc, collection, deleteDoc, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, stor } from "../../base/firebase";
-import { Invitados } from "../Invitados";
-import { Programa } from "../Programa";
 import { RespuestasInv } from "./RespuestasInv";
 import { CivilData } from "./datosCivil";
 import { INV_BASE, INV_ICONOS, InvConfig, InvItem, InvPersona, cuantos, iconoPara, idYoutube, linkDe, nuevoCodigo, origenVista } from "./invitacion";

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { ACCESO_PIN, FOTOS_PIN } from "../base/config";
-import { Invitados } from "./Invitados";
 import { Btn, Card, Inp, S } from "../ui/base";
 
 // ════════════════════════════════════════════════════════════════

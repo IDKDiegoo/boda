@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useData } from "../base/hooks";
-import { Invitados } from "./Invitados";
 import { Btn, Card, Title } from "../ui/base";
 
 // ════════════════════════════════════════════════════════════════

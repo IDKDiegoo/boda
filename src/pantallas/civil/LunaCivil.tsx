@@ -1,6 +1,4 @@
 import { fmt } from "../../base/config";
-import { Fotos } from "../Fotos";
-import { Presupuesto } from "../Presupuesto";
 import { Card } from "../../ui/base";
 
 // ════════════════════════════════════════════════════════════════

@@ -1,5 +1,4 @@
 import React from "react";
-import { app } from "../base/firebase";
 
 // ── Error Boundary ───────────────────────────────────────────────
 export class ErrorBoundary extends React.Component<{children:React.ReactNode},{error:string|null}> {

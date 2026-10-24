@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { app, initFCM } from "../base/firebase";
+import React from "react";
+import { initFCM } from "../base/firebase";
 import { Card } from "../ui/base";
 
 // ════════════════════════════════════════════════════════════════
