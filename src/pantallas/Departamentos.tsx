@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "../base/firebase";
+import { onSnapshot } from "firebase/firestore";
+import { dref } from "../base/firebase";
 import { Card } from "../ui/base";
 
 // ── Departamentos (búsqueda automática diaria por el bot check_deptos.py) ──
@@ -16,7 +16,7 @@ export type DeptosData = { departamentos: Depto[]; resumen: string; mejor_opcion
 export function useDepartamentos(): DeptosData|null {
   const [data, setData] = useState<DeptosData|null>(null);
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "boda", "departamentos"), snap => {
+    const unsub = onSnapshot(dref("departamentos"), snap => {
       if (snap.exists()) setData(snap.data() as DeptosData);
       else setData({ departamentos: [], resumen: "", mejor_opcion: null, fecha_consulta: "" });
     });

@@ -6,7 +6,7 @@ import { CANTIDAD_DEFECTO, UNIDAD_DEFECTO, penitencia, sacar } from "./logica";
 
 // ═══════════════════════════════════════════════════════════════════
 // VERDAD O RETO EN PAREJA — 5 niveles, con penitencia de alcohol si no se cumple.
-// Las cartas vienen de la base (boda/juegos_pareja: el archivo de Diego, cargado tal cual) y
+// Las cartas vienen de la base (contenido/juegos_pareja: iguales para todas las parejas) y
 // solo las pueden leer los novios: no van dentro del código de la página.
 // ═══════════════════════════════════════════════════════════════════
 
@@ -33,7 +33,7 @@ export function VerdadReto({ onVolver }: { onVolver: () => void }) {
 
   useEffect(() => {
     if (cache) return;
-    getDoc(doc(db, "boda", "juegos_pareja"))
+    getDoc(doc(db, "contenido", "juegos_pareja"))
       .then(s => { if (!s.exists()) { setError("Todavía no hay cartas cargadas."); return; } cache = s.data() as Datos; setDatos(cache); })
       .catch(() => setError("No se pudieron cargar las cartas. Revisa tu conexión."));
   }, []);

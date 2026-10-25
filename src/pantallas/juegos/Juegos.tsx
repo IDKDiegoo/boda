@@ -10,12 +10,12 @@ import { VerdadReto } from "./VerdadReto";
 // ═══════════════════════════════════════════════════════════════════
 type Juego = "" | "verdadreto" | "packs" | "preferirias" | "quiz" | "dados" | "impostor" | "misiones" | "mimica" | "bingo" | "caza" | "trivia";
 
-export function Juegos() {
+export function Juegos({ adultos = true }: { adultos?: boolean }) {
   const [vista, setVista] = useState<"pareja" | "fiesta">("pareja");
   const [juego, setJuego] = useState<Juego>("");
   const volver = () => setJuego("");
 
-  if (juego === "verdadreto") return <VerdadReto onVolver={volver}/>;
+  if (juego === "verdadreto" && adultos) return <VerdadReto onVolver={volver}/>;
   if (juego === "packs") return <Packs onVolver={volver}/>;
   if (juego === "preferirias") return <Preferirias onVolver={volver}/>;
   if (juego === "quiz") return <Quiz onVolver={volver}/>;
@@ -38,7 +38,7 @@ export function Juegos() {
       </div>
       {vista === "pareja" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <TarjetaJuego titulo="Verdad o reto" desc="5 niveles, de suave a sin filtro. Si no cumples, tomas." icono="🔥" color={C.vino} etiqueta="+18" onClick={() => setJuego("verdadreto")}/>
+          {adultos && <TarjetaJuego titulo="Verdad o reto" desc="5 niveles, de suave a sin filtro. Si no cumples, tomas." icono="🔥" color={C.vino} etiqueta="+18" onClick={() => setJuego("verdadreto")}/>}
           <TarjetaJuego titulo="Para conocerse" desc="Packs de preguntas: acercándonos, vida y sueños, tierno y tonto, temas difíciles" icono="💬" color="#5b8fb9" onClick={() => setJuego("packs")}/>
           <TarjetaJuego titulo="¿Qué preferirías?" desc="Dilemas para elegir a la cuenta de tres" icono="🤔" color="#8e6fb0" onClick={() => setJuego("preferirias")}/>
           <TarjetaJuego titulo="¿Cuánto me conoces?" desc="Uno responde en secreto, el otro adivina. Gana quien suma más" icono="🧠" color="#7a9e7e" onClick={() => setJuego("quiz")}/>

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { ref, uploadBytes, getDownloadURL, listAll, deleteObject } from "firebase/storage";
-import { FOTOS_PIN } from "../base/config";
-import { stor } from "../base/firebase";
+import { uploadBytes, getDownloadURL, listAll, deleteObject } from "firebase/storage";
+import { LEGADO, bodaActual, sref } from "../base/firebase";
 import { Foto } from "../tipos";
 import { Btn, Card, Title } from "../ui/base";
 
@@ -20,7 +19,7 @@ export function Fotos({ esAdmin }: { esAdmin:boolean }) {
   const cargar = async () => {
     setCargando(true);
     try {
-      const r = await listAll(ref(stor, "fotos-boda"));
+      const r = await listAll(sref("fotos-boda"));
       const urls = await Promise.all(r.items.map(async it=>({ url:await getDownloadURL(it), nombre:it.name })));
       setFotos(urls.reverse());
     } catch(e:any) {
@@ -74,7 +73,7 @@ export function Fotos({ esAdmin }: { esAdmin:boolean }) {
         const comp = (blob.size/1024/1024).toFixed(1);
         setProgreso(`Subiendo ${n}/${files.length}... ${orig}MB → ${comp}MB`);
         const nombre = `${Date.now()}_${f.name.replace(/\.[^.]+$/, "")}.jpg`;
-        await withTimeout(uploadBytes(ref(stor,`fotos-boda/${nombre}`), blob, { contentType:"image/jpeg" }));
+        await withTimeout(uploadBytes(sref(`fotos-boda/${nombre}`), blob, { contentType:"image/jpeg" }));
       }
       setProgreso("¡Fotos subidas! 🎉");
       if (esAdmin) await cargar();
@@ -113,7 +112,7 @@ export function Fotos({ esAdmin }: { esAdmin:boolean }) {
                   onClick={async()=>{
                     if (!window.confirm("¿Eliminar esta foto?")) return;
                     try {
-                      await deleteObject(ref(stor, `fotos-boda/${f.nombre}`));
+                      await deleteObject(sref(`fotos-boda/${f.nombre}`));
                       setFotos(prev=>prev.filter(x=>x.nombre!==f.nombre));
                     } catch(e:any){ alert("Error al eliminar: "+e.message); }
                   }}
@@ -129,9 +128,8 @@ export function Fotos({ esAdmin }: { esAdmin:boolean }) {
             <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:8 }}>📱 QR para invitados</div>
             <div style={{ fontSize:11, color:"#a07855", marginBottom:12 }}>Muestra este QR en la boda para que los invitados suban fotos</div>
             <div style={{ background:"#fff", border:"6px solid #f5e8dc", borderRadius:14, padding:16, display:"inline-block", marginBottom:10 }}>
-              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(window.location.origin+"?fotos=1")}&bgcolor=ffffff&color=5c3d2e`} alt="QR" style={{ width:180, height:180, display:"block" }}/>
+              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(window.location.origin+"?fotos=1"+(bodaActual() && bodaActual()!==LEGADO ? `&b=${bodaActual()}` : ""))}&bgcolor=ffffff&color=5c3d2e`} alt="QR" style={{ width:180, height:180, display:"block" }}/>
             </div>
-            <div style={{ fontSize:11, color:"#c4a882" }}>Código: <strong style={{ color:"#c9956a" }}>{FOTOS_PIN}</strong></div>
           </Card>
         </>
       )}

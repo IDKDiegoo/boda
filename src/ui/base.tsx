@@ -48,3 +48,17 @@ export function Badge({ text, color }: { text:string; color:string }) {
 export function Title({ icon, title }: { icon:string; title:string }) {
   return <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}><span style={{ fontSize:22 }}>{icon}</span><h2 style={{ fontSize:18, fontWeight:700, color:"#5c3d2e" }}>{title}</h2></div>;
 }
+
+// ── Marca: los anillos del logo de My Wedding (el logo completo, con letras, está en /mywedding-logo.jpg) ──
+export function Logo({ tam = 64 }: { tam?: number }) {
+  return <img src="/mywedding-icono-512.png" alt="My Wedding" width={tam} height={tam}
+    style={{ width:tam, height:tam, borderRadius:"50%", objectFit:"cover", border:"1px solid #f0e0d0", background:"#fbf0ea", flexShrink:0 }}/>;
+}
+
+/** La foto de la pareja; si no tiene, sus iniciales en un círculo. */
+export function FotoPareja({ foto, nombre, tam = 38, borde = 2 }: { foto?: string; nombre?: string; tam?: number; borde?: number }) {
+  if (foto) return <img src={foto} alt={nombre || "Pareja"} style={{ width:tam, height:tam, borderRadius:"50%", objectFit:"cover", border:`${borde}px solid #e8d5c4`, flexShrink:0 }}/>;
+  const ini = String(nombre || "").split(/\s*[&y]\s*|\s+/).filter(Boolean).map(x => x[0]).slice(0, 2).join(" & ").toUpperCase();
+  return <div style={{ width:tam, height:tam, borderRadius:"50%", background:"linear-gradient(135deg,#f5e3d3,#e8c9a6)", border:`${borde}px solid #e8d5c4`,
+    display:"flex", alignItems:"center", justifyContent:"center", color:"#5c3d2e", fontSize:tam*0.3, fontWeight:700, flexShrink:0 }}>{ini || "♡"}</div>;
+}

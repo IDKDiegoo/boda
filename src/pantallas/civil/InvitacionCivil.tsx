@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { doc, onSnapshot, setDoc, collection, deleteDoc, writeBatch } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, stor } from "../../base/firebase";
+import { onSnapshot, setDoc, deleteDoc, writeBatch } from "firebase/firestore";
+import { uploadBytes, getDownloadURL } from "firebase/storage";
+import { bodaActual, cref, db, dref, indiceInv, infoBoda, sref } from "../../base/firebase";
 import { RespuestasInv } from "./RespuestasInv";
 import { CivilData } from "./datosCivil";
 import { INV_BASE, INV_ICONOS, InvConfig, InvItem, InvPersona, cuantos, iconoPara, idYoutube, linkDe, nuevoCodigo, origenVista } from "./invitacion";
@@ -18,11 +18,11 @@ export function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:
   const [sumando, setSumando] = useState<string|null>(null);   // invitación a la que se le está sumando un acompañante
 
   useEffect(() => {
-    const u1 = onSnapshot(doc(db,"boda","invitacion"), snap => {
+    const u1 = onSnapshot(dref("invitacion"), snap => {
       const c = { ...INV_BASE, ...(snap.data() as Partial<InvConfig>||{}) } as InvConfig;
       setCfg(c); setBorr(b => b ?? c);
     });
-    const u2 = onSnapshot(collection(db,"boda","invitacion","invitados"), snap =>
+    const u2 = onSnapshot(cref("invitacion","invitados"), snap =>
       setPersonas(snap.docs.map(d=>({ codigo:d.id, ...(d.data() as any) }))));
     return () => { u1(); u2(); };
   }, []);
@@ -36,7 +36,7 @@ export function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:
     setSubiendoMusica(true);
     try {
       const ext = (f.name.split(".").pop() || "mp3").toLowerCase();
-      const r = ref(stor, `boda-civil/musica_${Date.now()}.${ext}`);
+      const r = sref(`boda-civil/musica_${Date.now()}.${ext}`);
       // Cache largo: los 40 invitados la bajan una sola vez cada uno (ver costo de Storage)
       const tipo = ext === "m4a" || ext === "aac" ? "audio/mp4" : ext === "mp3" ? "audio/mpeg" : (f.type || "audio/mpeg");   // Safari reconoce mejor audio/mp4
       await uploadBytes(r, f, { contentType: tipo, cacheControl: "public, max-age=31536000, immutable" });
@@ -52,7 +52,7 @@ export function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:
   const cambios = JSON.stringify(cfg) !== JSON.stringify(borr);
   const guardarCfg = async () => {
     const programa = [...borr.programa].filter(p=>p.actividad.trim()).sort((a,b)=>a.hora.localeCompare(b.hora));
-    await setDoc(doc(db,"boda","invitacion"), { ...borr, programa });
+    await setDoc(dref("invitacion"), { ...borr, programa });
     setBorr({ ...borr, programa }); avisar("✓ Invitación actualizada: los links ya muestran estos datos");
   };
   const setP = (i:number, campo:keyof InvItem, v:string) =>
@@ -64,12 +64,15 @@ export function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:
   const faltan = invitados.filter(i=>!conInv.has(i.id));
   const crearFaltantes = async () => {
     const b = writeBatch(db);
-    faltan.forEach(i => b.set(doc(db,"boda","invitacion","invitados",nuevoCodigo()), { para:i.nombre, invitadoId:i.id, enviada:false }));
+    faltan.forEach(i => { const c = nuevoCodigo(); b.set(dref("invitacion","invitados",c), { para:i.nombre, invitadoId:i.id, enviada:false });
+      const ix = indiceInv(c); if (ix) b.set(ix, { bodaId: bodaActual() }); });
     await b.commit(); avisar(`✓ ${faltan.length} invitaciones creadas`);
   };
-  const crearSuelta = async () => { await setDoc(doc(db,"boda","invitacion","invitados",nuevoCodigo()), { para:"Nueva invitación", enviada:false }); };
-  const cambiarPara = (p:InvPersona, para:string) => { if (para.trim() && para.trim()!==p.para) setDoc(doc(db,"boda","invitacion","invitados",p.codigo), { para:para.trim() }, { merge:true }); };
-  const marcarEnviada = (p:InvPersona) => { if (!p.enviada) setDoc(doc(db,"boda","invitacion","invitados",p.codigo), { enviada:true }, { merge:true }); };
+  const crearSuelta = async () => { const c = nuevoCodigo(); const ix = indiceInv(c); if (ix) await setDoc(ix, { bodaId: bodaActual() });
+    await setDoc(dref("invitacion","invitados",c), { para:"Nueva invitación", enviada:false }); };
+  const quitarDelIndice = (codigo:string) => { const ix = indiceInv(codigo); if (ix) deleteDoc(ix).catch(()=>{}); };
+  const cambiarPara = (p:InvPersona, para:string) => { if (para.trim() && para.trim()!==p.para) setDoc(dref("invitacion","invitados",p.codigo), { para:para.trim() }, { merge:true }); };
+  const marcarEnviada = (p:InvPersona) => { if (!p.enviada) setDoc(dref("invitacion","invitados",p.codigo), { enviada:true }, { merge:true }); };
   const copiar = async (p:InvPersona) => { try { await navigator.clipboard.writeText(linkDe(p.codigo)); avisar(`✓ Link de ${p.para} copiado`); marcarEnviada(p); } catch { window.prompt("Copia el link:", linkDe(p.codigo)); } };
   // Mensaje que se abre en WhatsApp (texto de Diego y Camila); el link es el de cada invitado
   const textoWsp = (p:InvPersona) => [
@@ -81,10 +84,10 @@ export function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:
     "",
     "Les pedimos confirmar su asistencia. ¡Esperamos contar con ustedes! 🥂",
     "",
-    "Diego & Camila ♡",
+    `${infoBoda().nombre || "Diego & Camila"} ♡`,
   ].join("\n");
   const whatsapp = (p:InvPersona) => { window.open(`https://wa.me/?text=${encodeURIComponent(textoWsp(p))}`, "_blank"); marcarEnviada(p); };
-  const borrar = (p:InvPersona) => { if (window.confirm(`¿Borrar la invitación de ${p.para}? Su link deja de funcionar.`)) deleteDoc(doc(db,"boda","invitacion","invitados",p.codigo)); };
+  const borrar = (p:InvPersona) => { if (window.confirm(`¿Borrar la invitación de ${p.para}? Su link deja de funcionar.`)) { deleteDoc(dref("invitacion","invitados",p.codigo)); quitarDelIndice(p.codigo); } };
   const copiarTodos = async () => {
     const t = personas.slice().sort((a,b)=>a.para.localeCompare(b.para)).map(p=>`${p.para}: ${linkDe(p.codigo)}`).join("\n");
     try { await navigator.clipboard.writeText(t); avisar(`✓ ${personas.length} links copiados`); } catch { window.prompt("Copia la lista:", t); }
@@ -104,12 +107,12 @@ export function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:
     const i = invitados.find(x=>x.id===invitadoId); if (!i) return;
     const propia = personas.find(x=>x.invitadoId===invitadoId);
     if (propia && (propia.enviada || propia.respuesta || propia.vistas) && !window.confirm(`${i.nombre} ya tiene su propia invitación enviada. ¿Juntarla igual con la de ${p.para}? Su link deja de funcionar.`)) return;
-    await setDoc(doc(db,"boda","invitacion","invitados",p.codigo), { acompanantes:[...(p.acompanantes||[]), { invitadoId, nombre:i.nombre }] }, { merge:true });
-    if (propia) await deleteDoc(doc(db,"boda","invitacion","invitados",propia.codigo));
+    await setDoc(dref("invitacion","invitados",p.codigo), { acompanantes:[...(p.acompanantes||[]), { invitadoId, nombre:i.nombre }] }, { merge:true });
+    if (propia) { await deleteDoc(dref("invitacion","invitados",propia.codigo)); quitarDelIndice(propia.codigo); }
     setSumando(null); avisar(`✓ ${i.nombre} va con ${p.para}`);
   };
   const sacarAcomp = async (p:InvPersona, invitadoId:number) => {
-    await setDoc(doc(db,"boda","invitacion","invitados",p.codigo), { acompanantes:(p.acompanantes||[]).filter(a=>a.invitadoId!==invitadoId) }, { merge:true });
+    await setDoc(dref("invitacion","invitados",p.codigo), { acompanantes:(p.acompanantes||[]).filter(a=>a.invitadoId!==invitadoId) }, { merge:true });
     avisar("Separado: si quieres, créale su propia invitación con el botón de arriba");
   };
   const pasarConfirmados = () => {

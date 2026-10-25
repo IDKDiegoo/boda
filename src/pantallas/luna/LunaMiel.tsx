@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { doc, setDoc } from "firebase/firestore";
+import { setDoc } from "firebase/firestore";
 import { fmt } from "../../base/config";
-import { db } from "../../base/firebase";
+import { dref } from "../../base/firebase";
 import { PaquetesTab, PresupuestoViaje, usePaquetes, useViajesConfig } from "./Paquetes";
 import { CATS_LUNA, DESTINOS, Destino, ITINERARIO_BZC, ITINERARIO_FLN, PRESUPUESTOS, VENTANAS, Ventana, ViajeConfig } from "./datosViaje";
 import { LunaItem } from "../../tipos";
@@ -35,7 +35,7 @@ export function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(
   };
 
   const solicitarBusqueda = async (viajeId?: string) => {
-    await setDoc(doc(db, "boda", "config_busqueda"), {
+    await setDoc(dref("config_busqueda"), {
       solicitada: true,
       viaje_id: viajeId || null,
       ts: new Date().toISOString(),
