@@ -125,7 +125,7 @@
   .polaroid figcaption{position:absolute;left:0;right:0;bottom:9px;text-align:center;font-family:var(--mano);font-size:23px;line-height:1;color:var(--tinta-2)}
   .decor{position:absolute;pointer-events:none;z-index:4;overflow:visible}   /* solo en huecos sin texto (lo revisa la prueba de textos tapados) */
   .decor .mece{transform-box:fill-box;transform-origin:50% 100%;animation:mece 7s ease-in-out infinite alternate}
-  .decor .mece:nth-child(2n){animation-duration:9s;animation-delay:-3s}
+  .decor g:nth-child(2n) > .mece{animation-duration:9s;animation-delay:-3s}
   @keyframes mece{from{transform:rotate(-1.6deg)}to{transform:rotate(1.6deg)}}
 
   /* Versículo */
@@ -764,7 +764,9 @@ window.Grabado = (() => {
       el("circle", { r: .8, fill: "#c3c8b0" }, fl); }
   }
   function cala(g, defs, x, y, alto, ang) {
-    const c = el("g", { class: "mece", transform: `translate(${x} ${y}) rotate(${ang})` }, g);
+    // La posición va en un grupo y el meneo en otro: la animación (transform en CSS) le pisaba la
+    // posición al tallo y todos quedaban en la esquina del ramo, apuntando para arriba (tapaban los nombres).
+    const c = el("g", { class: "mece" }, el("g", { transform: `translate(${x} ${y}) rotate(${ang})` }, g));
     el("path", { d: `M0 0 C${-3} ${-alto * .35} ${4} ${-alto * .7} ${1} ${-alto}`, fill: "none", stroke: "#7f8f6a", "stroke-width": 2.2, "stroke-linecap": "round" }, c);
     const t = el("g", { transform: `translate(1 ${-alto}) rotate(-12)` }, c);
     el("path", { d: "M0 0 C-9 -6 -15 -24 -9 -40 C-6 -48 4 -50 9 -44 C14 -38 13 -30 18 -26 C10 -24 6 -14 0 0Z", fill: grad(defs, [[0, "#ffffff"], [.6, "#f3f1ea"], [1, "#dcd8cb"]], "linearGradient", { x1: "0", y1: "0", x2: "1", y2: "1" }), stroke: "#d6d2c4", "stroke-width": .6 }, t);
@@ -772,7 +774,9 @@ window.Grabado = (() => {
     el("path", { d: "M-6 -38 C-2 -30 4 -26 12 -26", fill: "none", stroke: "#e2ded2", "stroke-width": .8 }, t);
   }
   function eucalipto(g, defs, x, y, largo, ang) {
-    const c = el("g", { class: "mece", transform: `translate(${x} ${y}) rotate(${ang})` }, g);
+    // La posición va en un grupo y el meneo en otro: la animación (transform en CSS) le pisaba la
+    // posición al tallo y todos quedaban en la esquina del ramo, apuntando para arriba (tapaban los nombres).
+    const c = el("g", { class: "mece" }, el("g", { transform: `translate(${x} ${y}) rotate(${ang})` }, g));
     el("path", { d: `M0 0 Q${largo * .12} ${-largo * .5} 0 ${-largo}`, fill: "none", stroke: "#7c8a6b", "stroke-width": 1.2 }, c);
     const hojaG = grad(defs, [[0, "#b3bea2"], [1, "#7f8e6d"]], "linearGradient", { x1: "0", y1: "0", x2: "1", y2: "1" });
     for (let k = 0; k < 9; k++) { const t = .1 + k * .1, lado = k % 2 ? 1 : -1, r = 7 - k * .45;
@@ -786,12 +790,16 @@ window.Grabado = (() => {
     if (tipo === "calas") { for (let i = 0; i < 4; i++) cala(g, defs, W * (.35 + i * .1), H, H * (.55 + azar() * .3), -14 + i * 9); eucalipto(g, defs, W * .3, H, H * .55, -24); }
     else if (tipo === "eucalipto") { for (let i = 0; i < 3; i++) eucalipto(g, defs, W * (.3 + i * .15), H * .95, H * (.5 + azar() * .3), -30 + i * 25); hortensia(g, defs, W * .55, H * .62, 22); }
     else { // rosas
-      for (let i = 0; i < 3; i++) eucalipto(g, defs, W * (.2 + i * .3), H * .95, H * (.5 + azar() * .25), -60 + i * 55);
+      // Sin foto al lado (My Wedding), el ramo queda en la esquina de la tarjeta: los tallos van hacia
+      // afuera, a la derecha. Con el abanico normal, uno subía hasta los nombres y los tapaba.
+      const esquina = svg.dataset.esquina === "1";
+      for (let i = 0; i < 3; i++) eucalipto(g, defs, W * (esquina ? .55 + i * .15 : .2 + i * .3), H * .95, H * (esquina ? .45 + azar() * .2 : .5 + azar() * .25), esquina ? 55 + i * 22 : -60 + i * 55);
       hortensia(g, defs, W * .26, H * .5, 30); hortensia(g, defs, W * .8, H * .74, 20);
       [[.5, .52, 31], [.74, .6, 25], [.32, .7, 22], [.6, .8, 19], [.86, .42, 16]].forEach(([fx, fy, r]) => rosa(g, defs, W * fx, H * fy, r));
     }
   }
   document.querySelectorAll("svg.decor").forEach(ramo);
+  window.__ramo = (svg) => { svg.replaceChildren(); ramo(svg); };   // para rehacer un ramo (personalizar)
 
   // ── Abrir la carta ──────────────────────────────────────────────────
   // Mientras la carta está cerrada nada se desplaza (en el iPhone un deslizamiento fuerte movía la página de abajo)
@@ -1098,7 +1106,11 @@ window.Grabado = (() => {
     if (!vacio(c.titulo)) txt("#titulo-inv", c.titulo); else if (!original) txt("#titulo-inv", "¡Nos casamos!");
     // Foto: la de la pareja, o ninguna (nunca la de otra pareja)
     if (!vacio(c.foto)) { $("#foto").src = c.foto; $("#foto").alt = `Foto de ${pareja}`; }
-    else if (!original) ocultar("#foto-fig", true);
+    else if (!original) {
+      ocultar("#foto-fig", true);
+      const d = document.querySelector(".escena .decor[data-ramo='rosas']");
+      if (d && d.dataset.esquina !== "1") { d.dataset.esquina = "1"; window.__ramo?.(d); }
+    }
     if (!vacio(c.fotoTexto)) txt("#foto-texto", c.fotoTexto); else if (!original) txt("#foto-texto", "");
     // Frase o versículo (vacío en una boda nueva = no se muestra)
     if (!vacio(c.frase)) { txt("#verso-texto", `«${String(c.frase).replace(/^[«"]|[»"]$/g, "")}»`); txt("#verso-cita", c.fraseCita || ""); }

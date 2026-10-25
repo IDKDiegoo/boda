@@ -41,6 +41,8 @@ module.exports = async (req, res) => {
       r('<h1 class="nombres" id="nombres">Diego<span>&amp;</span>Camila</h1>', `<h1 class="nombres" id="nombres">${esc(n1)}${n2 ? `<span>&amp;</span>${esc(n2)}` : ""}</h1>`);
       r('<p class="cap" id="titulo-inv">¡Nos casamos por el civil!</p>', `<p class="cap" id="titulo-inv">${esc(titulo)}</p>`);
       r('<img src="/pareja.jpg" alt="Diego y Camila caminando de la mano por la playa" id="foto">', `<img src="${esc(c.foto || "")}" alt="Foto de ${esc(pareja)}" id="foto">`);
+      // Sin foto, el ramo de la primera tarjeta se arma hacia afuera (si no, un tallo tapa los nombres)
+      if (!c.foto) r('<svg class="decor" data-ramo="rosas" data-semilla="9"', '<svg class="decor" data-ramo="rosas" data-esquina="1" data-semilla="9"');
       r('<p class="cap" id="pie-nombres">Diego &amp; Camila</p>', `<p class="cap" id="pie-nombres">${esc(pareja)}</p>`);
       // Colores de la pareja desde el principio: sin ellos el sobre se alcanza a pintar verde
       const PAL = { rosa:["#b98a8f","#c49aa0","#8f5f66","#5e3a40"], azul:["#7d8fa8","#8c9db4","#566a85","#36465c"], terracota:["#b8806a","#c4917c","#8e5a45","#5c3a2c"],
