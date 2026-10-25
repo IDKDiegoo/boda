@@ -23,6 +23,7 @@ const Regalos = lazy(() => import("./pantallas/Regalos").then(m => ({ default: m
 const BodaCivil = lazy(() => import("./pantallas/civil/BodaCivil").then(m => ({ default: m.BodaCivil })));
 const LunaMiel = lazy(() => import("./pantallas/luna/LunaMiel").then(m => ({ default: m.LunaMiel })));
 const QRInvitados = lazy(() => import("./pantallas/QRInvitados").then(m => ({ default: m.QRInvitados })));
+const Juegos = lazy(() => import("./pantallas/juegos/Juegos").then(m => ({ default: m.Juegos })));
 const Cargando = () => <div style={{ textAlign:"center", padding:40, color:"#c4a882", fontSize:13 }}>Cargando…</div>;
 
 // ════════════════════════════════════════════════════════════════
@@ -95,6 +96,7 @@ function Panel({ onSalir }: { onSalir:()=>void }) {
     { id:"luna",         icon:"✈️", label:"Luna de Miel",  desc:"Viaje y actividades" },
     { id:"deptos",       icon:"🏢", label:"Departamentos", desc:"Proyectos en Quilicura / metro L3" },
     { id:"checklist",    icon:"✅", label:"Pendientes",    desc:"Tareas y cosas por hacer" },
+    { id:"juegos",       icon:"🎲", label:"Juegos",        desc:"Para la fiesta y en pareja" },
     { id:"fotos",        icon:"📷", label:"Galería",       desc:"Fotos de la boda" },
     { id:"qr",           icon:"📱", label:"QR Invitados",  desc:"Código para subir fotos" },
   ];
@@ -152,6 +154,7 @@ function Panel({ onSalir }: { onSalir:()=>void }) {
         {tab==="luna"        && <LunaMiel data={luna} setData={setLuna}/>}
         {tab==="deptos"      && <Departamentos/>}
         {tab==="checklist"   && <CheckList/>}
+        {tab==="juegos"      && <Juegos/>}
         {tab==="fotos"       && <Fotos esAdmin={true}/>}
         {tab==="qr"          && <QRInvitados/>}
         </Suspense>
