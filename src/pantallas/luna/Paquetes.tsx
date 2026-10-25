@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { onSnapshot } from "firebase/firestore";
 import { guardarFusionando } from "../../base/guardar";
 import { fmt } from "../../base/config";
-import { db } from "../../base/firebase";
+import { dref } from "../../base/firebase";
 import { Paquete, PaquetesData, ViajeConfig, ViajesData } from "./datosViaje";
 import { LunaItem } from "../../tipos";
 import { Card } from "../../ui/base";
@@ -12,7 +12,7 @@ export function useViajesConfig() {
   const actual = useRef<ViajesData>({ viajes: [] });
   const setData = useCallback((d: ViajesData) => { actual.current = d; setDataEstado(d); }, []);
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "boda", "viajes_config"), snap => {
+    const unsub = onSnapshot(dref("viajes_config"), snap => {
       if (snap.exists()) setData(snap.data() as ViajesData);
       else setData({ viajes: [] });
     });
@@ -21,7 +21,7 @@ export function useViajesConfig() {
   const guardar = async (nuevo: ViajesData) => {
     const antes = actual.current;
     setData(nuevo);
-    await guardarFusionando(doc(db, "boda", "viajes_config"), antes, nuevo);
+    await guardarFusionando(dref("viajes_config"), antes, nuevo);
   };
   return { data, guardar };
 }
@@ -29,7 +29,7 @@ export function useViajesConfig() {
 export function usePaquetes(): Record<string, PaquetesData> {
   const [data, setData] = useState<Record<string, PaquetesData>>({});
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "boda", "paquetes"), snap => {
+    const unsub = onSnapshot(dref("paquetes"), snap => {
       if (snap.exists()) setData(snap.data() as Record<string, PaquetesData>);
     });
     return unsub;
@@ -97,7 +97,7 @@ export function PaqueteCard({ p, mejorId }: { p: Paquete; mejorId: string|null }
 export function useBusquedaPendiente(): { pendiente: boolean; ts: string|null } {
   const [estado, setEstado] = useState({ pendiente: false, ts: null as string|null });
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "boda", "config_busqueda"), snap => {
+    const unsub = onSnapshot(dref("config_busqueda"), snap => {
       if (snap.exists()) {
         const d = snap.data();
         // pendiente = solicitada (esperando al watcher) OR buscando (Claude corriendo)

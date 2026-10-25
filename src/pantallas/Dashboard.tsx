@@ -1,4 +1,5 @@
-import { fmt } from "../base/config";
+import { fechaLarga, fmt } from "../base/config";
+import { infoBoda } from "../base/firebase";
 import { useCuentaRegresiva } from "../base/hooks";
 import { BannerNotificaciones } from "../componentes/BannerNotificaciones";
 import { GastoExtra, Invitado, Proveedor } from "../tipos";
@@ -23,7 +24,7 @@ export function Dashboard({ invitados, proveedores, gastos }: { invitados:{invit
       <BannerNotificaciones/>
       <Title icon="💍" title="Nuestra Boda"/>
       <Card style={{ background:"linear-gradient(135deg,#c9956a,#a07040)", marginBottom:16, overflow:"hidden", position:"relative" }}>
-        <img src="/pareja.jpg" alt="Diego & Camila" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.25 }}/>
+        {(infoBoda().foto || infoBoda().legado) && <img src={infoBoda().foto || "/pareja.jpg"} alt={infoBoda().nombre} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity:0.25 }}/>}
         <div style={{ position:"relative", textAlign:"center", padding:"8px 0" }}>
           <div style={{ fontSize:11, color:"#ffe8d4", letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:12 }}>Faltan</div>
           <div style={{ display:"flex", justifyContent:"center", gap:12, marginBottom:12 }}>
@@ -34,7 +35,7 @@ export function Dashboard({ invitados, proveedores, gastos }: { invitados:{invit
               </div>
             ))}
           </div>
-          <div style={{ fontSize:13, color:"#ffe8d4" }}>Diego & Camila · 27 de Noviembre 2027 💍</div>
+          <div style={{ fontSize:13, color:"#ffe8d4" }}>{infoBoda().nombre} · {fechaLarga()} 💍</div>
         </div>
       </Card>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16 }}>

@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { uploadBytes, getDownloadURL } from "firebase/storage";
 import { fmt } from "../base/config";
-import { stor } from "../base/firebase";
+import { sref } from "../base/firebase";
 import { getVideoInfo } from "../base/hooks";
 import { DecoCheck, DecoItem } from "../tipos";
 import { Btn, Card, Inp, Sel, Title } from "../ui/base";
@@ -47,7 +47,7 @@ export function Decoraciones({ data, setData }: { data:{items:DecoItem[]}; setDa
     try {
       const blob  = await comprimir(files[0]);
       const nombre = `deco_${Date.now()}.jpg`;
-      const r = ref(stor, `decoraciones-boda/${nombre}`);
+      const r = sref(`decoraciones-boda/${nombre}`);
       await uploadBytes(r, blob, { contentType:"image/jpeg" });
       const url = await getDownloadURL(r);
       setForm(f => ({ ...f, foto: url }));

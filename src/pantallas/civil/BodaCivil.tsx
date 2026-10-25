@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { onSnapshot } from "firebase/firestore";
 import { guardarFusionando } from "../../base/guardar";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { uploadBytes, getDownloadURL } from "firebase/storage";
 import { fmt } from "../../base/config";
-import { db, stor } from "../../base/firebase";
+import { dref, sref } from "../../base/firebase";
 import { InvitacionCivil } from "./InvitacionCivil";
 import { LunaCivil } from "./LunaCivil";
 import { CATS_CIVIL, CAT_ICON_CIVIL, CivilData, CivilGasto, CivilInvitado, PLAZOS_CIVIL, SUG_CRONO_CIVIL, SUG_DECO_CIVIL, SUG_GASTOS_CIVIL, SUG_TAREAS_CIVIL, SUG_TIPS_CIVIL, UNIDS_CIVIL, comprimirImg, totalGasto } from "./datosCivil";
@@ -14,13 +14,13 @@ export function useCivil() {
   const actual = useRef<CivilData>({ invitados:[], gastos:[] });   // base del cambio (ver base/fusionar.js)
   const setLocal = useCallback((d:CivilData) => { actual.current = d; setLocalEstado(d); }, []);
   useEffect(()=>{
-    const unsub = onSnapshot(doc(db,"boda","civil"), snap=>{
+    const unsub = onSnapshot(dref("civil"), snap=>{
       if (snap.exists()) setLocal(snap.data() as CivilData);
       else setLocal({ invitados:[], gastos:[] });
     });
     return unsub;
   },[setLocal]);
-  const guardar = async (d:CivilData) => { const antes = actual.current; setLocal(d); await guardarFusionando(doc(db,"boda","civil"), antes, d); };
+  const guardar = async (d:CivilData) => { const antes = actual.current; setLocal(d); await guardarFusionando(dref("civil"), antes, d); };
   return { data, guardar };
 }
 
@@ -101,7 +101,7 @@ export function BodaCivil() {
       const urls: string[] = [];
       for (const f of files) {
         const blob = await comprimirImg(f);
-        const r = ref(stor, `boda-civil/${dest.campo}_${dest.id}_${Date.now()}_${urls.length}.jpg`);
+        const r = sref(`boda-civil/${dest.campo}_${dest.id}_${Date.now()}_${urls.length}.jpg`);
         await uploadBytes(r, blob, { contentType:"image/jpeg" });
         urls.push(await getDownloadURL(r));
       }

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { onSnapshot } from "firebase/firestore";
 import { guardarFusionando } from "./guardar";
 import { BODA_FECHA } from "./config";
-import { db } from "./firebase";
+import { dref } from "./firebase";
 
 export type VideoInfo = { tipo: "youtube" | "tiktok" | "otro"; id?: string; url: string };
 
@@ -44,7 +44,7 @@ export function useData<T>(coleccion: string, inicial: T) {
   const setData = useCallback((d: T) => { actual.current = d; setDataLocal(d); }, []);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "boda", coleccion), snap => {
+    const unsub = onSnapshot(dref(coleccion), snap => {
       if (snap.exists()) setData(snap.data() as T);
     });
     return unsub;
@@ -53,7 +53,7 @@ export function useData<T>(coleccion: string, inicial: T) {
   const guardar = async (nuevo: T) => {
     const antes = actual.current;
     setData(nuevo);
-    await guardarFusionando(doc(db, "boda", coleccion), antes as object, nuevo as object);
+    await guardarFusionando(dref(coleccion), antes as object, nuevo as object);
   };
 
   return [data, guardar] as const;

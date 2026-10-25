@@ -1049,8 +1049,11 @@ window.Grabado = (() => {
   }
   // «Ver» desde la app (#vista, o ?admin=1 en links viejos): no cuenta como abierta ni guarda respuestas
   const vistaAdmin = location.hash.includes("vista") || new URLSearchParams(location.search).has("admin");
+  // My Wedding: el índice dice de qué boda es este link; si no está, es de la boda original (/boda).
+  const ix = codigo ? await getDoc(doc(db, "invitaciones", codigo)).catch(() => null) : null;
+  const base = ix && ix.exists() && ix.data().bodaId ? ["bodas", ix.data().bodaId, "datos"] : ["boda"];
   try {
-    const cfg = (await getDoc(doc(db, "boda", "invitacion"))).data() || {};
+    const cfg = (await getDoc(doc(db, ...base, "invitacion"))).data() || {};
     if (cfg.lugarNombre) $("#lugar-nombre").textContent = cfg.lugarNombre;
     if (cfg.direccion) $("#lugar-dir").textContent = cfg.direccion;
     if (cfg.hora) $("#hora").textContent = cfg.hora;
@@ -1070,7 +1073,7 @@ window.Grabado = (() => {
   const ponerNombre = (t) => document.querySelectorAll("[data-para]").forEach((e) => { e.textContent = t; });
   if (!codigo) { ponerNombre("ti"); nota("Esta es la invitación de muestra: tu respuesta no se guarda."); }
   else {
-    const ref = doc(db, "boda", "invitacion", "invitados", codigo);
+    const ref = doc(db, ...base, "invitacion", "invitados", codigo);
     try {
       const snap = await getDoc(ref);
       if (!snap.exists()) { ponerNombre("ti"); nota("No encontramos esta invitación. Pídele a Diego o Camila tu link."); }

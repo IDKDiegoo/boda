@@ -48,3 +48,26 @@ export function Badge({ text, color }: { text:string; color:string }) {
 export function Title({ icon, title }: { icon:string; title:string }) {
   return <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}><span style={{ fontSize:22 }}>{icon}</span><h2 style={{ fontSize:18, fontWeight:700, color:"#5c3d2e" }}>{title}</h2></div>;
 }
+
+// ── Marca: logo de My Wedding (provisorio hasta que llegue el definitivo) ──
+export function Logo({ tam = 64 }: { tam?: number }) {
+  return (
+    <svg width={tam} height={tam} viewBox="0 0 100 100" role="img" aria-label="My Wedding">
+      <defs>
+        <linearGradient id="mw-oro" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#e2b98e"/><stop offset="1" stopColor="#b07d52"/></linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r="48" fill="#fff" stroke="#f0e0d0" strokeWidth="2"/>
+      <circle cx="40" cy="54" r="19" fill="none" stroke="url(#mw-oro)" strokeWidth="5"/>
+      <circle cx="60" cy="54" r="19" fill="none" stroke="url(#mw-oro)" strokeWidth="5"/>
+      <path d="M60 26 l5 -7 l5 7 l-5 5 z" fill="#e8c9a6" stroke="#b07d52" strokeWidth="1.2"/>
+    </svg>
+  );
+}
+
+/** La foto de la pareja; si no tiene, sus iniciales en un círculo. */
+export function FotoPareja({ foto, nombre, tam = 38, borde = 2 }: { foto?: string; nombre?: string; tam?: number; borde?: number }) {
+  if (foto) return <img src={foto} alt={nombre || "Pareja"} style={{ width:tam, height:tam, borderRadius:"50%", objectFit:"cover", border:`${borde}px solid #e8d5c4`, flexShrink:0 }}/>;
+  const ini = String(nombre || "").split(/\s*[&y]\s*|\s+/).filter(Boolean).map(x => x[0]).slice(0, 2).join(" & ").toUpperCase();
+  return <div style={{ width:tam, height:tam, borderRadius:"50%", background:"linear-gradient(135deg,#f5e3d3,#e8c9a6)", border:`${borde}px solid #e8d5c4`,
+    display:"flex", alignItems:"center", justifyContent:"center", color:"#5c3d2e", fontSize:tam*0.3, fontWeight:700, flexShrink:0 }}>{ini || "♡"}</div>;
+}
