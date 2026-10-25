@@ -146,7 +146,7 @@ export function LunaCivil({ hechos, onToggle }: { hechos:string[]; onToggle:(id:
         {LUNA_DIAS.map(d=>(
           <div key={d.id} style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#5c3d2e", padding:"6px 0", borderBottom:"1px solid #f3e7dc" }}>
             <span>{d.dia.slice(0,3)} {d.fecha} · {d.titulo}</span>
-            <span style={{ fontVariantNumeric:"tabular-nums", whiteSpace:"nowrap" as const, marginLeft:8 }}>{reales(totalDia(d))}</span>
+            <span style={{ fontVariantNumeric:"lining-nums tabular-nums", whiteSpace:"nowrap" as const, marginLeft:8 }}>{reales(totalDia(d))}</span>
           </div>
         ))}
         <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#a07855", padding:"7px 0" }}><span>Subtotal</span><span>{reales(subtotal)} · {fmt(subtotal*REAL_A_CLP)}</span></div>

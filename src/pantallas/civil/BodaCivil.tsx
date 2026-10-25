@@ -8,6 +8,7 @@ import { InvitacionCivil } from "./InvitacionCivil";
 import { LunaCivil } from "./LunaCivil";
 import { CATS_CIVIL, CAT_ICON_CIVIL, CivilData, CivilGasto, CivilInvitado, PLAZOS_CIVIL, SUG_CRONO_CIVIL, SUG_DECO_CIVIL, SUG_GASTOS_CIVIL, SUG_TAREAS_CIVIL, SUG_TIPS_CIVIL, UNIDS_CIVIL, comprimirImg, totalGasto } from "./datosCivil";
 import { Btn, Card, Inp, Sel, Title } from "../../ui/base";
+import { Icono } from "../../ui/iconos";
 
 export function useCivil() {
   const [data, setLocalEstado] = useState<CivilData>({ invitados:[], gastos:[] });
@@ -363,8 +364,8 @@ export function BodaCivil() {
                         <div style={{ textAlign:"right" as const, flexShrink:0 }}>
                           <div style={{ fontSize:15, fontWeight:700, color:"#4070b0", marginBottom:4 }}>{fmt(total)}</div>
                           <div style={{ display:"flex", gap:4, justifyContent:"flex-end" }}>
-                            <button onClick={()=>abrirEditG(g)} style={{ background:"none", border:"1px solid #d0c0b0", borderRadius:6, padding:"3px 7px", fontSize:11, color:"#a07855", cursor:"pointer" }}>✏️</button>
-                            <button onClick={()=>delGasto(g.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
+                            <button onClick={()=>abrirEditG(g)} style={{ background:"none", border:"1px solid #d0c0b0", borderRadius:6, padding:"3px 7px", fontSize:11, color:"#a07855", cursor:"pointer" }}><Icono n="lapiz" tam={16} style={{ color:"#a87447" }}/></button>
+                            <button onClick={()=>delGasto(g.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}><Icono n="basura" tam={16} style={{ color:"#d48a8a" }}/></button>
                           </div>
                         </div>
                       </div>
@@ -534,8 +535,8 @@ export function BodaCivil() {
                   <button onClick={()=>toggleInv(inv.id)} style={{ background:inv.confirmado?"#e8f5ec":"none", border:`1px solid ${inv.confirmado?"#6aaa96":"#e8d5c4"}`, borderRadius:6, padding:"4px 8px", fontSize:10, color:inv.confirmado?"#6aaa96":"#a07855", cursor:"pointer", fontFamily:"inherit" }}>
                     {inv.confirmado?"✓ Conf.":"Confirmar"}
                   </button>
-                  <button onClick={()=>abrirEditInv(inv)} style={{ background:"none", border:"1px solid #d0c0b0", borderRadius:6, padding:"4px 8px", fontSize:12, color:"#a07855", cursor:"pointer" }}>✏️</button>
-                  <button onClick={()=>delInv(inv.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
+                  <button onClick={()=>abrirEditInv(inv)} style={{ background:"none", border:"1px solid #d0c0b0", borderRadius:6, padding:"4px 8px", fontSize:12, color:"#a07855", cursor:"pointer" }}><Icono n="lapiz" tam={16} style={{ color:"#a87447" }}/></button>
+                  <button onClick={()=>delInv(inv.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}><Icono n="basura" tam={16} style={{ color:"#d48a8a" }}/></button>
                 </div>
               </div>
             </Card>

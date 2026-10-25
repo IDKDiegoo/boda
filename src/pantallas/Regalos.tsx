@@ -2,6 +2,7 @@ import { useState } from "react";
 import { fmt } from "../base/config";
 import { Regalo } from "../tipos";
 import { Badge, Btn, Card, Inp, Sel, Title } from "../ui/base";
+import { Icono } from "../ui/iconos";
 
 // ════════════════════════════════════════════════════════════════
 // REGALOS
@@ -56,7 +57,7 @@ export function Regalos({ data, setData }: { data:{regalos:Regalo[]}; setData:(d
               </div>
               <div style={{ display:"flex", gap:6 }}>
                 <button onClick={()=>toggle(r.id)} style={{ background:r.recibido?"#e8f5ec":"none", border:`1px solid ${r.recibido?"#6aaa96":"#e8d5c4"}`, borderRadius:6, padding:"4px 8px", fontSize:11, color:r.recibido?"#6aaa96":"#a07855", cursor:"pointer", fontFamily:"inherit" }}>{r.recibido?"✓ Recibido":"¿Recibido?"}</button>
-                <button onClick={()=>eliminar(r.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
+                <button onClick={()=>eliminar(r.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}><Icono n="basura" tam={16} style={{ color:"#d48a8a" }}/></button>
               </div>
             </div>
           </Card>

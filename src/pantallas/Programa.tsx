@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Cancion } from "../tipos";
 import { Btn, Card, Inp, Sel, Title } from "../ui/base";
+import { Icono } from "../ui/iconos";
 
 // ════════════════════════════════════════════════════════════════
 // PROGRAMA
@@ -74,7 +75,7 @@ export function Programa({ canciones, setCanciones }: { canciones:{canciones:Can
                     {c.link && (
                       <button onClick={()=>{ const e=toEmbedUrl(c.link!); if(e){setPlayerUrl(e);}else{window.open(c.link,"_blank");} }} style={{ background: toEmbedUrl(c.link)?"#f5e8dc":"#fdf0e8", border:`1px solid ${toEmbedUrl(c.link)?"#e8d5c4":"#f0c080"}`, borderRadius:8, padding:"4px 10px", fontSize:16, cursor:"pointer" }} title={toEmbedUrl(c.link)?"Reproducir en la app":"Abrir en navegador"}>{linkIcon(c.link)}</button>
                     )}
-                    <button onClick={()=>eliminar(c.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
+                    <button onClick={()=>eliminar(c.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}><Icono n="basura" tam={16} style={{ color:"#d48a8a" }}/></button>
                   </div>
                 </div>
               ))}

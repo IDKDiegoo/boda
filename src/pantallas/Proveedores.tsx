@@ -2,6 +2,7 @@ import { useState } from "react";
 import { fmt } from "../base/config";
 import { Proveedor } from "../tipos";
 import { Badge, Btn, Card, Inp, Sel, Title } from "../ui/base";
+import { Icono } from "../ui/iconos";
 
 // ════════════════════════════════════════════════════════════════
 // PROVEEDORES
@@ -69,7 +70,7 @@ export function Proveedores({ data, setData }: { data:{proveedores:Proveedor[]};
               {(p.extras||[]).length>0 && <div style={{ fontSize:11, color:"#a07855" }}>Base: {fmt(p.costo)} {p.extras.map(e=>`+ ${e.desc}: ${fmt(e.monto)}`).join(" ")}</div>}
               {p.contacto && <div style={{ fontSize:11, color:"#a07855", marginTop:4 }}>📞 {p.contacto}</div>}
               {p.notas && <div style={{ fontSize:11, color:"#c4a882", marginTop:4 }}>💬 {p.notas}</div>}
-              <button onClick={()=>{setForm(p);setEditId(p.id);setShow(true);}} style={{ background:"none", border:"none", color:"#c9956a", fontSize:12, cursor:"pointer", marginTop:8, padding:0, fontFamily:"inherit" }}>✏️ Editar</button>
+              <button onClick={()=>{setForm(p);setEditId(p.id);setShow(true);}} style={{ background:"none", border:"none", color:"#c9956a", fontSize:12, cursor:"pointer", marginTop:8, padding:0, fontFamily:"inherit" }}><Icono n="lapiz" tam={14}/>Editar</button>
             </Card>
           );
         })}

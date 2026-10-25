@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { C, TarjetaJuego } from "./comun";
+import { Title } from "../../ui/base";
 import { MIMICA, MISIONES_MESA } from "./contenido";
 import { Bingo, CazaFotos, Impostor, Mazo, Trivia } from "./Fiesta";
 import { Dados, Packs, Preferirias, Quiz } from "./Pareja";
@@ -29,7 +30,7 @@ export function Juegos({ adultos = true }: { adultos?: boolean }) {
 
   return (
     <div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: C.cafe, textAlign: "center", marginBottom: 14 }}>Juegos</div>
+      <Title icon="juegos" title="Juegos"/>
       <div style={{ display: "flex", background: "#fff", border: `1px solid ${C.borde}`, borderRadius: 14, padding: 4, marginBottom: 16 }}>
         {([["pareja", "💞 En pareja"], ["fiesta", "🎉 Para la fiesta"]] as const).map(([id, l]) => (
           <button key={id} onClick={() => setVista(id)} style={{ flex: 1, border: "none", borderRadius: 11, padding: "10px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useData } from "../base/hooks";
 import { Btn, Card, Title } from "../ui/base";
+import { Icono } from "../ui/iconos";
 
 // ════════════════════════════════════════════════════════════════
 // CHECKLIST
@@ -160,8 +161,8 @@ export function CheckList() {
               {t.notas&&<div style={{fontSize:11,color:"#a07855",marginTop:5}}>{t.notas}</div>}
             </div>
             <div style={{display:"flex",gap:5,flexShrink:0}}>
-              <button onClick={()=>abrirEditar(t)} style={{background:"#fdf0e8",border:"none",borderRadius:7,padding:"5px 8px",fontSize:12,cursor:"pointer"}}>✏️</button>
-              <button onClick={()=>eliminar(t.id)} style={{background:"#fef2f2",border:"none",borderRadius:7,padding:"5px 8px",fontSize:12,cursor:"pointer"}}>🗑️</button>
+              <button onClick={()=>abrirEditar(t)} style={{background:"#fdf0e8",border:"none",borderRadius:7,padding:"5px 8px",fontSize:12,cursor:"pointer"}}><Icono n="lapiz" tam={16} style={{ color:"#a87447" }}/></button>
+              <button onClick={()=>eliminar(t.id)} style={{background:"#fef2f2",border:"none",borderRadius:7,padding:"5px 8px",fontSize:12,cursor:"pointer"}}><Icono n="basura" tam={16} style={{ color:"#d48a8a" }}/></button>
             </div>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { fmt } from "../base/config";
 import { GastoExtra, Invitado, Proveedor } from "../tipos";
 import { Btn, Card, Inp, Sel, Title } from "../ui/base";
+import { Icono } from "../ui/iconos";
 
 // ════════════════════════════════════════════════════════════════
 // PRESUPUESTO
@@ -78,7 +79,7 @@ export function Presupuesto({ gastos, setGastos, proveedores, invitados }: any) 
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ fontSize:13, fontWeight:700, color:g.pagado?"#6aaa96":"#c9956a" }}>{fmt(g.monto)}</span>
               <button onClick={()=>toggleP(g.id)} style={{ background:"none", border:`1px solid ${g.pagado?"#6aaa96":"#e8d5c4"}`, borderRadius:6, padding:"3px 8px", fontSize:11, color:g.pagado?"#6aaa96":"#a07855", cursor:"pointer", fontFamily:"inherit" }}>{g.pagado?"✓":"Pagar"}</button>
-              <button onClick={()=>eliminar(g.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
+              <button onClick={()=>eliminar(g.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}><Icono n="basura" tam={16} style={{ color:"#d48a8a" }}/></button>
             </div>
           </div>
         ))}
