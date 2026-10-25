@@ -49,19 +49,10 @@ export function Title({ icon, title }: { icon:string; title:string }) {
   return <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}><span style={{ fontSize:22 }}>{icon}</span><h2 style={{ fontSize:18, fontWeight:700, color:"#5c3d2e" }}>{title}</h2></div>;
 }
 
-// ── Marca: logo de My Wedding (provisorio hasta que llegue el definitivo) ──
+// ── Marca: los anillos del logo de My Wedding (el logo completo, con letras, está en /mywedding-logo.jpg) ──
 export function Logo({ tam = 64 }: { tam?: number }) {
-  return (
-    <svg width={tam} height={tam} viewBox="0 0 100 100" role="img" aria-label="My Wedding">
-      <defs>
-        <linearGradient id="mw-oro" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#e2b98e"/><stop offset="1" stopColor="#b07d52"/></linearGradient>
-      </defs>
-      <circle cx="50" cy="50" r="48" fill="#fff" stroke="#f0e0d0" strokeWidth="2"/>
-      <circle cx="40" cy="54" r="19" fill="none" stroke="url(#mw-oro)" strokeWidth="5"/>
-      <circle cx="60" cy="54" r="19" fill="none" stroke="url(#mw-oro)" strokeWidth="5"/>
-      <path d="M60 26 l5 -7 l5 7 l-5 5 z" fill="#e8c9a6" stroke="#b07d52" strokeWidth="1.2"/>
-    </svg>
-  );
+  return <img src="/mywedding-icono-512.png" alt="My Wedding" width={tam} height={tam}
+    style={{ width:tam, height:tam, borderRadius:"50%", objectFit:"cover", border:"1px solid #f0e0d0", background:"#fbf0ea", flexShrink:0 }}/>;
 }
 
 /** La foto de la pareja; si no tiene, sus iniciales en un círculo. */

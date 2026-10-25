@@ -3,7 +3,7 @@ import { onSnapshot } from "firebase/firestore";
 import { guardarFusionando } from "../../base/guardar";
 import { uploadBytes, getDownloadURL } from "firebase/storage";
 import { fmt } from "../../base/config";
-import { dref, sref } from "../../base/firebase";
+import { dref, infoBoda, sref } from "../../base/firebase";
 import { InvitacionCivil } from "./InvitacionCivil";
 import { LunaCivil } from "./LunaCivil";
 import { CATS_CIVIL, CAT_ICON_CIVIL, CivilData, CivilGasto, CivilInvitado, PLAZOS_CIVIL, SUG_CRONO_CIVIL, SUG_DECO_CIVIL, SUG_GASTOS_CIVIL, SUG_TAREAS_CIVIL, SUG_TIPS_CIVIL, UNIDS_CIVIL, comprimirImg, totalGasto } from "./datosCivil";
@@ -29,7 +29,10 @@ export function BodaCivil() {
   const invitados = data.invitados || [];
   const gastos    = data.gastos    || [];
 
-  const [subTab, setSubTab] = useState<"presupuesto"|"checklist"|"programa"|"invitados"|"luna"|"invitacion">("presupuesto");
+  // Las bodas nuevas (My Wedding) ven acá solo sus invitados y la invitación: el resto de este
+  // planificador (presupuesto, checklist, programa y la luna de miel en Florianópolis) es de la boda original.
+  const legado = !!infoBoda().legado;
+  const [subTab, setSubTab] = useState<"presupuesto"|"checklist"|"programa"|"invitados"|"luna"|"invitacion">(legado ? "presupuesto" : "invitacion");
 
   // ── Invitados ────────────────────────────────────────────────
   const [showFInv, setShowFInv] = useState(false);
@@ -192,7 +195,7 @@ export function BodaCivil() {
 
   return (
     <div style={{ animation:"fadeUp .3s ease" }}>
-      <Title icon="💒" title="Boda Civil"/>
+      <Title icon="💒" title={legado ? "Boda Civil" : "Invitaciones"}/>
       <input ref={fotoInputRef} type="file" accept="image/*" multiple onChange={onFotoElegida} style={{ display:"none" }}/>
       {zoomFoto && (
         <div onClick={()=>setZoomFoto(null)}
@@ -205,12 +208,12 @@ export function BodaCivil() {
 
       {/* Sub-tabs */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:5, marginBottom:16 }}>
-        {SUB("presupuesto","Presupuesto","💰")}
-        {SUB("checklist","Checklist","✅")}
-        {SUB("programa","Programa","🕐")}
+        {legado && SUB("presupuesto","Presupuesto","💰")}
+        {legado && SUB("checklist","Checklist","✅")}
+        {legado && SUB("programa","Programa","🕐")}
         {SUB("invitados","Invitados","👥")}
         {SUB("invitacion","Invitación","💌")}
-        {SUB("luna","Luna de miel","🌴")}
+        {legado && SUB("luna","Luna de miel","🌴")}
       </div>
 
       {/* ══ PRESUPUESTO ══ */}
@@ -219,7 +222,7 @@ export function BodaCivil() {
           <div style={{ fontSize:12, fontWeight:800, color:"#c9956a", marginBottom:4 }}>✨ Empezar con una base</div>
           <div style={{ fontSize:11, color:"#a07855", lineHeight:1.5, marginBottom:10 }}>
             Carga un presupuesto estimado para 40 personas, ideas de decoración, el programa del día,
-            tips para ahorrar y el checklist por plazos. <strong>Después editás todo</strong>: textos, montos y cantidades.
+            tips para ahorrar y el checklist por plazos. <strong>Después editas todo</strong>: textos, montos y cantidades.
           </div>
           <button onClick={cargarSugerencia} style={{ background:"#c9956a", color:"#fff", border:"none", borderRadius:9, padding:"11px 16px", fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:"inherit", width:"100%" }}>
             Cargar sugerencia

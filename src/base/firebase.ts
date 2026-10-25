@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, collection } from "firebase/firestore";
-import { getStorage, ref } from "firebase/storage";
-import { getAuth } from "firebase/auth";
+import { getFirestore, doc, setDoc, collection, connectFirestoreEmulator } from "firebase/firestore";
+import { getStorage, ref, connectStorageEmulator } from "firebase/storage";
+import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getMessaging, getToken } from "firebase/messaging";
 
 // ── Firebase ────────────────────────────────────────────────────
@@ -17,6 +17,11 @@ export const app  = initializeApp(FIREBASE_CONFIG);
 export const db   = getFirestore(app);
 export const stor = getStorage(app);
 export const auth = getAuth(app);
+// Solo para probar en el Mac contra los emuladores (npm run build con REACT_APP_EMULADOR=1). En producción no existe.
+if (process.env.REACT_APP_EMULADOR === "1") {
+  connectFirestoreEmulator(db, "127.0.0.1", 8098); connectStorageEmulator(stor, "127.0.0.1", 9198);
+  connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+}
 
 // ── De qué boda son los datos (My Wedding: varias parejas) ──
 // Se fija al iniciar sesión. La boda original (Diego y Camila) vive en /boda; las demás en

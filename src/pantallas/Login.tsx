@@ -2,7 +2,7 @@ import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { MARCA, correoDe } from "../base/config";
 import { auth, initFCM } from "../base/firebase";
-import { Btn, Card, Inp, Logo, S } from "../ui/base";
+import { Btn, Card, Inp, S } from "../ui/base";
 
 // ════════════════════════════════════════════════════════════════
 // LOGIN — usuario y contraseña (como en el SaaS de ARAIN)
@@ -31,11 +31,8 @@ export function PantallaLogin({ onEntrar }: { onEntrar:()=>void }) {
   return (
     <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#fff5ee 0%,#fde8d8 50%,#f8d5c2 100%)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
       <S/>
-      <div style={{ animation:"float 3s ease-in-out infinite", marginBottom:18 }}><Logo tam={92}/></div>
-      <div style={{ textAlign:"center", marginBottom:28, animation:"fadeUp .6s ease" }}>
-        <h1 style={{ fontSize:32, color:"#5c3d2e", fontWeight:400, marginBottom:4 }}>{MARCA}</h1>
-        <div style={{ fontSize:13, color:"#a07855", letterSpacing:".04em" }}>Organiza tu boda, de la invitación a la fiesta</div>
-      </div>
+      <img src="/mywedding-logo.jpg" alt={MARCA} style={{ width:"min(300px, 80vw)", height:"auto", borderRadius:24, mixBlendMode:"multiply", animation:"fadeUp .6s ease" }}/>
+      <div style={{ fontSize:13, color:"#a07855", letterSpacing:".04em", margin:"4px 0 26px", textAlign:"center", animation:"fadeUp .7s ease" }}>Organiza tu boda, de la invitación a la fiesta</div>
       <Card style={{ width:"100%", maxWidth:340, animation:"fadeUp .7s ease" }}>
         <form onSubmit={e=>{ e.preventDefault(); intentar(); }} style={{ display:"flex", flexDirection:"column", gap:10 }}>
           <Inp value={usuario} onChange={v=>{setUsuario(v);setErr("");}} placeholder="Usuario"/>
