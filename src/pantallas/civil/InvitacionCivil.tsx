@@ -348,7 +348,7 @@ export function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:
       {personas.length>0 && (
         <div style={{ display:"flex", gap:6, marginBottom:10, overflowX:"auto" as const }}>
           {([["todas","Todas",personas.length],["sin","Sin responder",sinResp.length],["si","Vienen",si.length],["no","No vienen",no.length]] as const).map(([id,t,n])=>(
-            <button key={id} onClick={()=>setFiltro(id)} style={{ ...mini(filtro===id?"#5c3d2e":"#fff", filtro===id?"#fff":"#a07855"), border:"1px solid #ecdccb", borderRadius:20 }}>{t} · {n}</button>
+            <button key={id} onClick={()=>setFiltro(id)} style={{ ...mini(filtro===id?"#5c3d2e":"#fff", filtro===id?"#fff":"#a07855"), border:"1px solid #ecdccb", borderRadius:20, whiteSpace:"nowrap", flexShrink:0 }}>{t} · {n}</button>
           ))}
         </div>
       )}

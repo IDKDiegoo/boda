@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { setDoc } from "firebase/firestore";
 import { fmt } from "../../base/config";
-import { dref } from "../../base/firebase";
+import { dref, infoBoda } from "../../base/firebase";
 import { PaquetesTab, PresupuestoViaje, usePaquetes, useViajesConfig } from "./Paquetes";
 import { CATS_LUNA, DESTINOS, Destino, ITINERARIO_BZC, ITINERARIO_FLN, PRESUPUESTOS, VENTANAS, Ventana, ViajeConfig } from "./datosViaje";
 import { LunaItem } from "../../tipos";
 import { Btn, Card, Inp, Sel, Title } from "../../ui/base";
+import { Icono } from "../../ui/iconos";
 
 export function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(d:any)=>void }) {
   const lista = data.items || [];
-  const [subTab, setSubTab]   = useState<"viajes"|"paquetes"|"gastos">("viajes");
+  // El buscador de paquetes y las guías (Florianópolis y Búzios) son de la boda original: dependen
+  // de un programa del Mac de Diego. Las parejas nuevas usan el presupuesto del viaje.
+  const original = !!infoBoda().legado;
+  const [subTab, setSubTab]   = useState<"viajes"|"paquetes"|"gastos">(original ? "viajes" : "gastos");
   const [destino, setDestino] = useState<Destino>("bzc");
   const [ventana, setVentana] = useState<Ventana>("ene");
   const [form, setForm]       = useState<Partial<LunaItem>>({ categoria:"Vuelos" });
@@ -94,14 +98,14 @@ export function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(
 
   return (
     <div style={{ animation:"fadeUp .3s ease" }}>
-      <Title icon="✈️" title="Planificador de Viajes"/>
+      <Title icon="✈️" title={original ? "Planificador de Viajes" : "Luna de miel"}/>
 
       {/* Sub-tabs */}
-      <div style={{ display:"flex", gap:5, marginBottom:16 }}>
+      {original && <div style={{ display:"flex", gap:5, marginBottom:16 }}>
         {TAB_BTN("viajes","Viajes","🗺️")}
         {TAB_BTN("paquetes","Paquetes","🎁")}
         {TAB_BTN("gastos","Mis Gastos","📋")}
-      </div>
+      </div>}
 
       {/* ── TAB: VIAJES ── */}
       {subTab==="viajes" && (
@@ -168,7 +172,7 @@ export function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(
                     </div>
                     {v.notas && <div style={{ fontSize:10, color:"#c4a882", marginTop:3 }}>{v.notas}</div>}
                   </div>
-                  <button onClick={()=>eliminarViaje(v.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:18, padding:"0 4px" }}>🗑</button>
+                  <button onClick={()=>eliminarViaje(v.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:18, padding:"0 4px" }}><Icono n="basura" tam={16} style={{ color:"#d48a8a" }}/></button>
                 </div>
                 <div style={{ display:"flex", gap:6, marginTop:10 }}>
                   <button onClick={()=>{ setSelectedViajeId(v.id); setSubTab("paquetes"); }} style={{ flex:2, background:"#c9956a", color:"#fff", border:"none", borderRadius:9, padding:"9px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
@@ -338,7 +342,7 @@ export function LunaMiel({ data, setData }: { data:{items:LunaItem[]}; setData:(
                       </div>
                       <div style={{ display:"flex", gap:6 }}>
                         <button onClick={()=>toggle(i.id)} style={{ background:i.confirmado?"#e8f5ec":"none", border:`1px solid ${i.confirmado?"#6aaa96":"#e8d5c4"}`, borderRadius:6, padding:"4px 8px", fontSize:11, color:i.confirmado?"#6aaa96":"#a07855", cursor:"pointer", fontFamily:"inherit" }}>{i.confirmado?"✓ Pagado":"Confirmar"}</button>
-                        <button onClick={()=>eliminar(i.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}>🗑</button>
+                        <button onClick={()=>eliminar(i.id)} style={{ background:"none", border:"none", color:"#e07070", cursor:"pointer", fontSize:14 }}><Icono n="basura" tam={16} style={{ color:"#d48a8a" }}/></button>
                       </div>
                     </div>
                   </Card>

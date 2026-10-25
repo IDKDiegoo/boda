@@ -3,6 +3,7 @@ import { uploadBytes, getDownloadURL, listAll, deleteObject } from "firebase/sto
 import { LEGADO, bodaActual, sref } from "../base/firebase";
 import { Foto } from "../tipos";
 import { Btn, Card, Title } from "../ui/base";
+import { Icono } from "../ui/iconos";
 
 // ════════════════════════════════════════════════════════════════
 // FOTOS
@@ -117,7 +118,7 @@ export function Fotos({ esAdmin }: { esAdmin:boolean }) {
                     } catch(e:any){ alert("Error al eliminar: "+e.message); }
                   }}
                   style={{ position:"absolute", top:4, right:4, background:"rgba(0,0,0,.55)", border:"none", borderRadius:6, color:"#fff", fontSize:13, cursor:"pointer", padding:"2px 6px", lineHeight:1.4 }}
-                >🗑</button>
+                ><Icono n="basura" tam={16} style={{ color:"#d48a8a" }}/></button>
               </div>
             ))}
           </div>

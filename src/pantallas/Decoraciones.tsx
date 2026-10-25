@@ -5,6 +5,7 @@ import { sref } from "../base/firebase";
 import { getVideoInfo } from "../base/hooks";
 import { DecoCheck, DecoItem } from "../tipos";
 import { Btn, Card, Inp, Sel, Title } from "../ui/base";
+import { Icono } from "../ui/iconos";
 
 // ════════════════════════════════════════════════════════════════
 // DECORACIONES
@@ -230,8 +231,8 @@ export function Decoraciones({ data, setData }: { data:{items:DecoItem[]}; setDa
                         style={{ background:item.comprado?"#e8f5ec":"none", border:`1px solid ${item.comprado?"#6aaa96":"#e8d5c4"}`, borderRadius:6, padding:"4px 7px", fontSize:11, color:item.comprado?"#6aaa96":"#a07855", cursor:"pointer", fontFamily:"inherit" }}>
                         {item.comprado?"✓":"Comprar"}
                       </button>
-                      <button onClick={()=>abrirEditar(item)} style={{ background:"#fdf0e8", border:"none", borderRadius:6, padding:"4px 7px", fontSize:12, cursor:"pointer" }}>✏️</button>
-                      <button onClick={()=>eliminar(item.id)} style={{ background:"#fef2f2", border:"none", borderRadius:6, padding:"4px 7px", fontSize:12, cursor:"pointer" }}>🗑️</button>
+                      <button onClick={()=>abrirEditar(item)} style={{ background:"#fdf0e8", border:"none", borderRadius:6, padding:"4px 7px", fontSize:12, cursor:"pointer" }}><Icono n="lapiz" tam={16} style={{ color:"#a87447" }}/></button>
+                      <button onClick={()=>eliminar(item.id)} style={{ background:"#fef2f2", border:"none", borderRadius:6, padding:"4px 7px", fontSize:12, cursor:"pointer" }}><Icono n="basura" tam={16} style={{ color:"#d48a8a" }}/></button>
                     </div>
                   </div>
 
