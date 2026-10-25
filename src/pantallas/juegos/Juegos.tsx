@@ -1,20 +1,20 @@
 import { useState } from "react";
-import { C, TarjetaJuego } from "./comun";
-import { Title } from "../../ui/base";
-import { MIMICA, MISIONES_MESA } from "./contenido";
-import { Bingo, CazaFotos, Impostor, Mazo, Trivia } from "./Fiesta";
+import { C, EstilosJuego, IconoJuego, TarjetaJuego, vibrar } from "./comun";
+import { MISIONES_MESA } from "./contenido";
+import { Bingo, CazaFotos, Impostor, Mazo, Mimica, Trivia } from "./Fiesta";
 import { Dados, Packs, Preferirias, Quiz } from "./Pareja";
 import { VerdadReto } from "./VerdadReto";
 
 // ═══════════════════════════════════════════════════════════════════
-// JUEGOS (24-oct-2026): para la fiesta (en grupo) y en pareja.
+// JUEGOS (v2, 25-oct-2026): para la fiesta (en grupo) y en pareja.
 // ═══════════════════════════════════════════════════════════════════
 type Juego = "" | "verdadreto" | "packs" | "preferirias" | "quiz" | "dados" | "impostor" | "misiones" | "mimica" | "bingo" | "caza" | "trivia";
 
 export function Juegos({ adultos = true }: { adultos?: boolean }) {
   const [vista, setVista] = useState<"pareja" | "fiesta">("pareja");
   const [juego, setJuego] = useState<Juego>("");
-  const volver = () => setJuego("");
+  const volver = () => { setJuego(""); window.scrollTo({ top: 0 }); };
+  const abrir = (j: Juego) => { setJuego(j); window.scrollTo({ top: 0 }); };
 
   if (juego === "verdadreto" && adultos) return <VerdadReto onVolver={volver}/>;
   if (juego === "packs") return <Packs onVolver={volver}/>;
@@ -22,39 +22,54 @@ export function Juegos({ adultos = true }: { adultos?: boolean }) {
   if (juego === "quiz") return <Quiz onVolver={volver}/>;
   if (juego === "dados") return <Dados onVolver={volver}/>;
   if (juego === "impostor") return <Impostor onVolver={volver}/>;
-  if (juego === "misiones") return <Mazo titulo="Misiones por mesa 🎯" desc="Cada mesa saca una misión y la tiene que cumplir antes de que termine la cena." cartas={MISIONES_MESA} clave="misiones" color="#c9956a" onVolver={volver}/>;
-  if (juego === "mimica") return <Mazo titulo="Mímica 🎭" desc="Actúa sin hablar. Tu equipo tiene 60 segundos para adivinar." cartas={MIMICA} clave="mimica" color="#8e6fb0" reloj={60} onVolver={volver}/>;
+  if (juego === "misiones") return <Mazo titulo="Misiones por mesa" desc="Cada mesa saca una misión secreta y la tiene que cumplir antes de que termine la cena." cartas={MISIONES_MESA} clave="misiones" color="#c9956a" oscuro="#4a2a17" icono="diana" onVolver={volver}/>;
+  if (juego === "mimica") return <Mimica onVolver={volver}/>;
   if (juego === "bingo") return <Bingo onVolver={volver}/>;
   if (juego === "caza") return <CazaFotos onVolver={volver}/>;
   if (juego === "trivia") return <Trivia onVolver={volver}/>;
 
+  const pareja: [Juego, string, string, string, string, string?][] = [
+    ...(adultos ? [["verdadreto", "Verdad o reto", "5 niveles, de suave a sin filtro. Si no cumples, tomas.", "fuego", "#a3284b", "+18"] as [Juego, string, string, string, string, string]] : []),
+    ["packs", "Para conocerse", "Preguntas por pack: acercándonos, vida y sueños, tierno y tonto, temas difíciles", "charla", "#4f7fae"],
+    ["preferirias", "¿Qué preferirías?", "Cada uno elige en secreto. ¿Coincidieron?", "balanza", "#7d5ca8"],
+    ["quiz", "¿Cuánto me conoces?", "Uno responde, el otro adivina. Gana quien suma más", "cerebro", "#4f8a6b"],
+    ["dados", "Dados del amor", "Tira los dados: una acción y un lugar", "dados", "#c0394f"],
+  ];
+  const fiesta: [Juego, string, string, string, string][] = [
+    ["impostor", "El impostor", "Todos tienen la palabra menos uno. ¿Quién miente?", "mascara", "#4a3a6b"],
+    ["mimica", "Mímica", "Estilo Heads Up: acierta todas las que puedas antes del tiempo", "teatro", "#7d5ca8"],
+    ["misiones", "Misiones por mesa", "Una misión secreta para cada mesa durante la cena", "diana", "#c08552"],
+    ["bingo", "Bingo de la boda", "«La novia llora», «alguien bota una copa»… y cartones para imprimir", "ticket", "#b5655a"],
+    ["trivia", "Trivia de los novios", "Ustedes escriben las preguntas; las mesas compiten", "pregunta", "#4f8a6b"],
+    ["caza", "Caza de fotos", "Misiones para que los invitados saquen fotos y las suban con el QR", "camara", "#4f7fae"],
+  ];
+  const lista = vista === "pareja" ? pareja : fiesta;
+
   return (
     <div>
-      <Title icon="juegos" title="Juegos"/>
-      <div style={{ display: "flex", background: "#fff", border: `1px solid ${C.borde}`, borderRadius: 14, padding: 4, marginBottom: 16 }}>
-        {([["pareja", "💞 En pareja"], ["fiesta", "🎉 Para la fiesta"]] as const).map(([id, l]) => (
-          <button key={id} onClick={() => setVista(id)} style={{ flex: 1, border: "none", borderRadius: 11, padding: "10px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-            background: vista === id ? C.dorado : "transparent", color: vista === id ? "#fff" : C.suave }}>{l}</button>
-        ))}
+      <EstilosJuego/>
+      {/* Portada */}
+      <div style={{ position: "relative", overflow: "hidden", borderRadius: 26, padding: "22px 20px", marginBottom: 16, color: "#fff",
+        background: "radial-gradient(120% 120% at 0% 0%, #c47a8e 0%, #6b2c48 55%, #2c1424 100%)", boxShadow: "0 20px 40px -22px #2c1424" }}>
+        <div aria-hidden="true" style={{ position: "absolute", width: 200, height: 200, borderRadius: "50%", right: -60, top: -70, background: "radial-gradient(circle, rgba(255,214,170,.45), transparent 65%)", animation: "j-flotar 10s ease-in-out infinite" }}/>
+        <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 14 }}>
+          <span style={{ width: 54, height: 54, borderRadius: 18, background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.25)", display: "grid", placeItems: "center" }}><IconoJuego n="dados" tam={28}/></span>
+          <div>
+            <div style={{ fontFamily: "var(--titulo)", fontSize: 30, fontWeight: 600, lineHeight: 1 }}>Juegos</div>
+            <div style={{ fontSize: 12.5, opacity: .85, marginTop: 4 }}>{pareja.length + fiesta.length} juegos para la fiesta y para ustedes dos</div>
+          </div>
+        </div>
+        <div style={{ position: "relative", display: "flex", background: "rgba(0,0,0,.22)", borderRadius: 14, padding: 4, marginTop: 18 }}>
+          {([["pareja", "En pareja", "corazones"], ["fiesta", "Para la fiesta", "copa"]] as const).map(([id, l, ic]) => { const on = vista === id; return (
+            <button key={id} onClick={() => { vibrar(6); setVista(id); }} style={{ flex: 1, border: "none", borderRadius: 11, padding: "10px 6px", fontSize: 13.5, fontWeight: 600, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: on ? "#fff" : "transparent", color: on ? "#6b2c48" : "rgba(255,255,255,.85)", transition: "all .25s ease" }}>
+              <IconoJuego n={ic} tam={17}/>{l}</button>); })}
+        </div>
       </div>
-      {vista === "pareja" ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {adultos && <TarjetaJuego titulo="Verdad o reto" desc="5 niveles, de suave a sin filtro. Si no cumples, tomas." icono="🔥" color={C.vino} etiqueta="+18" onClick={() => setJuego("verdadreto")}/>}
-          <TarjetaJuego titulo="Para conocerse" desc="Packs de preguntas: acercándonos, vida y sueños, tierno y tonto, temas difíciles" icono="💬" color="#5b8fb9" onClick={() => setJuego("packs")}/>
-          <TarjetaJuego titulo="¿Qué preferirías?" desc="Dilemas para elegir a la cuenta de tres" icono="🤔" color="#8e6fb0" onClick={() => setJuego("preferirias")}/>
-          <TarjetaJuego titulo="¿Cuánto me conoces?" desc="Uno responde en secreto, el otro adivina. Gana quien suma más" icono="🧠" color="#7a9e7e" onClick={() => setJuego("quiz")}/>
-          <TarjetaJuego titulo="Dados del amor" desc="Un dado de acción y otro de lugar" icono="🎲" color="#c0394f" onClick={() => setJuego("dados")}/>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <TarjetaJuego titulo="El impostor" desc="Todos tienen la palabra menos uno. ¿Quién miente?" icono="🕵️" color="#5c3d2e" onClick={() => setJuego("impostor")}/>
-          <TarjetaJuego titulo="Misiones por mesa" desc="Una misión secreta para cada mesa durante la cena" icono="🎯" color="#c9956a" onClick={() => setJuego("misiones")}/>
-          <TarjetaJuego titulo="Bingo de la boda" desc="«La novia llora», «alguien bota una copa»… con cartones para imprimir" icono="🎟️" color="#b07d5b" onClick={() => setJuego("bingo")}/>
-          <TarjetaJuego titulo="Trivia de los novios" desc="Ustedes escriben las preguntas; las mesas compiten" icono="❓" color="#7a9e7e" onClick={() => setJuego("trivia")}/>
-          <TarjetaJuego titulo="Mímica" desc="Actuar sin hablar, con reloj de 60 segundos" icono="🎭" color="#8e6fb0" onClick={() => setJuego("mimica")}/>
-          <TarjetaJuego titulo="Caza de fotos" desc="Misiones para que los invitados saquen fotos y las suban con el QR" icono="📸" color="#5b8fb9" onClick={() => setJuego("caza")}/>
-        </div>
-      )}
+      <div key={vista} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 330px), 1fr))", gap: 12 }}>
+        {lista.map(([id, t, d, ic, col, et], k) => <TarjetaJuego key={id} indice={k} titulo={t} desc={d} icono={ic} color={col} etiqueta={et} onClick={() => abrir(id)}/>)}
+      </div>
+      <div style={{ fontSize: 11.5, color: C.suave, textAlign: "center", marginTop: 16 }}>Se juega con un solo teléfono. Nada de lo que pase en los juegos se guarda en la base.</div>
     </div>
   );
 }
