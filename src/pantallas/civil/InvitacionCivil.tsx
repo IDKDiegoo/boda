@@ -4,8 +4,14 @@ import { uploadBytes, getDownloadURL } from "firebase/storage";
 import { bodaActual, cref, db, dref, indiceInv, infoBoda, sref } from "../../base/firebase";
 import { RespuestasInv } from "./RespuestasInv";
 import { CivilData } from "./datosCivil";
-import { INV_BASE, INV_ICONOS, InvConfig, InvItem, InvPersona, cuantos, iconoPara, idYoutube, linkDe, nuevoCodigo, origenVista } from "./invitacion";
+import { INV_ICONOS, InvConfig, InvItem, InvPersona, PALETAS, cuantos, iconoPara, idYoutube, invBase, linkDe, nuevoCodigo, origenVista } from "./invitacion";
+import { comprimirImg } from "./datosCivil";
 import { Card, Inp, Sel } from "../../ui/base";
+
+const MESES_INV = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const DIAS_INV = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+/** «el sábado 20 de marzo» a partir de AAAA-MM-DD */
+const fechaTexto = (f?:string) => { const m = String(f||"").match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return ""; const d = new Date(+m[1], +m[2]-1, +m[3]); return `el ${DIAS_INV[d.getDay()]} ${+m[3]} de ${MESES_INV[d.getMonth()]}`; };
 
 export function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:CivilData)=>Promise<void> }) {
   const [cfg, setCfg]       = useState<InvConfig|null>(null);   // lo guardado
@@ -13,13 +19,14 @@ export function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:
   const [personas, setPersonas] = useState<InvPersona[]>([]);
   const [aviso, setAviso]   = useState("");
   const [filtro, setFiltro] = useState<"todas"|"sin"|"si"|"no">("todas");
-  const [abierto, setAbierto] = useState<"datos"|"programa"|"musica"|null>(null);
+  const [abierto, setAbierto] = useState<"diseno"|"datos"|"programa"|"musica"|null>(null);
+  const original = !!infoBoda().legado;
   const [vista, setVista]     = useState<"invitaciones"|"respuestas">("invitaciones");
   const [sumando, setSumando] = useState<string|null>(null);   // invitación a la que se le está sumando un acompañante
 
   useEffect(() => {
     const u1 = onSnapshot(dref("invitacion"), snap => {
-      const c = { ...INV_BASE, ...(snap.data() as Partial<InvConfig>||{}) } as InvConfig;
+      const c = { ...invBase(!!infoBoda().legado, infoBoda().nombre), ...(snap.data() as Partial<InvConfig>||{}) } as InvConfig;
       setCfg(c); setBorr(b => b ?? c);
     });
     const u2 = onSnapshot(cref("invitacion","invitados"), snap =>
@@ -47,6 +54,17 @@ export function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:
     finally { setSubiendoMusica(false); }
   };
 
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const subirFoto = async (f:File|undefined) => {
+    if (!f || !borr) return;
+    setSubiendoFoto(true);
+    try {
+      const r = sref(`boda-civil/invitacion_foto_${Date.now()}.jpg`);   // en la boda original, su carpeta de siempre (las reglas la permiten)
+      await uploadBytes(r, await comprimirImg(f), { contentType:"image/jpeg", cacheControl:"public, max-age=31536000, immutable" });
+      setBorr({ ...borr, foto: await getDownloadURL(r) }); avisar("✓ Foto lista: falta tocar «Guardar cambios»");
+    } catch (e:any) { alert("No se pudo subir la foto: " + (e?.message || "error")); }
+    finally { setSubiendoFoto(false); }
+  };
   if (!cfg || !borr) return <div style={{ textAlign:"center" as const, color:"#c4a882", padding:30, fontSize:12 }}>Cargando…</div>;
 
   const cambios = JSON.stringify(cfg) !== JSON.stringify(borr);
@@ -125,7 +143,7 @@ export function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:
     : (p.abierta || p.vistas) ? ["👀 La abrió","#c9956a","#fdf3ea"] : p.enviada ? ["Enviada","#a07855","#f6efe8"] : ["Sin enviar","#c4a882","#fbf7f2"];
   const lbl = { fontSize:10, fontWeight:700, color:"#a07855", marginBottom:3, display:"block" } as React.CSSProperties;
   const mini = (bg:string, color="#fff") => ({ background:bg, color, border:"none", borderRadius:8, padding:"7px 10px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" as const });
-  const Seccion = ({ id, icono, titulo, resumen }: { id:"datos"|"programa"|"musica"; icono:string; titulo:string; resumen:string }) => (
+  const Seccion = ({ id, icono, titulo, resumen }: { id:"diseno"|"datos"|"programa"|"musica"; icono:string; titulo:string; resumen:string }) => (
     <button onClick={()=>setAbierto(abierto===id?null:id)}
       style={{ width:"100%", display:"flex", alignItems:"center", gap:10, background:"none", border:"none", padding:0, cursor:"pointer", fontFamily:"inherit", textAlign:"left" as const }}>
       <span style={{ fontSize:20 }}>{icono}</span>
@@ -148,7 +166,7 @@ export function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:
             <div style={{ fontSize:11, fontWeight:700, color:"#9e4f56", letterSpacing:"0.06em" }}>INVITACIONES</div>
             <div style={{ fontSize:26, fontWeight:900, color:"#9e4f56", lineHeight:1.1, marginTop:2 }}>{personasSi} <span style={{ fontSize:13, fontWeight:700 }}>{personasSi===1?"persona viene":"personas vienen"}</span></div>
           </div>
-          <a href={`${origenVista()}/invitacion.html`} target="_blank" rel="noopener noreferrer" style={{ ...mini("#fff","#9e4f56"), textDecoration:"none" }}>👁 Ver muestra</a>
+          <a href={original ? `${origenVista()}/invitacion.html` : `${origenVista()}/m/${bodaActual()}`} target="_blank" rel="noopener noreferrer" style={{ ...mini("#fff","#9e4f56"), textDecoration:"none" }}>👁 Ver muestra</a>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, marginTop:12 }}>
           {[["Invitaciones",personas.length],["Abiertas",abiertas],["No vienen",personasNo],["Sin responder",sinResp.length]].map(([t,n])=>(
@@ -173,8 +191,63 @@ export function InvitacionCivil({ data, guardar }: { data:CivilData; guardar:(d:
       </div>
 
       {vista==="respuestas" ? (
-        <RespuestasInv personas={personas} recordar={(p:InvPersona)=>{ window.open(`https://wa.me/?text=${encodeURIComponent(`${p.para}, ¡te esperamos el viernes 18 de diciembre! 💍 Cuando puedas, confírmanos aquí: ${linkDe(p.codigo)}`)}`, "_blank"); }} avisar={avisar}/>
+        <RespuestasInv personas={personas} recordar={(p:InvPersona)=>{ window.open(`https://wa.me/?text=${encodeURIComponent(`${p.para}, ¡te esperamos ${fechaTexto(borr.fecha) || (original ? "el viernes 18 de diciembre" : "")}! 💍 Cuando puedas, confírmanos aquí: ${linkDe(p.codigo)}`)}`, "_blank"); }} avisar={avisar}/>
       ) : <>
+      {/* Diseño y textos (My Wedding): nombres, fecha, foto, colores y los textos de cada tarjeta */}
+      <Card style={{ marginBottom:10, padding:"14px 16px" }}>
+        <Seccion id="diseno" icono="✨" titulo="Diseño y textos" resumen={`${[borr.nombre1, borr.nombre2].filter(Boolean).join(" & ") || (original ? "Diego & Camila" : "Sin nombres")} · ${fechaTexto(borr.fecha) || (original ? "18 de diciembre" : "sin fecha")} · ${(PALETAS.find(p=>p.id===(borr.paleta||"salvia"))||PALETAS[0]).nombre}`}/>
+        {abierto==="diseno" && (
+          <div style={{ display:"flex", flexDirection:"column" as const, gap:10, marginTop:14 }}>
+            {original && <div style={{ fontSize:11, color:"#5c3d2e", background:"#fdf3ea", border:"1px solid #f0e0d0", borderRadius:9, padding:"8px 10px", lineHeight:1.5 }}>Lo que dejes vacío sigue como está hoy en su invitación.</div>}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+              <div><span style={lbl}>Nombre de uno</span><Inp value={borr.nombre1||""} onChange={v=>setBorr({...borr,nombre1:v})} placeholder="Valentina"/></div>
+              <div><span style={lbl}>Nombre del otro</span><Inp value={borr.nombre2||""} onChange={v=>setBorr({...borr,nombre2:v})} placeholder="Matías"/></div>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+              <div><span style={lbl}>Fecha</span><Inp type="date" value={borr.fecha||""} onChange={v=>setBorr({...borr,fecha:v})}/></div>
+              <div><span style={lbl}>Ciudad o comuna</span><Inp value={borr.ciudad||""} onChange={v=>setBorr({...borr,ciudad:v})} placeholder="Pirque"/></div>
+            </div>
+            <div><span style={lbl}>Título de la invitación</span><Inp value={borr.titulo||""} onChange={v=>setBorr({...borr,titulo:v})} placeholder="¡Nos casamos!"/></div>
+            <div>
+              <span style={lbl}>Colores</span>
+              <div style={{ display:"flex", flexWrap:"wrap" as const, gap:8, marginTop:4 }}>
+                {PALETAS.map(p=>{ const act=(borr.paleta||"salvia")===p.id; return (
+                  <button key={p.id} onClick={()=>setBorr({...borr,paleta:p.id})} title={p.nombre} style={{ display:"flex", flexDirection:"column" as const, alignItems:"center", gap:4, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
+                    <span style={{ display:"flex", borderRadius:20, overflow:"hidden", border:`2px solid ${act?"#5c3d2e":"#f0e0d0"}`, boxShadow:act?"0 0 0 2px #fff inset":"none" }}>
+                      {p.colores.map(c=><i key={c} style={{ width:14, height:26, background:c, display:"block" }}/>)}
+                    </span>
+                    <span style={{ fontSize:9, color:act?"#5c3d2e":"#a07855", fontWeight:act?800:500 }}>{p.nombre}</span>
+                  </button>); })}
+              </div>
+            </div>
+            <div>
+              <span style={lbl}>Foto de la pareja</span>
+              <div style={{ display:"flex", gap:10, alignItems:"center", marginTop:4 }}>
+                {(borr.foto || original) && <img src={borr.foto || "/pareja.jpg"} alt="" style={{ width:64, height:64, borderRadius:10, objectFit:"cover", border:"1px solid #f0e0d0" }}/>}
+                <label style={{ ...mini("#fdf3ea","#c9956a"), cursor:"pointer" }}>{subiendoFoto ? "Subiendo…" : borr.foto ? "Cambiar foto" : "Subir foto"}
+                  <input type="file" accept="image/*" style={{ display:"none" }} onChange={e=>subirFoto(e.target.files?.[0])}/></label>
+                {borr.foto && <button onClick={()=>setBorr({...borr,foto:""})} style={mini("transparent","#e07070")}>Quitar</button>}
+              </div>
+            </div>
+            <div><span style={lbl}>Texto bajo la foto</span><Inp value={borr.fotoTexto||""} onChange={v=>setBorr({...borr,fotoTexto:v})} placeholder="Caminando juntos"/></div>
+            <div><span style={lbl}>Frase o versículo (vacío = no se muestra)</span>
+              <textarea value={borr.frase||""} onChange={e=>setBorr({...borr,frase:e.target.value})} rows={3} placeholder="El amor es paciente, es bondadoso…" style={{ width:"100%", background:"#fdf8f3", border:"1.5px solid #e8d5c4", borderRadius:9, padding:"9px 12px", fontSize:13, color:"#5c3d2e", fontFamily:"inherit", outline:"none", resize:"vertical" as const }}/></div>
+            <div><span style={lbl}>De dónde es la frase</span><Inp value={borr.fraseCita||""} onChange={v=>setBorr({...borr,fraseCita:v})} placeholder="1 Corintios 13:4"/></div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+              <div><span style={lbl}>Celebración</span><Inp value={borr.celebracion||""} onChange={v=>setBorr({...borr,celebracion:v})} placeholder="Cena, brindis y baile"/></div>
+              <div><span style={lbl}>Detalle</span><Inp value={borr.celebracionNota||""} onChange={v=>setBorr({...borr,celebracionNota:v})} placeholder="en el mismo lugar"/></div>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+              <div><span style={lbl}>Vestimenta</span><Inp value={borr.vestimenta||""} onChange={v=>setBorr({...borr,vestimenta:v})} placeholder="Formal"/></div>
+              <div><span style={lbl}>Nota de vestimenta</span><Inp value={borr.vestimentaNota||""} onChange={v=>setBorr({...borr,vestimentaNota:v})} placeholder="Hay piscina: trae traje de baño"/></div>
+            </div>
+            <div><span style={lbl}>Texto de vestimenta</span><Inp value={borr.vestimentaTexto||""} onChange={v=>setBorr({...borr,vestimentaTexto:v})} placeholder="Es sobre pasto: mejor taco ancho"/></div>
+            <div><span style={lbl}>Regalos</span><Inp value={borr.regalos||""} onChange={v=>setBorr({...borr,regalos:v})} placeholder="Tu presencia es nuestro mejor regalo. Habrá lluvia de sobres."/></div>
+            <div><span style={lbl}>Nota final</span><Inp value={borr.regalosNota||""} onChange={v=>setBorr({...borr,regalosNota:v})} placeholder="Trae algo para abrigarte en la noche"/></div>
+          </div>
+        )}
+      </Card>
+
       {/* Datos del lugar */}
       <Card style={{ marginBottom:10, padding:"14px 16px" }}>
         <Seccion id="datos" icono="📍" titulo="Lugar y datos" resumen={`${borr.lugarNombre} · ${borr.direccion} · ${borr.hora} hrs`}/>

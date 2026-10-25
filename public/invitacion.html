@@ -408,7 +408,7 @@
   <div class="solapa-sombra"><div class="solapa" id="solapa"></div>
     <svg class="solapa-borde" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 .2 L50 99.6 L100 .2" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>
   </div>
-  <div class="monograma-sobre" aria-hidden="true"><span class="d">D</span><span class="c">C</span></div>
+  <div class="monograma-sobre" aria-hidden="true"><span class="d" id="mono-1">D</span><span class="c" id="mono-2">C</span></div>
   <div class="toca">Toca el sello para abrir</div>
   <button class="sello-btn" id="abrir" aria-label="Abrir la invitación"><img class="sello-img" data-sello="crema" alt=""></button>
   <div class="para-sobre"><div class="cap">Para</div><b data-para>&nbsp;</b><div class="cap" id="para-con-sobre" hidden></div></div>
@@ -422,24 +422,24 @@
     <article class="tarjeta verde principal revela">
       <span class="filete" aria-hidden="true"></span>
       <span class="sello-pega"><img class="sello-img" data-sello="crema" alt=""></span>
-      <p class="cap">¡Nos casamos por el civil!</p>
+      <p class="cap" id="titulo-inv">¡Nos casamos por el civil!</p>
       <p class="cap chica" id="mensaje" style="max-width:30ch;opacity:.92">Queremos que estés con nosotros el día en que unimos nuestras vidas.</p>
-      <h1 class="nombres">Diego<span>&amp;</span>Camila</h1>
-      <span class="sep cap chica" aria-hidden="true">Viernes</span>
-      <p class="fecha-grande">18 · Dic · 2026</p>
+      <h1 class="nombres" id="nombres">Diego<span>&amp;</span>Camila</h1>
+      <span class="sep cap chica" aria-hidden="true" id="dia-semana">Viernes</span>
+      <p class="fecha-grande" id="fecha-grande">18 · Dic · 2026</p>
     </article>
-    <figure class="polaroid revela">
-      <img src="/pareja.jpg" alt="Diego y Camila caminando de la mano por la playa">
-      <figcaption>Caminando juntos</figcaption>
+    <figure class="polaroid revela" id="foto-fig">
+      <img src="/pareja.jpg" alt="Diego y Camila caminando de la mano por la playa" id="foto">
+      <figcaption id="foto-texto">Caminando juntos</figcaption>
     </figure>
     <svg class="decor" data-ramo="rosas" data-semilla="9" style="right:-44px;bottom:-30px;width:min(250px,50vw);height:190px" aria-hidden="true"></svg>
   </section>
 
-  <section class="tarjeta crema verso revela" aria-label="Versículo">
+  <section class="tarjeta crema verso revela" aria-label="Versículo" id="verso">
     <span class="filete" aria-hidden="true"></span>
     <span class="sello-pega"><img class="sello-img" data-sello="verde" alt=""></span>
-    <p>«Ponme como un sello sobre tu corazón, como una marca sobre tu brazo; porque fuerte es como la muerte el amor. Las muchas aguas no podrán apagar el amor, ni lo ahogarán los ríos.»</p>
-    <cite>Cantares 8:6–7</cite>
+    <p id="verso-texto">«Ponme como un sello sobre tu corazón, como una marca sobre tu brazo; porque fuerte es como la muerte el amor. Las muchas aguas no podrán apagar el amor, ni lo ahogarán los ríos.»</p>
+    <cite id="verso-cita">Cantares 8:6–7</cite>
   </section>
 
   <section class="faltan" aria-labelledby="t-faltan">
@@ -466,8 +466,8 @@
       <span class="filete" aria-hidden="true"></span>
       <svg class="icono-linea" aria-hidden="true" style="width:88px;height:88px"><use href="#i-copas"/></svg>
       <h2 class="titulo" style="font-size:21px">Celebración</h2>
-      <p class="cap chica">Asado, brindis y baile</p>
-      <p class="nota">en el mismo lugar, hasta el atardecer</p>
+      <p class="cap chica" id="celebra">Asado, brindis y baile</p>
+      <p class="nota" id="celebra-nota">en el mismo lugar, hasta el atardecer</p>
     </article>
     <svg class="decor" data-ramo="calas" data-semilla="12" style="left:-34px;bottom:-26px;width:min(130px,30vw);height:250px" aria-hidden="true"></svg>
   </section>
@@ -483,10 +483,10 @@
     <article class="tarjeta greige arco vestimenta revela">
       <span class="filete" aria-hidden="true"></span>
       <h2 class="titulo" style="font-size:23px">Vestimenta</h2>
-      <p class="sub">Elegante de día</p>
+      <p class="sub" id="vest-sub">Elegante de día</p>
       <svg class="icono-linea" aria-hidden="true" style="width:120px;height:120px"><use href="#i-vestimenta"/></svg>
-      <p>Es sobre pasto: mejor taco ancho que aguja. El blanco, para la novia.</p>
-      <p class="piscina"><b>Hay piscina</b> por si te quieres bañar: trae traje de baño y toalla.</p>
+      <p id="vest-texto">Es sobre pasto: mejor taco ancho que aguja. El blanco, para la novia.</p>
+      <p class="piscina" id="vest-nota"><b>Hay piscina</b> por si te quieres bañar: trae traje de baño y toalla.</p>
       <div class="paleta" aria-label="Colores sugeridos"><i style="background:#b9c2a2"></i><i style="background:#d8c3a5"></i><i style="background:#a77b6c"></i><i style="background:#6f7d8c"></i><i style="background:#4a4e45"></i></div>
     </article>
     <article class="tarjeta crema regalos revela">
@@ -494,8 +494,8 @@
       <span class="sello-pega"><img class="sello-img" data-sello="verde" alt=""></span>
       <svg class="icono-linea" aria-hidden="true"><use href="#i-regalo"/></svg>
       <h2 class="titulo" style="font-size:21px">Regalos</h2>
-      <p>Tu presencia es nuestro mejor regalo. Si quieres hacernos uno, habrá lluvia de sobres.</p>
-      <p class="nota" style="margin-top:6px">Trae lentes de sol y bloqueador; para la tarde, algo liviano para abrigarte.</p>
+      <p id="regalos-texto">Tu presencia es nuestro mejor regalo. Si quieres hacernos uno, habrá lluvia de sobres.</p>
+      <p class="nota" style="margin-top:6px" id="regalos-nota">Trae lentes de sol y bloqueador; para la tarde, algo liviano para abrigarte.</p>
     </article>
     <svg class="decor" data-ramo="rosas" data-semilla="21" style="left:-40px;bottom:-40px;width:min(170px,40vw);height:150px" aria-hidden="true"></svg>
   </section>
@@ -512,7 +512,7 @@
       <div class="progreso" aria-hidden="true"><i class="hecho"></i><i></i><i></i><i></i></div>
       <div class="pregunta" data-paso="1">
         <div class="n">Pregunta 1 de 4</div>
-        <div class="q" id="q-asiste">¿Nos acompañas el <em>18 de diciembre</em>?</div>
+        <div class="q" id="q-asiste">¿Nos acompañas el <em id="q-fecha">18 de diciembre</em>?</div>
         <div class="arena" id="arena">
           <button class="btn si" id="btn-si">Sí, ahí estaré</button>
           <button class="btn no" id="btn-no" aria-label="No (pruébalo)">No</button>
@@ -560,9 +560,9 @@
   </section>
 
   <footer>
-    <div class="mono" aria-hidden="true">D&amp;C</div>
-    <p class="cap">Diego &amp; Camila</p>
-    <p class="cap chica">18 · 12 · 2026 · Lampa</p>
+    <div class="mono" aria-hidden="true" id="pie-mono">D&amp;C</div>
+    <p class="cap" id="pie-nombres">Diego &amp; Camila</p>
+    <p class="cap chica" id="pie-fecha">18 · 12 · 2026 · Lampa</p>
   </footer>
 </main>
 <canvas id="petalos" aria-hidden="true"></canvas>
@@ -837,7 +837,8 @@ window.Grabado = (() => {
   let ancho = innerWidth; addEventListener("resize", () => { if ((innerWidth < 640) !== (ancho < 640)) pintarPrograma(items); ancho = innerWidth; });
 
   // Cuenta regresiva (hora de Chile, verano: -03:00)
-  const meta = Date.parse("2026-12-18T13:00:00-03:00");
+  let meta = Date.parse("2026-12-18T13:00:00-03:00");
+  window.__inv.fijarMeta = (t) => { if (!isNaN(t)) meta = t; };
   const dos = (n) => String(n).padStart(2, "0");
   const tic = () => { let s = Math.max(0, Math.floor((meta - Date.now()) / 1000));
     $("#dd").textContent = Math.floor(s / 86400); s %= 86400;
@@ -869,6 +870,7 @@ window.Grabado = (() => {
   // Física de resorte: el botón persigue un objetivo que se aleja del cursor. Nunca salta.
   const arena = $("#arena"), no = $("#btn-no"), si = $("#btn-si"), frase = $("#frase-no");
   const FRASES = ["¿Seguro?", "Piénsalo bien…", "Habrá torta", "¡Y baile!", "El botón no quiere", "Ya, último intento", "Camila dice que no aceptes un no"];
+  window.__inv.frases = FRASES;   // la última se cambia por el nombre de la pareja (personalizar)
   let pos = { x: 0, y: 0 }, vel = { x: 0, y: 0 }, obj = { x: 0, y: 0 }, cursor = null, escapes = 0, ultimoEscape = 0, listo = false;
   const medida = () => ({ W: arena.clientWidth, H: arena.clientHeight, w: no.offsetWidth, h: no.offsetHeight });
   const pintar = () => { no.style.transform = `translate(${pos.x}px,${pos.y}px)`; };
@@ -1049,22 +1051,86 @@ window.Grabado = (() => {
   }
   // «Ver» desde la app (#vista, o ?admin=1 en links viejos): no cuenta como abierta ni guarda respuestas
   const vistaAdmin = location.hash.includes("vista") || new URLSearchParams(location.search).has("admin");
+  // ── My Wedding: cada pareja personaliza su invitación (nombres, fecha, foto, colores, textos) ──
+  // La boda original (Diego y Camila) conserva lo que ya está escrito en esta página cuando un campo
+  // viene vacío; una boda nueva nunca muestra los datos de ellos: usa textos genéricos.
+  const PALETAS = { salvia:["#7f8c6c","#8a9778","#5d694e","#3f4a36"], rosa:["#b98a8f","#c49aa0","#8f5f66","#5e3a40"],
+    azul:["#7d8fa8","#8c9db4","#566a85","#36465c"], terracota:["#b8806a","#c4917c","#8e5a45","#5c3a2c"],
+    champana:["#b59a6a","#c2aa7d","#8a7148","#5a4a2e"], burdeo:["#8e4a57","#9c5c68","#6a2f3c","#45202a"], negro:["#6e6e6e","#808080","#3d3d3d","#1f1f1f"] };
+  const DIAS = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+  const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const txt = (sel, v) => { const e = $(sel); if (e && v != null) e.textContent = v; };
+  const ocultar = (sel, si) => { const e = $(sel); if (e) e.hidden = !!si; };
+  let P = { n1: "Diego", n2: "Camila", fechaLarga: "18 de diciembre", diaHora: null, ciudad: "Lampa", original: true };
+  function personalizar(c, original) {
+    const vacio = (v) => v == null || String(v).trim() === "";
+    const n1 = !vacio(c.nombre1) ? c.nombre1.trim() : (original ? "Diego" : "Nosotros");
+    const n2 = !vacio(c.nombre2) ? c.nombre2.trim() : (original ? "Camila" : "");
+    const pareja = n2 ? `${n1} & ${n2}` : n1;
+    if (!original || !vacio(c.nombre1) || !vacio(c.nombre2)) {
+      $("#nombres").innerHTML = ""; $("#nombres").append(n1); if (n2) { const sp = document.createElement("span"); sp.textContent = "&"; $("#nombres").append(sp, n2); }
+      txt("#mono-1", n1[0] || ""); txt("#mono-2", (n2 || " ")[0]); txt("#pie-mono", n2 ? `${n1[0]}&${n2[0]}` : n1[0]); txt("#pie-nombres", pareja);
+      if (window.__inv.frases) window.__inv.frases[window.__inv.frases.length - 1] = `${n2 || n1} dice que no aceptes un no`;
+    }
+    // Fecha (AAAA-MM-DD) y hora → día de la semana, fecha grande, cuenta regresiva y calendario
+    let fechaLarga = original ? "18 de diciembre" : "", diaHora = null, ciudad = !vacio(c.ciudad) ? c.ciudad.trim() : (original ? "Lampa" : "");
+    const m = String(c.fecha || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) {
+      const d = new Date(+m[1], +m[2] - 1, +m[3]);
+      fechaLarga = `${+m[3]} de ${MESES[d.getMonth()]}`;
+      txt("#dia-semana", DIAS[d.getDay()]);
+      txt("#fecha-grande", `${+m[3]} · ${MESES[d.getMonth()].slice(0, 3).replace(/^./, (x) => x.toUpperCase())} · ${m[1]}`);
+      txt("#pie-fecha", `${m[3]} · ${m[2]} · ${m[1]}${ciudad ? " · " + ciudad : ""}`);
+      const [h, mi] = String(c.hora || "12:00").split(":").map(Number);
+      diaHora = new Date(+m[1], +m[2] - 1, +m[3], h || 0, mi || 0);
+      window.__inv.fijarMeta?.(diaHora.getTime());
+      txt("#q-fecha", fechaLarga);
+    } else if (!original) { ocultar(".faltan", true); txt("#dia-semana", ""); txt("#fecha-grande", ""); txt("#pie-fecha", ciudad); txt("#q-fecha", "gran día"); }
+    if (!vacio(c.titulo)) txt("#titulo-inv", c.titulo); else if (!original) txt("#titulo-inv", "¡Nos casamos!");
+    // Foto: la de la pareja, o ninguna (nunca la de otra pareja)
+    if (!vacio(c.foto)) { $("#foto").src = c.foto; $("#foto").alt = `Foto de ${pareja}`; }
+    else if (!original) ocultar("#foto-fig", true);
+    if (!vacio(c.fotoTexto)) txt("#foto-texto", c.fotoTexto); else if (!original) txt("#foto-texto", "");
+    // Frase o versículo (vacío en una boda nueva = no se muestra)
+    if (!vacio(c.frase)) { txt("#verso-texto", `«${String(c.frase).replace(/^[«"]|[»"]$/g, "")}»`); txt("#verso-cita", c.fraseCita || ""); }
+    else if (!original) ocultar("#verso", true);
+    const textos = [["#celebra", c.celebracion, "Cena, brindis y baile"], ["#celebra-nota", c.celebracionNota, "en el mismo lugar"],
+      ["#vest-sub", c.vestimenta, "Formal"], ["#vest-texto", c.vestimentaTexto, "El blanco, para la novia."], ["#vest-nota", c.vestimentaNota, ""],
+      ["#regalos-texto", c.regalos, "Tu presencia es nuestro mejor regalo."], ["#regalos-nota", c.regalosNota, ""]];
+    for (const [sel, v, generico] of textos) {
+      if (!vacio(v)) { txt(sel, v); ocultar(sel, false); }
+      else if (!original) { txt(sel, generico); ocultar(sel, !generico); }
+    }
+    if (!original) ocultar(".paleta", true);   // los colores sugeridos de vestimenta eran los de Diego y Camila
+    // Colores
+    const pal = PALETAS[c.paleta];
+    if (pal) { const r = document.documentElement.style; ["--salvia","--salvia-2","--salvia-osc","--bosque"].forEach((k, i) => r.setProperty(k, pal[i])); }
+    document.title = pareja + (original ? " · Civil en Lampa" : "");
+    return { n1, n2, pareja, fechaLarga, diaHora, ciudad, original };
+  }
+
   // My Wedding: el índice dice de qué boda es este link; si no está, es de la boda original (/boda).
   const ix = codigo ? await getDoc(doc(db, "invitaciones", codigo)).catch(() => null) : null;
-  const base = ix && ix.exists() && ix.data().bodaId ? ["bodas", ix.data().bodaId, "datos"] : ["boda"];
+  // «Ver muestra» de una boda nueva llega sin código y con ?b={boda}
+  const bMuestra = ((location.pathname.match(/\/m\/([a-z0-9-]+)/) || [])[1] || new URLSearchParams(location.search).get("b") || "").replace(/[^a-z0-9-]/g, "");
+  const base = ix && ix.exists() && ix.data().bodaId ? ["bodas", ix.data().bodaId, "datos"] : (!codigo && bMuestra ? ["bodas", bMuestra, "datos"] : ["boda"]);
   try {
     const cfg = (await getDoc(doc(db, ...base, "invitacion"))).data() || {};
+    P = personalizar(cfg, base[0] === "boda");
     if (cfg.lugarNombre) $("#lugar-nombre").textContent = cfg.lugarNombre;
     if (cfg.direccion) $("#lugar-dir").textContent = cfg.direccion;
     if (cfg.hora) $("#hora").textContent = cfg.hora;
     if (cfg.comoLlegar) $("#como-llegar").textContent = cfg.comoLlegar;
     if (cfg.limite) $("#limite").textContent = cfg.limite;
     if (cfg.mensaje) $("#mensaje").textContent = cfg.mensaje;
-    const q = encodeURIComponent([cfg.lugarNombre, cfg.direccion].filter(Boolean).join(", ") || "Lampa, Chile");
+    const q = encodeURIComponent([cfg.lugarNombre, cfg.direccion].filter(Boolean).join(", ") || (P.original ? "Lampa, Chile" : P.ciudad || ""));
     $("#mapa").href = cfg.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${q}`;
     const [h, m] = (cfg.hora || "13:00").split(":").map(Number);
-    const ini = `20261218T${String(h + 3).padStart(2, "0")}${String(m || 0).padStart(2, "0")}00Z`;
-    $("#cal").href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("Boda civil de Diego y Camila")}&dates=${ini}%2F20261218T230000Z&location=${q}&details=${encodeURIComponent("Te esperamos desde las " + (cfg.hora || "13:00") + ".")}`;
+    const utc = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    const ini = P.diaHora ? utc(P.diaHora) : `20261218T${String(h + 3).padStart(2, "0")}${String(m || 0).padStart(2, "0")}00Z`;
+    const fin = P.diaHora ? utc(new Date(P.diaHora.getTime() + 7 * 3600e3)) : "20261218T230000Z";
+    if (!P.original && !P.diaHora) $("#cal").hidden = true;
+    $("#cal").href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(P.original && !cfg.nombre1 ? "Boda civil de Diego y Camila" : `Boda de ${P.n1}${P.n2 ? " y " + P.n2 : ""}`)}&dates=${ini}%2F${fin}&location=${q}&details=${encodeURIComponent("Te esperamos desde las " + (cfg.hora || "13:00") + ".")}`;
     if (Array.isArray(cfg.programa) && cfg.programa.length) window.__inv.pintarPrograma(cfg.programa);
     if (cfg.musicaArchivo) prepararAudio(cfg.musicaArchivo, cfg.musicaInicio);
     else if (cfg.musicaUrl) prepararMusica(cfg.musicaUrl, cfg.musicaInicio);
@@ -1076,7 +1142,7 @@ window.Grabado = (() => {
     const ref = doc(db, ...base, "invitacion", "invitados", codigo);
     try {
       const snap = await getDoc(ref);
-      if (!snap.exists()) { ponerNombre("ti"); nota("No encontramos esta invitación. Pídele a Diego o Camila tu link."); }
+      if (!snap.exists()) { ponerNombre("ti"); nota(`No encontramos esta invitación. Pídele a ${P.n1}${P.n2 ? " o " + P.n2 : ""} tu link.`); }
       else {
         const inv = snap.data();
         ponerNombre(inv.para || "ti");
@@ -1085,13 +1151,13 @@ window.Grabado = (() => {
         if (acomp.length) {
           const y = acomp.length === 1 ? acomp[0] : acomp.slice(0, -1).join(", ") + " y " + acomp[acomp.length - 1];
           for (const id of ["#para-con", "#para-con-sobre"]) { const e = $(id); e.textContent = `y ${y}`; e.hidden = false; }
-          $("#q-asiste").innerHTML = "¿Nos acompañan el <em>18 de diciembre</em>?";
+          $("#q-asiste").innerHTML = `¿Nos acompañan el <em>${P.fechaLarga || "gran día"}</em>?`;
           $("#q-comida").innerHTML = "¿Algo que debamos saber <em>de su comida</em>?";
           $("#q-cancion").innerHTML = "¿Qué canción los hace salir <em>a bailar</em>?";
           $("#btn-si").textContent = "Sí, ahí estaremos";
         }
-        document.title = `${inv.para ? inv.para + " · " : ""}Diego & Camila`;
-        nota("Tu respuesta les llega directo a Diego y Camila.");
+        document.title = `${inv.para ? inv.para + " · " : ""}${P.n1}${P.n2 ? " & " + P.n2 : ""}`;
+        nota(`Tu respuesta les llega directo a ${P.n1}${P.n2 ? " y " + P.n2 : ""}.`);
         if (inv.respuesta) window.__inv.mostrarRespuesta(inv.respuesta);
         if (vistaAdmin) nota("Vista previa desde la app: lo que respondas aquí no se guarda.");
         else {
