@@ -1,6 +1,7 @@
 {
   "rewrites": [
-    { "source": "/i/:codigo", "destination": "/invitacion.html" },
+    { "source": "/i/:codigo", "destination": "/api/inv?codigo=:codigo" },
+    { "source": "/m/:b", "destination": "/api/inv?b=:b" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
