@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getAuth } from "firebase/auth";
 import { getMessaging, getToken } from "firebase/messaging";
 
 // ── Firebase ────────────────────────────────────────────────────
@@ -15,6 +16,7 @@ export const FIREBASE_CONFIG = {
 export const app  = initializeApp(FIREBASE_CONFIG);
 export const db   = getFirestore(app);
 export const stor = getStorage(app);
+export const auth = getAuth(app);
 export let messaging: any = null;
 try { messaging = getMessaging(app); } catch(e) { console.warn("FCM no disponible:", e); }
 

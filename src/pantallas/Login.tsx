@@ -1,17 +1,29 @@
 import { useState } from "react";
-import { ACCESO_PIN, FOTOS_PIN } from "../base/config";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { EMAIL_NOVIOS, FOTOS_PIN } from "../base/config";
+import { auth, initFCM } from "../base/firebase";
 import { Btn, Card, Inp, S } from "../ui/base";
 
 // ════════════════════════════════════════════════════════════════
 // LOGIN
 // ════════════════════════════════════════════════════════════════
-export function PantallaLogin({ onLogin }: { onLogin:(tipo:"admin"|"fotos")=>void }) {
+export function PantallaLogin({ onFotos, onEntrar }: { onFotos:()=>void; onEntrar:()=>void }) {
   const [pin, setPin] = useState("");
   const [err, setErr] = useState("");
-  const intentar = () => {
-    if (pin === ACCESO_PIN) { onLogin("admin"); return; }
-    if (pin.toUpperCase() === FOTOS_PIN) { onLogin("fotos"); return; }
-    setErr("Código incorrecto"); setPin("");
+  const [entrando, setEntrando] = useState(false);
+  const intentar = async () => {
+    if (pin.toUpperCase() === FOTOS_PIN) { onFotos(); return; }
+    if (!pin.trim() || entrando) return;
+    setEntrando(true);
+    try {
+      // El código es la contraseña de la cuenta de los novios: lo revisa Firebase, no la página.
+      await signInWithEmailAndPassword(auth, EMAIL_NOVIOS, pin.trim());
+      onEntrar();
+      initFCM();
+    } catch (e:any) {
+      setErr(e?.code === "auth/too-many-requests" ? "Demasiados intentos. Espera un rato y vuelve a probar." : "Código incorrecto");
+      setPin("");
+    } finally { setEntrando(false); }
   };
   return (
     <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#fff5ee 0%,#fde8d8 50%,#f8d5c2 100%)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
@@ -28,7 +40,7 @@ export function PantallaLogin({ onLogin }: { onLogin:(tipo:"admin"|"fotos")=>voi
         <div style={{ fontSize:13, color:"#a07855", marginBottom:16, textAlign:"center" }}>Ingresa tu código de acceso</div>
         <Inp value={pin} onChange={v=>{setPin(v);setErr("");}} placeholder="Código..." type="password"/>
         {err && <div style={{ color:"#e07070", fontSize:12, marginTop:8, textAlign:"center" }}>{err}</div>}
-        <Btn onClick={intentar} style={{ width:"100%", marginTop:14 }}>Entrar →</Btn>
+        <Btn onClick={intentar} style={{ width:"100%", marginTop:14 }}>{entrando ? "Entrando…" : "Entrar →"}</Btn>
         <div style={{ fontSize:11, color:"#c4a882", marginTop:14, textAlign:"center" }}>Invitados: usa el código del QR para subir fotos</div>
       </Card>
     </div>
