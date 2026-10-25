@@ -721,17 +721,26 @@ window.Grabado = (() => {
 
   // ── Carta, solapa y sellos con relieve (se pintan una vez) ──────────
   const sobre = $("#sobre");
-  (async () => {
+  // Colores del relieve: los de la paleta de la pareja (My Wedding). Si el servidor ya la mandó
+  // (window.__PALETA), se pinta una sola vez con esos; si no, verde salvia y se repinta al llegar.
+  const mezcla = (a, b) => "#" + [1, 3, 5].map((i) => Math.round((parseInt(a.slice(i, i + 2), 16) + parseInt(b.slice(i, i + 2), 16)) / 2).toString(16).padStart(2, "0")).join("");
+  let pintado = "";
+  async function pintarRelieve(pal) {
+    const clave = pal ? pal.join() : "salvia"; if (clave === pintado) return; pintado = clave;
+    const [c1, c2, c3] = pal ? [pal[0], pal[1], mezcla(pal[2], pal[3])] : ["#7d8a6a", "#889577", "#4c5543"];
     const W = innerWidth, H = innerHeight;
     const [fondo, solapa, crema, verde] = await Promise.all([
-      Grabado.pintar(W, H, Grabado.mapaFlores(W, H, 7), "#7d8a6a"),
-      Grabado.pintar(Math.round(W * 1.44), Math.round(H * .56), Grabado.mapaFlores(Math.round(W * 1.44), Math.round(H * .56), 23), "#889577"),
-      Grabado.sello(180, "#e9e3d5", 31), Grabado.sello(180, "#4c5543", 31),
+      Grabado.pintar(W, H, Grabado.mapaFlores(W, H, 7), c1),
+      Grabado.pintar(Math.round(W * 1.44), Math.round(H * .56), Grabado.mapaFlores(Math.round(W * 1.44), Math.round(H * .56), 23), c2),
+      Grabado.sello(180, "#e9e3d5", 31), Grabado.sello(180, c3, 31),
     ]);
+    if (pintado !== clave) return;   // llegó otra paleta mientras se pintaba
     if (fondo && sobre.isConnected) sobre.style.backgroundImage = `url(${fondo})`;
     if (solapa) $("#solapa").style.backgroundImage = `url(${solapa})`;
     document.querySelectorAll("img[data-sello]").forEach((i) => { const src = i.dataset.sello === "verde" ? verde : crema; if (src) i.src = src; });
-  })();
+  }
+  pintarRelieve(window.__PALETA || null);
+  window.__pintarRelieve = pintarRelieve;
 
   // ── Flores de papel: calas, rosas blancas, hortensias y eucalipto ───
   let cuenta = 0;
@@ -1060,7 +1069,7 @@ window.Grabado = (() => {
   const DIAS = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
   const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
   const txt = (sel, v) => { const e = $(sel); if (e && v != null) e.textContent = v; };
-  const ocultar = (sel, si) => { const e = $(sel); if (e) e.hidden = !!si; };
+  const ocultar = (sel, si) => { const e = $(sel); if (e) { e.hidden = !!si; e.style.display = si ? "none" : ""; } };   // display: algunos bloques tienen display propio que le gana a hidden
   let P = { n1: "Diego", n2: "Camila", fechaLarga: "18 de diciembre", diaHora: null, ciudad: "Lampa", original: true };
   function personalizar(c, original) {
     const vacio = (v) => v == null || String(v).trim() === "";
@@ -1104,7 +1113,8 @@ window.Grabado = (() => {
     if (!original) ocultar(".paleta", true);   // los colores sugeridos de vestimenta eran los de Diego y Camila
     // Colores
     const pal = PALETAS[c.paleta];
-    if (pal) { const r = document.documentElement.style; ["--salvia","--salvia-2","--salvia-osc","--bosque"].forEach((k, i) => r.setProperty(k, pal[i])); }
+    if (pal) { const r = document.documentElement.style; ["--salvia","--salvia-2","--salvia-osc","--bosque"].forEach((k, i) => r.setProperty(k, pal[i]));
+      window.__pintarRelieve?.(c.paleta === "salvia" ? null : pal); }
     document.title = pareja + (original ? " · Civil en Lampa" : "");
     return { n1, n2, pareja, fechaLarga, diaHora, ciudad, original };
   }

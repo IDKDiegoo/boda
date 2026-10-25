@@ -42,6 +42,12 @@ module.exports = async (req, res) => {
       r('<p class="cap" id="titulo-inv">¡Nos casamos por el civil!</p>', `<p class="cap" id="titulo-inv">${esc(titulo)}</p>`);
       r('<img src="/pareja.jpg" alt="Diego y Camila caminando de la mano por la playa" id="foto">', `<img src="${esc(c.foto || "")}" alt="Foto de ${esc(pareja)}" id="foto">`);
       r('<p class="cap" id="pie-nombres">Diego &amp; Camila</p>', `<p class="cap" id="pie-nombres">${esc(pareja)}</p>`);
+      // Colores de la pareja desde el principio: sin ellos el sobre se alcanza a pintar verde
+      const PAL = { rosa:["#b98a8f","#c49aa0","#8f5f66","#5e3a40"], azul:["#7d8fa8","#8c9db4","#566a85","#36465c"], terracota:["#b8806a","#c4917c","#8e5a45","#5c3a2c"],
+        champana:["#b59a6a","#c2aa7d","#8a7148","#5a4a2e"], burdeo:["#8e4a57","#9c5c68","#6a2f3c","#45202a"], negro:["#6e6e6e","#808080","#3d3d3d","#1f1f1f"] };
+      const pal = PAL[c.paleta];
+      if (pal) r('<meta name="theme-color" content="#7f8c6c">', `<meta name="theme-color" content="${pal[0]}">`);
+      if (pal) r("</head>", `<style>:root{--salvia:${pal[0]};--salvia-2:${pal[1]};--salvia-osc:${pal[2]};--bosque:${pal[3]}}</style><script>window.__PALETA=${JSON.stringify(pal)}</script>\n</head>`);
     }
   } catch (e) { console.error("inv", e.message); }   // si falla la base, igual se manda la página (se personaliza en el navegador)
   res.setHeader("Content-Type", "text/html; charset=utf-8");
