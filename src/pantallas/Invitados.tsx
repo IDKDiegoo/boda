@@ -43,7 +43,7 @@ export function Invitados({ data, setData }: { data:{invitados:Invitado[]}; setD
         ))}
       </div>
       {show && (
-        <Card style={{ marginBottom:16, border:"2px solid #e8d5c4" }}>
+        <Card enfocar={editId ?? "nuevo"} style={{ marginBottom:16, border:"2px solid #e8d5c4" }}>
           <div style={{ fontSize:14, fontWeight:700, color:"#5c3d2e", marginBottom:14 }}>{editId?"Editar":"Nuevo"} invitado</div>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             <Inp value={form.nombre||""} onChange={v=>setForm({...form,nombre:v})} placeholder="Nombre completo"/>

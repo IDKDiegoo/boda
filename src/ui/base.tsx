@@ -54,8 +54,16 @@ export function S() {
 }
 
 // ── Componentes base ─────────────────────────────────────────────
-export function Card({ children, style }: { children:React.ReactNode; style?:React.CSSProperties }) {
-  return <div style={{ background:"var(--papel)", borderRadius:"var(--radio)", padding:20, border:"1px solid var(--borde)", boxShadow:"var(--sombra)", ...style }}>{children}</div>;
+// `enfocar`: para los formularios de agregar/editar. Al aparecer, o cuando cambia el ítem que se edita,
+// la tarjeta se desliza a la vista (el lápiz suele estar mucho más abajo que el formulario).
+export function Card({ children, style, enfocar }: { children:React.ReactNode; style?:React.CSSProperties; enfocar?:string|number|boolean|null }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (enfocar === undefined) return;
+    const t = setTimeout(() => ref.current?.scrollIntoView({ behavior:"smooth", block:"start" }), 30);
+    return () => clearTimeout(t);
+  }, [enfocar]);
+  return <div ref={ref} style={{ background:"var(--papel)", borderRadius:"var(--radio)", padding:20, border:"1px solid var(--borde)", boxShadow:"var(--sombra)", scrollMarginTop:84, ...style }}>{children}</div>;
 }
 export function Btn({ children, onClick, color="#c9956a", outline=false, style }: { children:React.ReactNode; onClick?:()=>void; color?:string; outline?:boolean; style?:React.CSSProperties }) {
   return <button onClick={onClick} style={{ background:outline?"transparent":`linear-gradient(180deg, ${color}, ${color}e6)`, border:`1.5px solid ${color}`, color:outline?color:"#fff",

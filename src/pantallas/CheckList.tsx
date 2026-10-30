@@ -95,7 +95,7 @@ export function CheckList() {
 
       {/* Formulario */}
       {form&&(
-        <Card style={{marginBottom:12,border:"1px solid #e8d5c4"}}>
+        <Card enfocar={edit?.id ?? "nuevo"} style={{marginBottom:12,border:"1px solid #e8d5c4"}}>
           <div style={{fontSize:13,fontWeight:700,color:"#5c3d2e",marginBottom:12}}>{edit?"Editar tarea":"Nueva tarea"}</div>
           <div style={{display:"flex",flexDirection:"column",gap:9}}>
             <div>

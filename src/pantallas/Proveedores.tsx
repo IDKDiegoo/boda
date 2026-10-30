@@ -36,7 +36,7 @@ export function Proveedores({ data, setData }: { data:{proveedores:Proveedor[]};
         <div style={{ fontSize:28, fontWeight:700, color:"#c9956a", marginTop:4 }}>{fmt(total)}</div>
       </Card>
       {show && (
-        <Card style={{ marginBottom:16, border:"2px solid #e8d5c4" }}>
+        <Card enfocar={editId ?? "nuevo"} style={{ marginBottom:16, border:"2px solid #e8d5c4" }}>
           <div style={{ fontSize:14, fontWeight:700, color:"#5c3d2e", marginBottom:14 }}>{editId?"Editar":"Nuevo"} proveedor</div>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             <Sel value={form.categoria||"Fotografía"} onChange={v=>setForm({...form,categoria:v})} options={CATS_PROV.map(c=>({value:c,label:c}))}/>

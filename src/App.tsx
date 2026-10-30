@@ -10,7 +10,7 @@ import { Invitados } from "./pantallas/Invitados";
 import { PantallaLogin } from "./pantallas/Login";
 import { PROVEEDORES_INICIALES, Proveedores } from "./pantallas/Proveedores";
 import { Cancion, DecoItem, GastoExtra, Invitado, LunaItem, MesaPos, Proveedor, Regalo } from "./tipos";
-import { Cargando, FotoPareja, Logo, S } from "./ui/base";
+import { Cargando, Logo, S } from "./ui/base";
 import { Icono } from "./ui/iconos";
 
 // Carga diferida: cada pantalla se descarga recién cuando se abre (antes bajaba todo de una).
@@ -198,7 +198,6 @@ function Panel({ onSalir, soporte }: { onSalir:()=>void; soporte?:boolean }) {
           <div style={{ fontFamily:"var(--titulo)", fontSize:22, fontWeight:600, color:"var(--tinta)" }}>My Wedding</div>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:11, background:"linear-gradient(135deg,#fbf1e8,#f5e3d3)", border:"1px solid #f0dcc9", borderRadius:14, padding:"12px 12px" }}>
-          <FotoPareja foto={info.foto || (info.legado ? "/pareja.jpg" : "")} nombre={info.nombre} tam={42}/>
           <div style={{ minWidth:0 }}>
             <div style={{ fontFamily:"var(--titulo)", fontSize:18, fontWeight:600, color:"var(--tinta)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{info.nombre}</div>
             <div style={{ fontSize:11, color:"var(--suave)", letterSpacing:".04em" }}>{fechaCorta()} · {diasFaltantes()} días</div>
@@ -234,7 +233,7 @@ function Panel({ onSalir, soporte }: { onSalir:()=>void; soporte?:boolean }) {
       <header style={{ position:"sticky", top:0, zIndex:100, background:"rgba(255,253,251,.86)", backdropFilter:"saturate(1.4) blur(14px)", WebkitBackdropFilter:"saturate(1.4) blur(14px)",
         borderBottom:"1px solid var(--borde)", padding:"10px 16px", paddingTop:"calc(10px + env(safe-area-inset-top, 0px))", display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, minWidth:0 }}>
-          <FotoPareja foto={info.foto || (info.legado ? "/pareja.jpg" : "")} nombre={info.nombre} tam={38}/>
+          <Logo tam={38}/>
           <div style={{ minWidth:0 }}>
             <div style={{ fontFamily:"var(--titulo)", fontSize:19, fontWeight:600, color:"var(--tinta)", lineHeight:1.1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{info.nombre}</div>
             <div style={{ fontSize:10, color:"var(--tenue)", letterSpacing:".08em", marginTop:2 }}>{fechaCorta()} · {diasFaltantes()} días</div>

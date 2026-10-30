@@ -116,7 +116,7 @@ export function Decoraciones({ data, setData }: { data:{items:DecoItem[]}; setDa
 
       {/* Formulario */}
       {show && (
-        <Card style={{ marginBottom:16, border:"2px solid #e8d5c4" }}>
+        <Card enfocar={editId ?? "nuevo"} style={{ marginBottom:16, border:"2px solid #e8d5c4" }}>
           <div style={{ fontSize:14, fontWeight:700, color:"#5c3d2e", marginBottom:14 }}>
             {editId !== null ? "Editar ítem" : "Nuevo ítem"}
           </div>
