@@ -52,6 +52,13 @@ const ICONOS: Record<string, React.ReactNode> = {
   mas: <><path d="M12 5v14M5 12h14"/></>,
   impresora: <><path d="M7 9V3.5h10V9"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/></>,
   trago: <><path d="M6 4h12l-1.6 14.3a2 2 0 0 1-2 1.7H9.6a2 2 0 0 1-2-1.7L6 4Z"/><path d="M6.6 9.5h10.8"/></>,
+  pelota: <><circle cx="12" cy="12" r="9"/><path d="m12 7.6 3.8 2.8-1.4 4.4H9.6l-1.4-4.4L12 7.6ZM12 3v4.6M20.6 9.9l-4.8.5M17.3 19.3l-2.9-4.5M6.7 19.3l2.9-4.5M3.4 9.9l4.8.5"/></>,
+  rosco: <><circle cx="20.00" cy="12.00" r="1.9"/><circle cx="17.66" cy="17.66" r="1.9"/><circle cx="12.00" cy="20.00" r="1.9"/><circle cx="6.34" cy="17.66" r="1.9"/><circle cx="4.00" cy="12.00" r="1.9"/><circle cx="6.34" cy="6.34" r="1.9"/><circle cx="12.00" cy="4.00" r="1.9"/><circle cx="17.66" cy="6.34" r="1.9"/><path d="M12 9.5v2.7l1.6 1"/></>,
+  votar: <><rect x="4" y="11" width="16" height="9.5" rx="1.8"/><path d="M8.5 11V4.5h7V11M8 15.5h8"/></>,
+  qr: <><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><path d="M14 14h3v3h-3zM20.5 14v.01M14 20.5h.01M17.5 20.5H21v-3"/></>,
+  mesa: <><ellipse cx="12" cy="9" rx="9" ry="3.5"/><path d="M12 12.5V20M8 20.5h8M5.5 11.3v5M18.5 11.3v5"/></>,
+  corona: <><path d="M3.5 8 8 12l4-6.5 4 6.5 4.5-4-2 10.5h-13L3.5 8Z"/><path d="M5.5 21h13"/></>,
+  compartir: <><circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="m8.2 10.8 7.6-4.1M8.2 13.2l7.6 4.1"/></>,
 };
 export function IconoJuego({ n, tam = 26, grosor = 1.7 }: { n: string; tam?: number; grosor?: number }) {
   return <svg width={tam} height={tam} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={grosor} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: "block", flexShrink: 0 }}>{ICONOS[n] || ICONOS.pregunta}</svg>;
@@ -70,6 +77,9 @@ export function EstilosJuego() {
     @keyframes j-pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
     @keyframes j-temblar{0%,100%{transform:rotate(0)}25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
     .j-entrar{animation:j-entrar .45s cubic-bezier(.2,.8,.3,1) both}
+    .j-campo{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:12px 14px;font-size:16px;color:#fff;outline:none;width:100%;min-width:0}
+    .j-campo::placeholder{color:rgba(255,255,255,.55)}
+    .j-campo:focus{background:rgba(255,255,255,.18)!important;border-color:#fff!important;box-shadow:0 0 0 3px rgba(255,255,255,.18)!important;color:#fff}
     .j-tile{transition:transform .2s ease, box-shadow .25s ease}
     .j-tile:active{transform:scale(.97)}
     @media (hover:hover){.j-tile:hover{transform:translateY(-3px)}}
