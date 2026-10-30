@@ -61,3 +61,80 @@ export function hayLinea(marcadas) {
   L.push([0, 6, 12, 18, 24], [4, 8, 12, 16, 20]);
   return L.some((l) => l.every((x) => m.has(x)));
 }
+
+// ═══ Juegos en grupo (30-oct-2026): cada uno con su teléfono ═══
+
+/** Elige tema y palabra. `cat` = nombre del tema o "Todos". `otra` = una palabra distinta del mismo tema (modo infiltrado). */
+export function elegirPalabra(temas, cat, azar = Math.random) {
+  const nombres = Object.keys(temas || {}).filter((k) => (temas[k] || []).length >= 2);
+  if (!nombres.length) return null;
+  const t = nombres.includes(cat) ? cat : nombres[Math.floor(azar() * nombres.length)];
+  const [palabra, otra] = barajar(temas[t], azar);
+  return { cat: t, palabra, otra };
+}
+
+/** Reparte la ronda del impostor entre ids. Devuelve { pal: {pid: palabra|null}, imp: [pids], orden: [pids] }.
+ *  Con `otra` (infiltrado) el impostor recibe esa palabra en vez de nada, y no sabe que es el impostor. */
+export function repartirSala(pids, palabra, nImpostores = 1, otra = null, azar = Math.random) {
+  const ids = (pids || []).filter(Boolean);
+  const n = Math.max(1, Math.min(Number(nImpostores) || 1, Math.max(1, ids.length - 2)));
+  const imp = barajar(ids, azar).slice(0, n);
+  const pal = {};
+  ids.forEach((p) => { pal[p] = imp.includes(p) ? (otra || null) : palabra; });
+  return { pal, imp, orden: barajar(ids, azar) };
+}
+
+/** Cuenta votos { votante: votado } → [{ pid, n }] de más a menos (solo votos a jugadores válidos). */
+export function contarVotos(votos, validos) {
+  const ok = new Set(validos || Object.values(votos || {}));
+  const c = {};
+  Object.values(votos || {}).forEach((x) => { if (ok.has(x)) c[x] = (c[x] || 0) + 1; });
+  return Object.entries(c).map(([pid, n]) => ({ pid, n })).sort((a, b) => b.n - a.n);
+}
+
+/** Mímica: arma dos equipos alternados y el orden de turnos (A, B, A, B…). */
+export function armarEquipos(pids, azar = Math.random) {
+  const ids = barajar((pids || []).filter(Boolean), azar);
+  const eq = {}; const A = [], B = [];
+  ids.forEach((p, i) => { if (i % 2 === 0) { eq[p] = "A"; A.push(p); } else { eq[p] = "B"; B.push(p); } });
+  const cola = [];
+  for (let i = 0; i < Math.max(A.length, B.length); i++) { if (A[i]) cola.push(A[i]); if (B[i]) cola.push(B[i]); }
+  return { eq, cola };
+}
+
+// ── Pasapalabra ── est = texto de 25 letras: "-" pendiente, "o" acierto, "x" error.
+/** Siguiente letra pendiente desde `desde` (sin contarla), dando la vuelta. -1 si no queda ninguna. */
+export function siguientePendiente(est, desde) {
+  const n = est.length;
+  for (let k = 1; k <= n; k++) { const i = (desde + k) % n; if (est[i] === "-") return i; }
+  return -1;
+}
+/**
+ * Aplica una jugada al rosco. ron = { est:[e0,e1], pos:[p0,p1], rest:[ms,ms], turno, desde, fase }.
+ * accion: "ok" | "mal" | "pasa" | "tiempo". `ahora` en ms. Devuelve el ron nuevo.
+ * Un acierto sigue jugando; un error o un pasapalabra le pasa el turno al otro (si le queda algo).
+ */
+export function jugarRosco(ron, accion, ahora) {
+  const r = { ...ron, est: [...ron.est], pos: [...ron.pos], rest: [...ron.rest] };
+  const t = r.turno, n = r.est.length;
+  if (r.desde) r.rest[t] = Math.max(0, r.rest[t] - (ahora - r.desde));
+  const vivo = (k) => k < n && r.est[k].includes("-") && r.rest[k] > 0;
+  if (accion === "ok" || accion === "mal") {
+    const e = r.est[t].split(""); e[r.pos[t]] = accion === "ok" ? "o" : "x"; r.est[t] = e.join("");
+  }
+  if (accion !== "tiempo" && r.rest[t] > 0) {
+    const sig = siguientePendiente(r.est[t], r.pos[t]);
+    if (sig >= 0) r.pos[t] = sig;
+  }
+  if (accion === "tiempo") r.rest[t] = 0;
+  const otro = n === 2 ? 1 - t : t;
+  let turno = t;
+  if (accion !== "ok" || !vivo(t)) turno = vivo(otro) ? otro : (vivo(t) ? t : -1);
+  if (turno === -1) { r.fase = "fin"; r.desde = 0; r.turno = t; return r; }
+  r.turno = turno;
+  // Al cambiar de turno el reloj queda en pausa hasta que el presentador lo vuelva a partir.
+  r.desde = turno === t ? ahora : 0;
+  return r;
+}
+/** Puntaje del rosco: aciertos y errores. */
+export const puntajeRosco = (e) => ({ ok: (e.match(/o/g) || []).length, mal: (e.match(/x/g) || []).length });

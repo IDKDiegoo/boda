@@ -24,3 +24,4 @@ t("línea con centro", hayLinea([10,11,13,14]), true);
 t("diagonal", hayLinea([0,6,18,24]), true);
 t("sin línea", hayLinea([0,1,2,3]), false);
 console.log(`\n${ok} ok, ${mal} mal`); if (mal) process.exit(1);
+

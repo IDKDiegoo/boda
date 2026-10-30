@@ -27,6 +27,8 @@ const LunaMiel = lazy(() => import("./pantallas/luna/LunaMiel").then(m => ({ def
 const QRInvitados = lazy(() => import("./pantallas/QRInvitados").then(m => ({ default: m.QRInvitados })));
 const Juegos = lazy(() => import("./pantallas/juegos/Juegos").then(m => ({ default: m.Juegos })));
 const PanelAdmin = lazy(() => import("./pantallas/admin/PanelAdmin").then(m => ({ default: m.PanelAdmin })));
+const MesaInvitados = lazy(() => import("./pantallas/MesaInvitados").then(m => ({ default: m.MesaInvitados })));
+const SalaJuego = lazy(() => import("./pantallas/juegos/EnGrupo").then(m => ({ default: m.SalaJuego })));
 
 // ════════════════════════════════════════════════════════════════
 // APP
@@ -65,6 +67,9 @@ export default function App() {
   // El QR de los invitados: ?fotos=1 (boda original) o ?fotos=1&b={boda}. Solo deja subir fotos.
   const qs = new URLSearchParams(window.location.search);
   const qrFotos = qs.get("fotos")==="1" ? (qs.get("b") || LEGADO) : "";
+  // El QR de cada mesa (?mesa=5&b={boda}) y el de una partida en grupo (?sala=ABC12): sin cuenta.
+  const qrMesa = Number(qs.get("mesa")) || 0;
+  const qrSala = (qs.get("sala") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5);
 
   useEffect(() => onAuthStateChanged(auth, async u => {
     if (!u) { setSes(null); setBoda(null); return; }
@@ -81,6 +86,16 @@ export default function App() {
   }), []);
   const salir = () => { localStorage.removeItem("boda_acceso"); fijarBoda(""); setBoda(null); signOut(auth); };
 
+  if (qrMesa) { fijarBoda(qs.get("b") || LEGADO); return <Suspense fallback={<Bienvenida/>}><MesaInvitados mesa={qrMesa}/></Suspense>; }
+  if (qrSala) return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#fff5ee,#fde8d8)", padding:"16px 16px 40px" }}>
+      <S/>
+      <div style={{ maxWidth:760, margin:"0 auto" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}><Logo tam={34}/><div style={{ fontFamily:"var(--titulo)", fontSize:21, fontWeight:600, color:"#3b2a21" }}>My Wedding</div></div>
+        <Suspense fallback={<Cargando/>}><SalaJuego codigo={qrSala} onSalir={() => { window.location.href = "/"; }}/></Suspense>
+      </div>
+    </div>
+  );
   if (qrFotos) { fijarBoda(qrFotos); return (
     <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#fff5ee,#fde8d8)", padding:20 }}>
       <S/>

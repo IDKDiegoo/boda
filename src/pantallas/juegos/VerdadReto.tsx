@@ -97,7 +97,7 @@ export function VerdadReto({ onVolver }: { onVolver: () => void }) {
         {(["j1", "j2"] as const).map((k, i) => (
           <label key={k} style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.2)", borderRadius: 18, padding: "8px 10px" }}>
             <span style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", fontWeight: 700, background: i ? COL_RETO : COL_VERDAD }}>{ini(aj[k] || "?")}</span>
-            <input id={`vr-${k}`} value={aj[k]} onChange={e => cambiar({ [k]: e.target.value } as any)} placeholder={i ? "Jugador 2" : "Jugador 1"} aria-label={i ? "Nombre del jugador 2" : "Nombre del jugador 1"}
+            <input className="j-campo" id={`vr-${k}`} value={aj[k]} onChange={e => cambiar({ [k]: e.target.value } as any)} placeholder={i ? "Jugador 2" : "Jugador 1"} aria-label={i ? "Nombre del jugador 2" : "Nombre del jugador 1"}
               style={{ minWidth: 0, width: "100%", background: "transparent", border: "none", color: "#fff", fontSize: 15, fontWeight: 600, outline: "none", boxShadow: "none" }}/>
           </label>
         ))}
@@ -134,7 +134,7 @@ export function VerdadReto({ onVolver }: { onVolver: () => void }) {
               <button key={b} onClick={() => { vibrar(6); cambiar({ bebida: on ? "" : b }); }} style={{ borderRadius: 20, padding: "7px 13px", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
                 background: on ? "#fff" : "rgba(255,255,255,.1)", color: on ? "#8d1a3c" : "#fff", border: "1px solid rgba(255,255,255,.25)" }}>{b}</button>); })}
           </div>
-          <input id="vr-bebida" value={aj.bebida} onChange={e => cambiar({ bebida: e.target.value })} placeholder="u otra cosa…" aria-label="Qué están tomando"
+          <input className="j-campo" id="vr-bebida" value={aj.bebida} onChange={e => cambiar({ bebida: e.target.value })} placeholder="u otra cosa…" aria-label="Qué están tomando"
             style={{ marginTop: 10, width: "100%", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.25)", borderRadius: 12, padding: "10px 12px", fontSize: 14, color: "#fff", outline: "none" }}/>
           <button onClick={() => setEditarTragos(v => !v)} style={{ marginTop: 10, background: "none", border: "none", color: "#ffd5b0", fontSize: 12.5, fontWeight: 600, cursor: "pointer", padding: 0 }}>
             {editarTragos ? "Listo ▲" : "Cambiar cuánto se toma en cada nivel ▼"}

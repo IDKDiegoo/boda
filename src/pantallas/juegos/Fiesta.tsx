@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useData } from "../../base/hooks";
 import { infoBoda } from "../../base/firebase";
 import { AnilloTiempo, BarraJuego, Boton, CartaGiro, Escenario, IconoJuego, Opciones, confeti, guardarLocal, leerLista, leerLocal, useReloj, vibrar } from "./comun";
-import { BINGO, CAZA_FOTOS, IMPOSTOR, MIMICA } from "./contenido";
+import { BINGO, CAZA_FOTOS, MIMICA } from "./contenido";
+import { temasDe } from "./contenidoGrupo";
 import { barajar, carton, hayLinea, repartirImpostor, sacar } from "./logica";
 
 // Juegos para la fiesta (v2), con un solo teléfono que se va pasando (o el del animador).
@@ -15,7 +16,7 @@ const Avatar = ({ n, tam = 44, style }: { n: string; tam?: number; style?: React
 // ── EL IMPOSTOR ──────────────────────────────────────────────────
 type Jug = { nombre: string; palabra: string | null };
 export function Impostor({ onVolver }: { onVolver: () => void }) {
-  const [aj, setAj] = useState(() => leerLocal("imp", { nombres: "", categoria: "De la boda", impostores: 1, tiempo: 90 }));
+  const [aj, setAj] = useState(() => leerLocal("imp", { nombres: "", categoria: "Todos", impostores: 1, tiempo: 90, modo: "clasico" }));
   const [nuevo, setNuevo] = useState("");
   const [reparto, setReparto] = useState<Jug[] | null>(null);
   const [fase, setFase] = useState<"reparto" | "discusion" | "votar" | "final">("reparto");
@@ -32,7 +33,8 @@ export function Impostor({ onVolver }: { onVolver: () => void }) {
   const agregar = () => { const n = nuevo.trim(); if (!n || jugadores.includes(n)) return; vibrar(8); cambiar({ nombres: [...jugadores, n].join("\n") }); setNuevo(""); };
   const quitar = (n: string) => cambiar({ nombres: jugadores.filter(x => x !== n).join("\n") });
   const empezar = () => {
-    const lista = IMPOSTOR[aj.categoria] || IMPOSTOR["De la boda"];
+    const temas = temasDe(aj.modo), nombres = Object.keys(temas);
+    const lista = temas[aj.categoria] || temas[nombres[Math.floor(Math.random() * nombres.length)]];
     const r: Jug[] = repartirImpostor(jugadores, barajar(lista)[0], aj.impostores);
     setReparto(r); setI(0); setMirando(false); setYaVio(false); setFase("reparto"); setVotados([]);
     setParte(barajar(r.map(x => x.nombre))[0]); vibrar(14);
@@ -54,15 +56,17 @@ export function Impostor({ onVolver }: { onVolver: () => void }) {
           </span>))}
       </div>
       <form onSubmit={e => { e.preventDefault(); agregar(); }} style={{ display: "flex", gap: 8 }}>
-        <input id="imp-nuevo" value={nuevo} onChange={e => setNuevo(e.target.value)} placeholder="Nombre del jugador" aria-label="Nombre del jugador"
+        <input className="j-campo" id="imp-nuevo" value={nuevo} onChange={e => setNuevo(e.target.value)} placeholder="Nombre del jugador" aria-label="Nombre del jugador"
           style={{ flex: 1, minWidth: 0, background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.25)", borderRadius: 14, padding: "12px 14px", fontSize: 15, color: "#fff", outline: "none" }}/>
         <button type="submit" aria-label="Agregar jugador" style={{ width: 48, borderRadius: 14, border: "none", background: "#fff", color: col, cursor: "pointer", display: "grid", placeItems: "center" }}><IconoJuego n="mas" tam={22} grosor={2.4}/></button>
       </form>
-      <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", opacity: .7, margin: "20px 0 8px" }}>Tema de las palabras</div>
+      <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", opacity: .7, margin: "20px 0 8px" }}>Modo</div>
+      <Opciones valor={aj.modo || "clasico"} opciones={[["clasico", "Clásico"], ["futbol", "Futbolero"]]} onCambiar={v => cambiar({ modo: v, categoria: "Todos" })}/>
+      <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", opacity: .7, margin: "16px 0 8px" }}>Tema de las palabras</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {Object.keys(IMPOSTOR).map(k => { const on = aj.categoria === k; return (
+        {["Todos", ...Object.keys(temasDe(aj.modo))].map(k => { const on = aj.categoria === k || (k === "Todos" && !temasDe(aj.modo)[aj.categoria]); return (
           <button key={k} onClick={() => { vibrar(6); cambiar({ categoria: k }); }} style={{ cursor: "pointer", borderRadius: 20, padding: "8px 13px", fontSize: 13, fontWeight: 600,
-            background: on ? "#fff" : "rgba(255,255,255,.08)", color: on ? col : "#fff", border: "1px solid rgba(255,255,255,.22)" }}>{k}</button>); })}
+            background: on ? "#fff" : "rgba(255,255,255,.08)", color: on ? col : "#fff", border: "1px solid rgba(255,255,255,.22)" }}>{k === "Todos" ? "Mezclar todo" : k}</button>); })}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 18 }}>
         <div><div style={{ fontSize: 12, opacity: .75, marginBottom: 6 }}>Impostores</div><Opciones valor={aj.impostores} opciones={[[1, "1"], [2, "2"], [3, "3"]]} onCambiar={v => cambiar({ impostores: v })}/></div>
@@ -240,7 +244,7 @@ export function Mimica({ onVolver }: { onVolver: () => void }) {
 }
 
 // ── BINGO: el sello cae al marcar; línea completa = confeti ──────
-export function Bingo({ onVolver }: { onVolver: () => void }) {
+export function Bingo({ onVolver, invitado }: { onVolver: () => void; invitado?: boolean }) {
   const [c, setC] = useState<string[]>(() => { const g = leerLista("bingo_carton"); return g.length === 25 ? g : carton(BINGO); });
   const [m, setM] = useState<number[]>(() => leerLista("bingo_marcas").map(Number));
   const ya = useRef(hayLinea(m));
@@ -270,9 +274,9 @@ export function Bingo({ onVolver }: { onVolver: () => void }) {
             </button>); })}
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: invitado ? "1fr" : "1fr 1fr", gap: 10, marginTop: 16 }}>
         <Boton color="rgba(255,255,255,.18)" onClick={nuevo}><IconoJuego n="barajar" tam={17}/>Cartón nuevo</Boton>
-        <Boton color="#ffffff" claro style={{ color: col }} onClick={() => imprimirCartones(12)}><IconoJuego n="impresora" tam={17}/>Imprimir 12</Boton>
+        {!invitado && <Boton color="#ffffff" claro style={{ color: col }} onClick={() => imprimirCartones(12)}><IconoJuego n="impresora" tam={17}/>Imprimir 12</Boton>}
       </div>
     </Escenario>
   );
@@ -287,7 +291,7 @@ function imprimirCartones(n: number) {
 }
 
 // ── CAZA DE FOTOS: lista con anillo de avance ────────────────────
-export function CazaFotos({ onVolver }: { onVolver: () => void }) {
+export function CazaFotos({ onVolver, pie }: { onVolver: () => void; pie?: React.ReactNode }) {
   const [hechas, setHechas] = useState<string[]>(() => leerLista("caza"));
   const t = (x: string) => { vibrar(10); const n = hechas.includes(x) ? hechas.filter(y => y !== x) : [...hechas, x]; setHechas(n); guardarLocal("caza", n); if (n.length === CAZA_FOTOS.length) confeti(); };
   const col = "#4f7fae", f = hechas.length / CAZA_FOTOS.length, r = 34, L = 2 * Math.PI * r;
@@ -298,7 +302,7 @@ export function CazaFotos({ onVolver }: { onVolver: () => void }) {
         <svg width="84" height="84" style={{ transform: "rotate(-90deg)", flexShrink: 0 }} aria-hidden="true"><circle cx="42" cy="42" r={r} fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="8"/>
           <circle cx="42" cy="42" r={r} fill="none" stroke="#fff" strokeWidth="8" strokeLinecap="round" strokeDasharray={L} strokeDashoffset={L * (1 - f)} style={{ transition: "stroke-dashoffset .6s ease" }}/></svg>
         <div><div style={{ fontFamily: "var(--titulo)", fontSize: 30, fontWeight: 600, lineHeight: 1 }}>{hechas.length}<span style={{ fontSize: 18, opacity: .7 }}> / {CAZA_FOTOS.length}</span></div>
-          <div style={{ fontSize: 12.5, opacity: .85, marginTop: 4, lineHeight: 1.4 }}>Muéstrales la lista a los invitados. Las fotos se suben con el QR de la Galería.</div></div>
+          <div style={{ fontSize: 12.5, opacity: .85, marginTop: 4, lineHeight: 1.4 }}>{pie ? "Saca las fotos de la lista y súbelas más abajo. Marca las que ya tienes." : "Muéstrales la lista a los invitados. Las fotos se suben con el QR de cada mesa o el de la Galería."}</div></div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {CAZA_FOTOS.map(x => { const on = hechas.includes(x); return (
@@ -343,8 +347,8 @@ export function Trivia({ onVolver }: { onVolver: () => void }) {
       <BarraJuego titulo="Trivia de los novios" onVolver={onVolver}/>
       <div style={{ fontSize: 13.5, opacity: .85, marginBottom: 14, lineHeight: 1.5 }}>Escriban preguntas sobre ustedes («¿dónde fue la primera cita?»). En la fiesta, el animador las lee y las mesas compiten.</div>
       <form onSubmit={e => { e.preventDefault(); agregar(); }} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <input id="tr-p" value={p} onChange={e => setP(e.target.value)} placeholder="Pregunta" aria-label="Pregunta" style={campo}/>
-        <input id="tr-r" value={r} onChange={e => setR(e.target.value)} placeholder="Respuesta" aria-label="Respuesta" style={campo}/>
+        <input className="j-campo" id="tr-p" value={p} onChange={e => setP(e.target.value)} placeholder="Pregunta" aria-label="Pregunta" style={campo}/>
+        <input className="j-campo" id="tr-r" value={r} onChange={e => setR(e.target.value)} placeholder="Respuesta" aria-label="Respuesta" style={campo}/>
         <Boton color="#ffffff" claro style={{ color: col }}><IconoJuego n="mas" tam={18} grosor={2.3}/>Agregar pregunta</Boton>
       </form>
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 14 }}>
