@@ -283,7 +283,7 @@ export function BodaCivil() {
 
           {/* Formulario */}
           {showFG && (
-            <Card style={{ marginBottom:14, border:`2px solid ${editGId?"#5070a0":"#e8d5c4"}` }}>
+            <Card enfocar={editGId ?? "nuevo"} style={{ marginBottom:14, border:`2px solid ${editGId?"#5070a0":"#e8d5c4"}` }}>
               <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:12 }}>
                 {editGId ? "✏️ Editar ítem" : "Nuevo ítem"}
               </div>
@@ -499,7 +499,7 @@ export function BodaCivil() {
 
           {/* Formulario agregar / editar */}
           {showFInv && (
-            <Card style={{ marginBottom:14, border:`2px solid ${editInvId?"#5070a0":"#e8d5c4"}` }}>
+            <Card enfocar={editInvId ?? "nuevo"} style={{ marginBottom:14, border:`2px solid ${editInvId?"#5070a0":"#e8d5c4"}` }}>
               <div style={{ fontSize:13, fontWeight:700, color:"#5c3d2e", marginBottom:10 }}>
                 {editInvId ? "✏️ Editar invitado" : "Nuevo invitado"}
               </div>
