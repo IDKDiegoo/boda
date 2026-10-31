@@ -132,9 +132,37 @@ export function jugarRosco(ron, accion, ahora) {
   if (accion !== "ok" || !vivo(t)) turno = vivo(otro) ? otro : (vivo(t) ? t : -1);
   if (turno === -1) { r.fase = "fin"; r.desde = 0; r.turno = t; return r; }
   r.turno = turno;
-  // Al cambiar de turno el reloj queda en pausa hasta que el presentador lo vuelva a partir.
-  r.desde = turno === t ? ahora : 0;
+  // Como en la tele: al pasar o fallar se detiene el reloj de uno y parte solo el del otro.
+  // Jugando solo, «pasapalabra» deja el reloj en pausa hasta que el presentador diga «seguir».
+  r.desde = turno !== t ? ahora : (n === 1 && accion === "pasa") ? 0 : ahora;
   return r;
+}
+/** Pausa el reloj del que está jugando (descuenta lo que corrió) y lo vuelve a partir. */
+export function pausarRosco(ron, ahora) {
+  if (!ron.desde) return ron;
+  const rest = [...ron.rest]; rest[ron.turno] = Math.max(0, rest[ron.turno] - (ahora - ron.desde));
+  return { ...ron, rest, desde: 0 };
+}
+export const seguirRosco = (ron, ahora) => ron.desde ? ron : { ...ron, desde: ahora };
+
+// ── Pruebas para ganar segundos ──
+/** Número entre 0 y 1 a partir de un texto (para que todos los teléfonos barajen igual). */
+export function azarDe(semilla) {
+  let h = 2166136261; for (const ch of String(semilla)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+  return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 100000) / 100000; };
+}
+/** Letras desordenadas de una palabra (nunca igual a la original si se puede). */
+export function desordenar(palabra, semilla = palabra) {
+  const az = azarDe(semilla), l = [...palabra];
+  for (let k = 0; k < 6; k++) { const x = barajar(l, az); if (x.join("") !== palabra) return x; }
+  return [...l].reverse();
+}
+/** Ahorcado: cómo se ve la palabra, cuántos errores y si se resolvió. `usadas` = letras probadas. */
+export function estadoAhorcado(palabra, usadas = "") {
+  const u = new Set([...usadas]);
+  const vista = [...palabra].map((c) => (u.has(c) ? c : "_"));
+  const errores = [...u].filter((c) => !palabra.includes(c)).length;
+  return { vista, errores, resuelta: !vista.includes("_") };
 }
 /** Puntaje del rosco: aciertos y errores. */
 export const puntajeRosco = (e) => ({ ok: (e.match(/o/g) || []).length, mal: (e.match(/x/g) || []).length });

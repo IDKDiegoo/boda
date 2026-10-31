@@ -9,7 +9,7 @@ import { db } from "../../base/firebase";
 // Un solo documento por sala: lo escuchan todos (onSnapshot), sin consultas periódicas.
 // ═══════════════════════════════════════════════════════════════════
 
-export type JuegoSala = "impostor" | "mimica" | "rosco" | "probable";
+export type JuegoSala = "impostor" | "mimica" | "rosco" | "probable" | "quien";
 export type JugSala = { n: string; t: number };
 export type Sala = {
   id: string; b: string; j: JuegoSala; host: string; est: "lobby" | "juego";

@@ -57,6 +57,7 @@ const ICONOS: Record<string, React.ReactNode> = {
   votar: <><rect x="4" y="11" width="16" height="9.5" rx="1.8"/><path d="M8.5 11V4.5h7V11M8 15.5h8"/></>,
   qr: <><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><path d="M14 14h3v3h-3zM20.5 14v.01M14 20.5h.01M17.5 20.5H21v-3"/></>,
   mesa: <><ellipse cx="12" cy="9" rx="9" ry="3.5"/><path d="M12 12.5V20M8 20.5h8M5.5 11.3v5M18.5 11.3v5"/></>,
+  lupa: <><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/><path d="M8 9.5c.5-1.2 1.6-2 2.9-2"/></>,
   corona: <><path d="M3.5 8 8 12l4-6.5 4 6.5 4.5-4-2 10.5h-13L3.5 8Z"/><path d="M5.5 21h13"/></>,
   compartir: <><circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="m8.2 10.8 7.6-4.1M8.2 13.2l7.6 4.1"/></>,
 };
