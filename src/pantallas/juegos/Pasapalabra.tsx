@@ -424,8 +424,9 @@ function LaPista({ sala, r, pr, tema, host }: { sala: Sala; r: any; pr: any; tem
 // ── Palabras cruzadas: cada palabra partida en dos columnas ──
 const partir2 = (p: string) => { const m = Math.ceil(p.length / 2); return [p.slice(0, m), p.slice(m)]; };
 function Cruzadas({ sala, pr, tema, soyYo, host, onBien, onSaltar }: PropsPrueba & { onBien: () => void; onSaltar: () => void }) {
-  const items: string[] = pr.items || [], i = pr.i || 0, pan = Math.floor(i / 9);
-  const panel = items.slice(pan * 9, pan * 9 + 9), dentro = i - pan * 9, palabra = panel[dentro] || "";
+  const i = pr.i || 0, pan = Math.floor(i / 9);
+  const panel: string[] = useMemo(() => (pr.items || []).slice(pan * 9, pan * 9 + 9), [pr.items, pan]);
+  const dentro = i - pan * 9, palabra = panel[dentro] || "";
   const usadas = new Set(panel.slice(0, dentro));
   const izq = useMemo(() => barajar(panel.map((p, k) => ({ p, k })), azarDe(`${sala.id}-${pan}-i`)), [panel, pan, sala.id]);
   const der = useMemo(() => barajar(panel.map((p, k) => ({ p, k })), azarDe(`${sala.id}-${pan}-d`)), [panel, pan, sala.id]);
@@ -458,7 +459,7 @@ function Cruzadas({ sala, pr, tema, soyYo, host, onBien, onSaltar }: PropsPrueba
 // ── La memoria: 9 palabras a la vista unos segundos; después se tapan y hay que encontrar la que se pide ──
 function Memoria({ sala, pr, r, soyYo, host, seg }: { sala: Sala; pr: any; r: any; soyYo: boolean; host: boolean; seg: number }) {
   // `mk` = cuántas encontró en este panel (ojo: `pr.k` es en qué prueba va el juego).
-  const items: string[] = pr.items || [], pan = pr.pan || 0, k = pr.mk || 0;
+  const items: string[] = useMemo(() => pr.items || [], [pr.items]), pan = pr.pan || 0, k = pr.mk || 0;
   const panel = useMemo(() => Array.from({ length: 9 }, (_, j) => items[(pan * 9 + j) % Math.max(1, items.length)]), [items, pan]);
   const orden = useMemo(() => barajar([0, 1, 2, 3, 4, 5, 6, 7, 8], azarDe(`${sala.id}-${pan}-m`)), [pan, sala.id]);
   const faltaVer = useFaltan(pr.mem || 0);
