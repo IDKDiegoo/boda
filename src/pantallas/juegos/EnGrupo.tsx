@@ -6,7 +6,7 @@ import { ConfigRosco, RoscoSala, inicioRosco } from "./Pasapalabra";
 import { ConfigQuien, QuienSala, inicioQuien } from "./QuienEsQuien";
 import { armarEquipos, barajar, contarVotos, elegirPalabra, repartirSala } from "./logica";
 import { Avatar, Meta, Panel, Pildora, PropsJuego, Rotulo, VACIO, VolverSala, nombreDe } from "./uiGrupo";
-import { JuegoSala, Sala, anfitrion, cambiar, crearSala, jugadores, limpiarCodigo, miNombre, miPid, qrDe, salir, unirse, urlSala, useFaltan, useSala } from "./sala";
+import { JuegoSala, Sala, anfitrion, cambiar, crearSala, jugadores, limpiarCodigo, miNombre, miPid, qrDe, salir, unirse, urlSala, useFaltan, usePantallaEncendida, useSala, yaEstuve } from "./sala";
 
 // ═══════════════════════════════════════════════════════════════════
 // JUEGOS EN GRUPO (30-oct-2026): el que abre el juego muestra un QR, los demás se unen con su
@@ -15,7 +15,7 @@ import { JuegoSala, Sala, anfitrion, cambiar, crearSala, jugadores, limpiarCodig
 
 export const JUEGOS_SALA: Record<JuegoSala, Meta> = {
   impostor: { t: "El impostor", color: "#6b55a0", oscuro: "#151024", icono: "mascara", min: 3, desc: "Todos tienen la palabra menos uno. ¿Quién miente?",
-    cfg: { modo: "clasico", cat: "Todos", imp: 1, tiempo: 90, infiltrado: false } },
+    cfg: { modo: "clasico", cat: "Todos", imp: 1, tiempo: 90, infiltrado: false, ayuda: "tema" } },
   mimica: { t: "Mímica por equipos", color: "#7d5ca8", oscuro: "#1d1430", icono: "teatro", min: 4, desc: "Dos equipos; el que actúa ve la palabra en su teléfono",
     cfg: { tiempo: 60, tema: "De la boda" } },
   rosco: { t: "Pasapalabra", color: "#2f6fb0", oscuro: "#0b1730", icono: "rosco", min: 2, desc: "Pruebas para ganar segundos y el rosco de la A a la Z, como en la tele",
@@ -74,7 +74,16 @@ export function EntrarConCodigo({ onEntrar, onVolver }: { onEntrar: (codigo: str
 export function SalaJuego({ codigo, onSalir }: { codigo: string; onSalir: () => void }) {
   const [sala, error] = useSala(codigo);
   const yo = miPid();
+  const [preguntar, setPreguntar] = useState(false);
+  const volviendo = useRef(false);
   const fuera = async () => { await salir(codigo); onSalir(); };
+  const enJuego = !!sala && sala.est === "juego" && !!sala.jug?.[yo];
+  usePantallaEncendida(enJuego);
+  // Si la sala dejó de reconocer a este teléfono (pero ya había entrado y sabemos su nombre), vuelve a entrar solo.
+  useEffect(() => {
+    if (!sala || sala.jug?.[yo] || volviendo.current || !yaEstuve(codigo) || !miNombre()) return;
+    volviendo.current = true; unirse(codigo, miNombre()).catch(() => {}).finally(() => { volviendo.current = false; });
+  }, [sala, yo, codigo]);
   if (sala === undefined || (error && !sala)) return (
     <Escenario color="#6b55a0" oscuro="#151024">
       <BarraJuego titulo="Sala de juego" onVolver={onSalir}/>
@@ -95,14 +104,46 @@ export function SalaJuego({ codigo, onSalir }: { codigo: string; onSalir: () => 
     </Escenario>
   );
   const m = JUEGOS_SALA[sala.j];
-  if (!sala.jug?.[yo]) return <Unirse sala={sala} meta={m} onSalir={onSalir}/>;
-  const p: PropsJuego = { sala, yo, host: anfitrion(sala) === yo, meta: m, onSalir: fuera };
-  if (sala.est === "lobby") return <Lobby {...p}/>;
-  if (sala.j === "impostor") return <ImpostorSala {...p}/>;
-  if (sala.j === "mimica") return <MimicaSala {...p}/>;
-  if (sala.j === "rosco") return <RoscoSala {...p}/>;
-  if (sala.j === "quien") return <QuienSala {...p}/>;
-  return <ProbableSala {...p}/>;
+  if (!sala.jug?.[yo]) return yaEstuve(codigo) && miNombre()
+    ? <Escenario color={m.color} oscuro={m.oscuro}><div style={{ display: "grid", placeItems: "center", minHeight: 300, opacity: .85 }}>Volviendo a la sala…</div></Escenario>
+    : <Unirse sala={sala} meta={m} onSalir={onSalir}/>;
+  // La flecha de volver, en plena partida, pregunta antes de sacarte (era fácil tocarla sin querer al terminar una ronda).
+  const p: PropsJuego = { sala, yo, host: anfitrion(sala) === yo, meta: m, onSalir: sala.est === "lobby" ? fuera : () => setPreguntar(true) };
+  let juego: React.ReactNode;
+  if (sala.est === "lobby") juego = <Lobby {...p}/>;
+  else if (sala.j === "impostor") juego = <ImpostorSala {...p}/>;
+  else if (sala.j === "mimica") juego = <MimicaSala {...p}/>;
+  else if (sala.j === "rosco") juego = <RoscoSala {...p}/>;
+  else if (sala.j === "quien") juego = <QuienSala {...p}/>;
+  else juego = <ProbableSala {...p}/>;
+  return <>
+    {juego}
+    {preguntar && (
+      <div role="dialog" aria-modal="true" aria-label="Salir de la partida" style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(8,6,16,.72)", display: "grid", placeItems: "center", padding: 20 }}>
+        <div className="j-entrar" style={{ width: "min(100%, 380px)", background: "#fffdfb", color: "#2c1424", borderRadius: 24, padding: "22px 20px", textAlign: "center" }}>
+          <div style={{ fontFamily: "var(--titulo)", fontSize: 26, fontWeight: 600 }}>¿Salir de la partida?</div>
+          <div style={{ fontSize: 13.5, color: "#7a6158", margin: "8px 0 18px", lineHeight: 1.45 }}>Los demás siguen jugando. Puedes volver a entrar con el mismo código: {sala.id}.</div>
+          <Boton color={m.color} style={{ width: "100%" }} onClick={() => setPreguntar(false)}>Seguir jugando</Boton>
+          <button onClick={fuera} style={{ marginTop: 10, width: "100%", background: "none", border: "none", color: "#9a7b70", fontSize: 14, fontWeight: 600, padding: 10, cursor: "pointer" }}>Salir de la sala</button>
+        </div>
+      </div>)}
+  </>;
+}
+
+/** Para los invitados que entran por el QR de una partida (sin cuenta): al salir no van al inicio de sesión. */
+export function SalaInvitado({ codigo }: { codigo: string }) {
+  const [fuera, setFuera] = useState(false);
+  if (!fuera) return <SalaJuego codigo={codigo} onSalir={() => setFuera(true)}/>;
+  return (
+    <Escenario color="#6b55a0" oscuro="#151024">
+      <div className="j-entrar" style={{ textAlign: "center", padding: "50px 10px" }}>
+        <IconoJuego n="dados" tam={50}/>
+        <div style={{ fontFamily: "var(--titulo)", fontSize: 30, fontWeight: 600, marginTop: 12 }}>Saliste de la sala {codigo}</div>
+        <div style={{ fontSize: 13.5, opacity: .8, marginTop: 8 }}>Si fue sin querer, vuelve a entrar: tu nombre queda guardado.</div>
+        <Boton color="#ffffff" claro style={{ width: "100%", marginTop: 22, color: "#6b55a0" }} onClick={() => setFuera(false)}>Volver a entrar</Boton>
+      </div>
+    </Escenario>
+  );
 }
 
 function Unirse({ sala, meta, onSalir }: { sala: Sala; meta: Meta; onSalir: () => void }) {
@@ -204,6 +245,9 @@ function ConfigJuego({ sala, cfg, poner, color }: { sala: Sala; cfg: any; poner:
         <div><Rotulo>Impostores</Rotulo><Opciones valor={cfg.imp} opciones={[[1, "1"], [2, "2"], [3, "3"]]} onCambiar={v => poner({ imp: v })}/></div>
         <div><Rotulo>Para discutir</Rotulo><Opciones valor={cfg.tiempo} opciones={[[60, "1'"], [90, "1½'"], [150, "2½'"]]} onCambiar={v => poner({ tiempo: v })}/></div>
       </div>
+      <Rotulo style={{ marginTop: 14 }}>Ayuda para el impostor</Rotulo>
+      <Opciones valor={cfg.ayuda || "tema"} opciones={[["nada", "Nada"], ["tema", "La temática"], ["inicial", "Temática + 1ª letra"]]} onCambiar={v => poner({ ayuda: v })}/>
+      <div style={{ fontSize: 12, opacity: .75, marginTop: 8, lineHeight: 1.45 }}>{(cfg.ayuda || "tema") === "nada" ? "Nadie ve la temática: el impostor juega a ciegas." : (cfg.ayuda === "inicial" ? "El impostor ve la temática y con qué letra empieza la palabra." : "El impostor ve de qué temática es la palabra (sirve cuando se mezclan temas).")}</div>
       <Rotulo style={{ marginTop: 14 }}>Variante</Rotulo>
       <Opciones valor={cfg.infiltrado ? 1 : 0} opciones={[[0, "Impostor sin palabra"], [1, "Infiltrado"]]} onCambiar={v => poner({ infiltrado: !!v })}/>
       <div style={{ fontSize: 12, opacity: .75, marginTop: 8, lineHeight: 1.45 }}>{cfg.infiltrado
@@ -232,7 +276,7 @@ function inicioDe(sala: Sala, cfg: any): Record<string, any> {
   if (sala.j === "impostor") {
     const e = elegirPalabra(cfg.modo === "futbol" ? IMPOSTOR_FUTBOL : IMPOSTOR_CLASICO, cfg.cat)!;
     const r = repartirSala(ids, e.palabra, cfg.imp, cfg.infiltrado ? e.otra : null);
-    return { est: "juego", cfg, v: {}, ron: { n: (sala.ron?.n || 0) + 1, cat: e.cat, palabra: e.palabra, otra: cfg.infiltrado ? e.otra : null, ...r, fase: "ver", listo: {}, fin: 0 } };
+    return { est: "juego", cfg, v: {}, ron: { n: (sala.ron?.n || 0) + 1, cat: e.cat, palabra: e.palabra, otra: cfg.infiltrado ? e.otra : null, ...r, fase: "ver", listo: {}, fin: 0, vuelta: 1, dec: {} } };
   }
   if (sala.j === "mimica") {
     const { eq, cola } = armarEquipos(ids);
@@ -253,14 +297,21 @@ function ImpostorSala({ sala, yo, host, meta, onSalir }: PropsJuego) {
   const faltan = useFaltan(r.fase === "pistas" ? r.fin : 0);
   const listos = enRonda.filter(p => r.listo?.[p]).length;
   const votaron = enRonda.filter(p => sala.v?.[p]).length;
+  const decidieron = enRonda.filter(p => r.dec?.[p]).length;
+  const porOtra = enRonda.filter(p => r.dec?.[p] === "otra").length;
+  const ayuda = sala.cfg?.ayuda || "tema";
   const [mirando, setMirando] = useState(false);
+  const otraVuelta = () => cambiar(sala.id, { "ron.fase": "pistas", "ron.fin": Date.now() + (sala.cfg?.tiempo || 90) * 1000, "ron.vuelta": (r.vuelta || 1) + 1, "ron.dec": {} });
   // El anfitrión avanza solo cuando todos vieron, se acaba el tiempo o todos votaron.
   useEffect(() => {
     if (!host) return;
     if (r.fase === "ver" && enRonda.length && listos >= enRonda.length) cambiar(sala.id, { "ron.fase": "pistas", "ron.fin": Date.now() + (sala.cfg?.tiempo || 90) * 1000 });
-    else if (r.fase === "pistas" && r.fin && faltan === 0) { vibrar([60, 40, 60]); cambiar(sala.id, { "ron.fase": "votar" }); }
+    else if (r.fase === "pistas" && r.fin && faltan === 0) { vibrar([60, 40, 60]); cambiar(sala.id, { "ron.fase": "decidir", "ron.dec": {} }); }
+    // Gana la mayoría; si empatan, se vota.
+    else if (r.fase === "decidir" && enRonda.length && decidieron >= enRonda.length) { if (porOtra * 2 > enRonda.length) otraVuelta(); else cambiar(sala.id, { "ron.fase": "votar" }); }
     else if (r.fase === "votar" && enRonda.length && votaron >= enRonda.length) cambiar(sala.id, { "ron.fase": "fin" });
-  }, [host, r.fase, listos, votaron, faltan, enRonda.length, r.fin, sala.id, sala.cfg?.tiempo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [host, r.fase, listos, votaron, decidieron, porOtra, faltan, enRonda.length, r.fin, sala.id, sala.cfg?.tiempo]);
   useEffect(() => { if (r.fase === "fin") vibrar([30, 40, 30]); }, [r.fase]);
 
   const derecha = <span style={{ fontSize: 12, background: "rgba(0,0,0,.22)", borderRadius: 20, padding: "5px 10px" }}>Ronda {r.n || 1} · {sala.id}</span>;
@@ -270,8 +321,8 @@ function ImpostorSala({ sala, yo, host, meta, onSalir }: PropsJuego) {
         background: mirando ? (mia ? "#fffdfb" : "linear-gradient(150deg,#e0455f,#8d1a3c)") : "rgba(255,255,255,.08)", color: mirando && mia ? "#3b2a21" : "#fff",
         border: mirando ? "none" : "2px dashed rgba(255,255,255,.35)", transition: "background .25s ease, transform .2s", transform: mirando ? "scale(1.02)" : "none" }}>
       {mirando ? (mia
-        ? <div><div style={{ fontSize: 11, letterSpacing: ".24em", textTransform: "uppercase", color: col }}>Tu palabra · {r.cat}</div><div style={{ fontFamily: "var(--titulo)", fontSize: "clamp(30px, 9vw, 44px)", fontWeight: 600, marginTop: 6, lineHeight: 1.1 }}>{mia}</div></div>
-        : <div><IconoJuego n="mascara" tam={50}/><div style={{ fontFamily: "var(--titulo)", fontSize: 32, fontWeight: 600, marginTop: 6 }}>Eres el impostor</div><div style={{ fontSize: 13, opacity: .9, marginTop: 4 }}>Tema: <b>{r.cat}</b>. Escucha y disimula.</div></div>)
+        ? <div><div style={{ fontSize: 11, letterSpacing: ".24em", textTransform: "uppercase", color: col }}>Tu palabra{ayuda !== "nada" ? ` · ${r.cat}` : ""}</div><div style={{ fontFamily: "var(--titulo)", fontSize: "clamp(30px, 9vw, 44px)", fontWeight: 600, marginTop: 6, lineHeight: 1.1 }}>{mia}</div></div>
+        : <div><IconoJuego n="mascara" tam={50}/><div style={{ fontFamily: "var(--titulo)", fontSize: 32, fontWeight: 600, marginTop: 6 }}>Eres el impostor</div><div style={{ fontSize: 13, opacity: .9, marginTop: 4, lineHeight: 1.45 }}>{ayuda === "nada" ? "No sabes nada: escucha y disimula." : <>Temática: <b>{r.cat}</b>{ayuda === "inicial" && r.palabra ? <> · empieza con <b>«{String(r.palabra)[0]}»</b></> : null}. Escucha y disimula.</>}</div></div>)
         : <div style={{ display: "grid", placeItems: "center", gap: 10 }}><IconoJuego n="ojo" tam={38}/><div style={{ fontSize: 15, fontWeight: 600 }}>Mantén presionado para ver lo tuyo</div><div style={{ fontSize: 12.5, opacity: .7 }}>Que nadie mire tu pantalla</div></div>}
     </div>);
 
@@ -295,7 +346,7 @@ function ImpostorSala({ sala, yo, host, meta, onSalir }: PropsJuego) {
     const orden: string[] = (r.orden || []).filter((p: string) => sala.jug[p]);
     return (
       <Escenario color={col} oscuro={meta.oscuro}>
-        <BarraJuego titulo="Den sus pistas" onVolver={onSalir} derecha={derecha}/>
+        <BarraJuego titulo={(r.vuelta || 1) > 1 ? `Pistas · vuelta ${r.vuelta}` : "Den sus pistas"} onVolver={onSalir} derecha={derecha}/>
         <div style={{ display: "grid", placeItems: "center", margin: "4px 0 16px" }}><AnilloTiempo seg={faltan} total={sala.cfg?.tiempo || 90} tam={150}/></div>
         <Panel>
           <Rotulo>En este orden, una palabra cada uno</Rotulo>
@@ -304,7 +355,30 @@ function ImpostorSala({ sala, yo, host, meta, onSalir }: PropsJuego) {
           </div>
         </Panel>
         <div style={{ marginTop: 14 }}>{tarjeta(130)}</div>
-        {host && <Boton color="#ffffff" claro style={{ width: "100%", marginTop: 14, color: col }} onClick={() => cambiar(sala.id, { "ron.fase": "votar" })}>Votar ahora</Boton>}
+        {host && <Boton color="#ffffff" claro style={{ width: "100%", marginTop: 14, color: col }} onClick={() => cambiar(sala.id, { "ron.fase": "decidir", "ron.dec": {} })}>Terminar la vuelta</Boton>}
+      </Escenario>);
+  }
+
+  if (r.fase === "decidir") {
+    const mio = r.dec?.[yo];
+    const elegir = (x: "votar" | "otra") => { vibrar(12); cambiar(sala.id, { [`ron.dec.${yo}`]: x }); };
+    return (
+      <Escenario color={col} oscuro={meta.oscuro}>
+        <BarraJuego titulo="¿Y ahora?" onVolver={onSalir} derecha={<span style={{ fontSize: 12, background: "rgba(0,0,0,.22)", borderRadius: 20, padding: "5px 10px" }}>{decidieron}/{enRonda.length} eligieron</span>}/>
+        <div style={{ fontSize: 14, opacity: .88, marginBottom: 14, lineHeight: 1.5 }}>Terminó la vuelta {r.vuelta || 1} de pistas. ¿Ya saben quién es, o hacen otra vuelta de palabras? Gana la mayoría.</div>
+        <div style={{ display: "grid", gap: 10 }}>
+          {([["votar", "Votar al impostor", "votar"], ["otra", "Otra vuelta de pistas", "barajar"]] as const).map(([id, t, ic]) => { const on = mio === id, n = enRonda.filter(p => r.dec?.[p] === id).length; return (
+            <button key={id} onClick={() => elegir(id)} className="j-tile" style={{ display: "flex", alignItems: "center", gap: 14, textAlign: "left", padding: "18px 16px", borderRadius: 20, cursor: "pointer",
+              background: on ? "#fff" : "rgba(255,255,255,.1)", color: on ? col : "#fff", border: on ? "none" : "1px solid rgba(255,255,255,.22)" }}>
+              <IconoJuego n={ic} tam={26}/><span style={{ flex: 1, fontSize: 17, fontWeight: 700 }}>{t}</span>
+              <span style={{ fontFamily: "var(--titulo)", fontSize: 26, fontWeight: 700, opacity: .85 }}>{n}</span>
+            </button>); })}
+        </div>
+        <div style={{ marginTop: 14 }}>{tarjeta(136)}</div>
+        {host && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
+          <Boton color="rgba(255,255,255,.14)" onClick={() => cambiar(sala.id, { "ron.fase": "votar" })}>Votar ya</Boton>
+          <Boton color="rgba(255,255,255,.14)" onClick={otraVuelta}>Otra vuelta ya</Boton>
+        </div>}
       </Escenario>);
   }
 

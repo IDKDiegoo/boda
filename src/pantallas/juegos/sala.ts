@@ -20,16 +20,23 @@ const LETRAS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";       // sin 0/O ni 1/I, que 
 const nuevoCodigo = () => Array.from({ length: 5 }, () => LETRAS[Math.floor(Math.random() * LETRAS.length)]).join("");
 export const limpiarCodigo = (c: string) => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5);
 
+// Lo que el teléfono recuerda (id, nombre, salas en que entró). Si el navegador no deja guardar nada
+// (modo privado, el navegador de WhatsApp), igual queda en memoria mientras la página esté abierta:
+// antes el id cambiaba en cada llamada y la sala dejaba de reconocer al invitado.
+const MEMORIA: Record<string, string> = {};
+const leer = (k: string) => { try { const v = localStorage.getItem(k); if (v != null) return v; } catch { /* nada */ } try { const v = sessionStorage.getItem(k); if (v != null) return v; } catch { /* nada */ } return MEMORIA[k] ?? null; };
+const guardar = (k: string, v: string) => { MEMORIA[k] = v; try { localStorage.setItem(k, v); } catch { try { sessionStorage.setItem(k, v); } catch { /* nada */ } } };
+
 /** Id de este teléfono (no es una cuenta: solo para saber quién es quién en la sala). */
 export function miPid(): string {
-  try {
-    let p = localStorage.getItem("mw_pid");
-    if (!p) { p = Math.random().toString(36).slice(2, 12); localStorage.setItem("mw_pid", p); }
-    return p;
-  } catch { return "anon" + Math.random().toString(36).slice(2, 8); }
+  let p = leer("mw_pid");
+  if (!p) { p = Math.random().toString(36).slice(2, 12); guardar("mw_pid", p); }
+  return p;
 }
-export const miNombre = () => { try { return localStorage.getItem("mw_nombre") || ""; } catch { return ""; } };
-const guardarNombre = (n: string) => { try { localStorage.setItem("mw_nombre", n); } catch { /* nada */ } };
+export const miNombre = () => leer("mw_nombre") || "";
+const guardarNombre = (n: string) => guardar("mw_nombre", n);
+/** ¿Este teléfono ya había entrado a la sala? (para volver a entrar solo si la sala lo perdió). */
+export const yaEstuve = (codigo: string) => leer(`mw_sala_${codigo}`) === "1";
 
 export const urlSala = (codigo: string) => `${window.location.origin}/?sala=${codigo}`;
 export const qrDe = (texto: string, tam = 240) =>
@@ -45,7 +52,7 @@ export async function crearSala(b: string, j: JuegoSala, nombre: string, cfg: an
         mesa: mesa ?? null, creada: serverTimestamp(), expira: Timestamp.fromMillis(Date.now() + 12 * 3600 * 1000) });
       return true;
     });
-    if (ok) return codigo;
+    if (ok) { guardar(`mw_sala_${codigo}`, "1"); return codigo; }
   }
   throw new Error("No se pudo crear la sala. Intenta de nuevo.");
 }
@@ -53,8 +60,9 @@ export async function crearSala(b: string, j: JuegoSala, nombre: string, cfg: an
 export async function unirse(codigo: string, nombre: string) {
   const n = nombre.trim().slice(0, 24); guardarNombre(n);
   await updateDoc(doc(db, "salas", codigo), { [`jug.${miPid()}`]: { n, t: Date.now() } });
+  guardar(`mw_sala_${codigo}`, "1");
 }
-export const salir = (codigo: string) => updateDoc(doc(db, "salas", codigo), { [`jug.${miPid()}`]: deleteField(), [`v.${miPid()}`]: deleteField() }).catch(() => {});
+export const salir = (codigo: string) => { guardar(`mw_sala_${codigo}`, "0"); return updateDoc(doc(db, "salas", codigo), { [`jug.${miPid()}`]: deleteField(), [`v.${miPid()}`]: deleteField() }).catch(() => {}); };
 
 /** Cambia campos de la sala. Acepta rutas con punto ("ron.fase", `v.${pid}`). */
 export const cambiar = (codigo: string, patch: Record<string, any>) => updateDoc(doc(db, "salas", codigo), patch);
@@ -91,4 +99,16 @@ export function useFaltan(fin: number | undefined, pausado = false) {
     return () => clearInterval(t);
   }, [fin, pausado]);
   return Math.max(0, Math.ceil(((fin || 0) - Date.now()) / 1000));
+}
+
+/** Mientras se juega, la pantalla no se apaga (si se apaga, algunos teléfonos recargan la página al volver). */
+export function usePantallaEncendida(activo: boolean) {
+  useEffect(() => {
+    if (!activo || !(navigator as any).wakeLock) return;
+    let lock: any = null, vivo = true;
+    const pedir = async () => { try { if (vivo && document.visibilityState === "visible") lock = await (navigator as any).wakeLock.request("screen"); } catch { /* sin permiso */ } };
+    const alVolver = () => { if (document.visibilityState === "visible") pedir(); };
+    pedir(); document.addEventListener("visibilitychange", alVolver);
+    return () => { vivo = false; document.removeEventListener("visibilitychange", alVolver); try { lock?.release(); } catch { /* nada */ } };
+  }, [activo]);
 }

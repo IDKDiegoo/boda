@@ -28,7 +28,7 @@ const QRInvitados = lazy(() => import("./pantallas/QRInvitados").then(m => ({ de
 const Juegos = lazy(() => import("./pantallas/juegos/Juegos").then(m => ({ default: m.Juegos })));
 const PanelAdmin = lazy(() => import("./pantallas/admin/PanelAdmin").then(m => ({ default: m.PanelAdmin })));
 const MesaInvitados = lazy(() => import("./pantallas/MesaInvitados").then(m => ({ default: m.MesaInvitados })));
-const SalaJuego = lazy(() => import("./pantallas/juegos/EnGrupo").then(m => ({ default: m.SalaJuego })));
+const SalaInvitado = lazy(() => import("./pantallas/juegos/EnGrupo").then(m => ({ default: m.SalaInvitado })));
 
 // ════════════════════════════════════════════════════════════════
 // APP
@@ -92,7 +92,7 @@ export default function App() {
       <S/>
       <div style={{ maxWidth:760, margin:"0 auto" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}><Logo tam={34}/><div style={{ fontFamily:"var(--titulo)", fontSize:21, fontWeight:600, color:"#3b2a21" }}>My Wedding</div></div>
-        <Suspense fallback={<Cargando/>}><SalaJuego codigo={qrSala} onSalir={() => { window.location.href = "/"; }}/></Suspense>
+        <Suspense fallback={<Cargando/>}><SalaInvitado codigo={qrSala}/></Suspense>
       </div>
     </div>
   );

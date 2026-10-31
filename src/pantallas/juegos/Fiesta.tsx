@@ -16,7 +16,7 @@ const Avatar = ({ n, tam = 44, style }: { n: string; tam?: number; style?: React
 // ── EL IMPOSTOR ──────────────────────────────────────────────────
 type Jug = { nombre: string; palabra: string | null };
 export function Impostor({ onVolver }: { onVolver: () => void }) {
-  const [aj, setAj] = useState(() => leerLocal("imp", { nombres: "", categoria: "Todos", impostores: 1, tiempo: 90, modo: "clasico" }));
+  const [aj, setAj] = useState(() => leerLocal("imp", { nombres: "", categoria: "Todos", impostores: 1, tiempo: 90, modo: "clasico", ayuda: "tema" }));
   const [nuevo, setNuevo] = useState("");
   const [reparto, setReparto] = useState<Jug[] | null>(null);
   const [fase, setFase] = useState<"reparto" | "discusion" | "votar" | "final">("reparto");
@@ -25,6 +25,8 @@ export function Impostor({ onVolver }: { onVolver: () => void }) {
   const [yaVio, setYaVio] = useState(false);
   const [parte, setParte] = useState("");
   const [votados, setVotados] = useState<string[]>([]);
+  const [tema, setTema] = useState("");      // la temática de la palabra de esta ronda
+  const [vuelta, setVuelta] = useState(1);
   const reloj = useReloj(() => setFase("votar"));
   const cambiar = (p: any) => { const n = { ...aj, ...p }; setAj(n); guardarLocal("imp", n); };
   const jugadores: string[] = aj.nombres.split(/[\n,]/).map((x: string) => x.trim()).filter(Boolean);
@@ -34,7 +36,8 @@ export function Impostor({ onVolver }: { onVolver: () => void }) {
   const quitar = (n: string) => cambiar({ nombres: jugadores.filter(x => x !== n).join("\n") });
   const empezar = () => {
     const temas = temasDe(aj.modo), nombres = Object.keys(temas);
-    const lista = temas[aj.categoria] || temas[nombres[Math.floor(Math.random() * nombres.length)]];
+    const cat = temas[aj.categoria] ? aj.categoria : nombres[Math.floor(Math.random() * nombres.length)];
+    const lista = temas[cat]; setTema(cat); setVuelta(1);
     const r: Jug[] = repartirImpostor(jugadores, barajar(lista)[0], aj.impostores);
     setReparto(r); setI(0); setMirando(false); setYaVio(false); setFase("reparto"); setVotados([]);
     setParte(barajar(r.map(x => x.nombre))[0]); vibrar(14);
@@ -68,6 +71,8 @@ export function Impostor({ onVolver }: { onVolver: () => void }) {
           <button key={k} onClick={() => { vibrar(6); cambiar({ categoria: k }); }} style={{ cursor: "pointer", borderRadius: 20, padding: "8px 13px", fontSize: 13, fontWeight: 600,
             background: on ? "#fff" : "rgba(255,255,255,.08)", color: on ? col : "#fff", border: "1px solid rgba(255,255,255,.22)" }}>{k === "Todos" ? "Mezclar todo" : k}</button>); })}
       </div>
+      <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", opacity: .7, margin: "16px 0 8px" }}>Ayuda para el impostor</div>
+      <Opciones valor={aj.ayuda || "tema"} opciones={[["nada", "Nada"], ["tema", "La temática"], ["inicial", "Temática + 1ª letra"]]} onCambiar={v => cambiar({ ayuda: v })}/>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 18 }}>
         <div><div style={{ fontSize: 12, opacity: .75, marginBottom: 6 }}>Impostores</div><Opciones valor={aj.impostores} opciones={[[1, "1"], [2, "2"], [3, "3"]]} onCambiar={v => cambiar({ impostores: v })}/></div>
         <div><div style={{ fontSize: 12, opacity: .75, marginBottom: 6 }}>Tiempo para discutir</div><Opciones valor={aj.tiempo} opciones={[[60, "1'"], [90, "1½'"], [120, "2'"]]} onCambiar={v => cambiar({ tiempo: v })}/></div>
@@ -96,8 +101,8 @@ export function Impostor({ onVolver }: { onVolver: () => void }) {
             background: mirando ? (j.palabra ? "#fffdfb" : "linear-gradient(150deg,#e0455f,#8d1a3c)") : "rgba(255,255,255,.08)", color: mirando && j.palabra ? "#3b2a21" : "#fff",
             border: mirando ? "none" : "2px dashed rgba(255,255,255,.35)", transition: "background .25s ease, transform .2s", transform: mirando ? "scale(1.02)" : "none" }}>
           {mirando ? (j.palabra
-            ? <div><div style={{ fontSize: 11, letterSpacing: ".24em", textTransform: "uppercase", color: col }}>Tu palabra</div><div style={{ fontFamily: "var(--titulo)", fontSize: 40, fontWeight: 600, marginTop: 6 }}>{j.palabra}</div></div>
-            : <div><IconoJuego n="mascara" tam={52}/><div style={{ fontFamily: "var(--titulo)", fontSize: 34, fontWeight: 600, marginTop: 6 }}>Eres el impostor</div><div style={{ fontSize: 13, opacity: .85, marginTop: 4 }}>Escucha las pistas y haz como que sabes</div></div>)
+            ? <div><div style={{ fontSize: 11, letterSpacing: ".24em", textTransform: "uppercase", color: col }}>Tu palabra{(aj.ayuda || "tema") !== "nada" && tema ? ` · ${tema}` : ""}</div><div style={{ fontFamily: "var(--titulo)", fontSize: 40, fontWeight: 600, marginTop: 6 }}>{j.palabra}</div></div>
+            : <div><IconoJuego n="mascara" tam={52}/><div style={{ fontFamily: "var(--titulo)", fontSize: 34, fontWeight: 600, marginTop: 6 }}>Eres el impostor</div><div style={{ fontSize: 13, opacity: .85, marginTop: 4, lineHeight: 1.45 }}>{(aj.ayuda || "tema") === "nada" ? "Escucha las pistas y haz como que sabes" : <>Temática: <b>{tema}</b>{aj.ayuda === "inicial" && palabra ? <> · empieza con <b>«{palabra[0]}»</b></> : null}. Escucha y disimula.</>}</div></div>)
             : <div style={{ display: "grid", placeItems: "center", gap: 10 }}><IconoJuego n="ojo" tam={40}/><div style={{ fontSize: 15, fontWeight: 600 }}>Mantén presionado para ver</div><div style={{ fontSize: 12.5, opacity: .7 }}>Suelta antes de pasar el teléfono</div></div>}
         </div>
         <Boton color="#ffffff" claro disabled={!yaVio || mirando} style={{ width: "100%", marginTop: 16, color: col }} onClick={() => { setYaVio(false); if (i + 1 < reparto.length) setI(i + 1); else { setFase("discusion"); reloj.partir(aj.tiempo); } }}>
@@ -110,7 +115,7 @@ export function Impostor({ onVolver }: { onVolver: () => void }) {
   // Discusión con reloj
   if (fase === "discusion") return (
     <Escenario color="#6b55a0" oscuro="#151024">
-      <BarraJuego titulo="A discutir" onVolver={() => { reloj.parar(); setReparto(null); }}/>
+      <BarraJuego titulo={vuelta > 1 ? `Pistas · vuelta ${vuelta}` : "A discutir"} onVolver={() => { reloj.parar(); setReparto(null); }}/>
       <div style={{ textAlign: "center" }}>
         <div style={{ fontSize: 12, letterSpacing: ".22em", textTransform: "uppercase", opacity: .7 }}>Empieza</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 8 }}><Avatar n={parte} tam={40}/><span style={{ fontFamily: "var(--titulo)", fontSize: 32, fontWeight: 600 }}>{parte}</span></div>
@@ -136,7 +141,8 @@ export function Impostor({ onVolver }: { onVolver: () => void }) {
             {ya && <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".12em", animation: "j-pop .4s ease" }}>{era ? "¡IMPOSTOR!" : "INOCENTE"}</span>}
           </button>); })}
       </div>
-      <Boton color="#ffffff" claro style={{ width: "100%", marginTop: 18, color: col }} onClick={() => setFase("final")}>Revelar todo</Boton>
+      {!votados.length && <Boton color="rgba(255,255,255,.16)" style={{ width: "100%", marginTop: 18 }} onClick={() => { setVuelta(v => v + 1); setFase("discusion"); reloj.partir(aj.tiempo); }}><IconoJuego n="barajar" tam={17}/>Mejor otra vuelta de pistas</Boton>}
+      <Boton color="#ffffff" claro style={{ width: "100%", marginTop: 10, color: col }} onClick={() => setFase("final")}>Revelar todo</Boton>
     </Escenario>
   );
 
