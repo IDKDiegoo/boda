@@ -1,4 +1,5 @@
-import { Suspense, lazy, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
+import { conParametro } from "../base/rutas";
 import { Cargando, Logo, S } from "../ui/base";
 import { CartaGiro, EstilosJuego, IconoJuego, TarjetaJuego, Boton, confeti, guardarLocal, leerLista, vibrar } from "./juegos/comun";
 import { MISIONES_MESA } from "./juegos/contenido";
@@ -20,11 +21,20 @@ const misionDe = (mesa: number, salto: number) => MISIONES_MESA[((mesa - 1) * 7 
 type Vista = "" | "mision" | "bingo" | "caza" | "codigo" | `nueva-${JuegoSala}`;
 
 export function MesaInvitados({ mesa }: { mesa: number }) {
-  const [vista, setVista] = useState<Vista>("");
+  // La parte que se está viendo va en la dirección (?ver=bingo): ATRÁS vuelve al menú de la mesa.
+  const verDeUrl = () => (new URLSearchParams(window.location.search).get("ver") || "") as Vista;
+  const [vista, setVistaEstado] = useState<Vista>(verDeUrl);
+  const setVista = (v: Vista) => { window.history.pushState({ mw: "mesa" }, "", conParametro(window.location.href, "ver", v)); setVistaEstado(v); window.scrollTo({ top: 0 }); };
+  useEffect(() => {
+    const alVolver = () => { setVistaEstado(verDeUrl()); setSala((new URLSearchParams(window.location.search).get("sala") || "").toUpperCase().slice(0, 5)); };
+    window.addEventListener("popstate", alVolver);
+    return () => window.removeEventListener("popstate", alVolver);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [sala, setSala] = useState(() => (new URLSearchParams(window.location.search).get("sala") || "").toUpperCase().slice(0, 5));
-  const volver = () => { setVista(""); window.scrollTo({ top: 0 }); };
-  const abrirSala = (c: string) => { setSala(c); window.history.replaceState(null, "", `${window.location.pathname}${window.location.search.replace(/([?&])sala=[^&]*/, "")}${window.location.search ? "&" : "?"}sala=${c}`); };
-  const cerrarSala = () => { setSala(""); setVista(""); window.history.replaceState(null, "", window.location.pathname + window.location.search.replace(/[?&]sala=[^&]*/, "").replace(/^&/, "?")); };
+  const volver = () => { if (window.history.state?.mw === "mesa") window.history.back(); else { window.history.replaceState(null, "", conParametro(window.location.href, "ver", "")); setVistaEstado(""); } window.scrollTo({ top: 0 }); };
+  const abrirSala = (c: string) => { window.history.replaceState({ mw: "mesa" }, "", conParametro(window.location.href, "sala", c)); setSala(c); };
+  const cerrarSala = () => { setSala(""); setVistaEstado(""); window.history.replaceState(null, "", conParametro(window.location.origin + conParametro(window.location.href, "sala", ""), "ver", "")); };
 
   let cuerpo: React.ReactNode;
   if (sala) cuerpo = <SalaJuego codigo={sala} onSalir={cerrarSala}/>;

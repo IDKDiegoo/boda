@@ -12,6 +12,7 @@ import { PROVEEDORES_INICIALES, Proveedores } from "./pantallas/Proveedores";
 import { Cancion, DecoItem, GastoExtra, Invitado, LunaItem, MesaPos, Proveedor, Regalo } from "./tipos";
 import { Cargando, Logo, S } from "./ui/base";
 import { Icono } from "./ui/iconos";
+import { rutaDe, tabDeRuta } from "./base/rutas";
 
 // Carga diferida: cada pantalla se descarga recién cuando se abre (antes bajaba todo de una).
 const CheckList = lazy(() => import("./pantallas/CheckList").then(m => ({ default: m.CheckList })));
@@ -128,8 +129,17 @@ function Panel({ onSalir, soporte }: { onSalir:()=>void; soporte?:boolean }) {
     civil:"invitaciones", luna:"luna", deptos:"_legado", juegos:"juegos", fotos:"fotos", qr:"fotos" };
   const visible = (id:string) => MODULO[id]==="_legado" ? !!info.legado : mod(MODULO[id]);
   const esPC = useEsPC();
-  const [tab, setTab]     = useState(() => ["dashboard","civil","fotos","juegos","luna"].find(visible) || "dashboard");
+  const inicial = () => ["dashboard","civil","fotos","juegos","luna"].find(visible) || "dashboard";
+  // La pantalla sale de la dirección (/mesas, /juegos/impostor…): ATRÁS del navegador vuelve a la anterior.
+  const [tab, setTab]     = useState(() => { const t = tabDeRuta(window.location.pathname); return t && visible(t) ? t : inicial(); });
   const [sidebar, setSidebar] = useState(false);
+  useEffect(() => {
+    if (tabDeRuta(window.location.pathname) !== tab) window.history.replaceState(null, "", rutaDe(tab) + window.location.search);
+    const alVolver = () => { const t = tabDeRuta(window.location.pathname); setTab(t && visible(t) ? t : inicial()); setSidebar(false); };
+    window.addEventListener("popstate", alVolver);
+    return () => window.removeEventListener("popstate", alVolver);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [invitados,   setInvitados]   = useData<{invitados:Invitado[]}>("invitados",   {invitados:[]});
   const [proveedores, setProveedores] = useData<{proveedores:Proveedor[]}>("proveedores",{proveedores:PROVEEDORES_INICIALES});
@@ -175,7 +185,10 @@ function Panel({ onSalir, soporte }: { onSalir:()=>void; soporte?:boolean }) {
   const conAcceso = [...TODOS_MAIN, ...TODOS_SIDEBAR].filter(t => visible(t.id));
   const TABS_MAIN = mod("organizacion") ? TODOS_MAIN : conAcceso.slice(0, 4);
   const SIDEBAR_ITEMS = conAcceso.filter(t => !TABS_MAIN.some(m => m.id===t.id)) as typeof TODOS_SIDEBAR;
-  const ir = (id:string) => { setTab(id); setSidebar(false); window.scrollTo({ top:0, behavior:"smooth" }); };
+  const ir = (id:string) => {
+    if (id !== tab || window.location.pathname !== rutaDe(id)) window.history.pushState(null, "", rutaDe(id));
+    setTab(id); setSidebar(false); window.scrollTo({ top:0, behavior:"smooth" });
+  };
   const actual = conAcceso.find(t => t.id===tab);
   const enMas = SIDEBAR_ITEMS.some(s=>s.id===tab);
 

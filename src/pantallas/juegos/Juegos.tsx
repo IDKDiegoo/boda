@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BarraJuego, C, Escenario, EstilosJuego, IconoJuego, TarjetaJuego, vibrar } from "./comun";
 import { MISIONES_MESA } from "./contenido";
 import { Bingo, CazaFotos, Impostor, Mazo, Mimica, Trivia } from "./Fiesta";
@@ -6,6 +6,7 @@ import { Dados, Packs, Preferirias, Quiz } from "./Pareja";
 import { VerdadReto } from "./VerdadReto";
 import { EntrarConCodigo, NuevaSala, SalaJuego } from "./EnGrupo";
 import { JuegoSala } from "./sala";
+import { conParametro, rutaDe, subRuta } from "../../base/rutas";
 
 // ═══════════════════════════════════════════════════════════════════
 // JUEGOS (v2, 25-oct-2026): para la fiesta (en grupo) y en pareja.
@@ -15,13 +16,21 @@ type Juego = "" | "verdadreto" | "packs" | "preferirias" | "quiz" | "dados" | "i
 
 export function Juegos({ adultos = true }: { adultos?: boolean }) {
   const [vista, setVista] = useState<"pareja" | "fiesta">("pareja");
-  const [juego, setJuego] = useState<Juego>("");
-  const volver = () => { setJuego(""); window.scrollTo({ top: 0 }); };
-  const abrir = (j: Juego) => { setJuego(j); window.scrollTo({ top: 0 }); };
+  // Cada juego tiene su dirección (/juegos/impostor): ATRÁS vuelve a la lista de juegos, no fuera de la app.
+  const deRuta = (): Juego => (subRuta(window.location.pathname)[0] || "") as Juego;
+  const [juego, setJuego] = useState<Juego>(deRuta);
+  const salaDeUrl = () => new URLSearchParams(window.location.search).get("sala") || "";
+  const [sala, setSala] = useState(salaDeUrl);
+  useEffect(() => {
+    const alVolver = () => { setJuego(deRuta()); setSala(salaDeUrl()); };
+    window.addEventListener("popstate", alVolver);
+    return () => window.removeEventListener("popstate", alVolver);
+  }, []);
+  const volver = () => { if (window.history.state?.mw === "juego") window.history.back(); else { window.history.replaceState(null, "", rutaDe("juegos")); setJuego(""); } window.scrollTo({ top: 0 }); };
+  const abrir = (j: Juego) => { window.history.pushState({ mw: "juego" }, "", rutaDe("juegos", j)); setJuego(j); window.scrollTo({ top: 0 }); };
   // Sala en grupo: el código queda en la dirección (?sala=) para que al recargar se vuelva a entrar.
-  const [sala, setSala] = useState(() => new URLSearchParams(window.location.search).get("sala") || "");
-  const abrirSala = (c: string) => { setSala(c); window.history.replaceState(null, "", `?sala=${c}`); window.scrollTo({ top: 0 }); };
-  const cerrarSala = () => { setSala(""); setJuego(""); window.history.replaceState(null, "", window.location.pathname); };
+  const abrirSala = (c: string) => { window.history.pushState({ mw: "juego" }, "", conParametro(window.location.href, "sala", c)); setSala(c); window.scrollTo({ top: 0 }); };
+  const cerrarSala = () => { setSala(""); setJuego(""); window.history.replaceState(null, "", rutaDe("juegos")); };
 
   if (sala) return <SalaJuego codigo={sala} onSalir={cerrarSala}/>;
   if (juego === "codigo") return <EntrarConCodigo onEntrar={abrirSala} onVolver={volver}/>;
