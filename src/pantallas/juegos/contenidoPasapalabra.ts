@@ -96,22 +96,83 @@ const FUTBOL_NUEVAS = d([
   ["Z", "Zurdo", "Jugador que patea con la izquierda", 1], ["Z", "Zico", "El «Pelé blanco» brasileño", 3], ["Z", "Zagallo", "Campeón del mundo como jugador y como técnico con Brasil", 3],
 ]);
 
-export const BANCO: Record<"general" | "futbol", Def[]> = {
-  general: [...deAntes(ROSCOS.general, [1, 1, 2]), ...GENERAL_NUEVAS],
-  futbol: [...deAntes(ROSCOS.futbol, [2, 2, 2]), ...FUTBOL_NUEVAS],
-};
+const CHILE = d([
+  ["A", "Arica", "La ciudad más al norte de Chile, «la ciudad de la eterna primavera»", 2], ["A", "Alerce", "Árbol milenario del sur, de los más longevos del mundo", 2],
+  ["B", "Bandera", "La de Chile tiene una estrella blanca", 1], ["B", "Bachelet", "Apellido de la primera mujer presidenta de Chile", 1],
+  ["C", "Chillán", "Capital de la región de Ñuble", 2], ["C", "Curanto", "Comida chilota cocida en un hoyo con piedras calientes", 2],
+  ["D", "Dieciocho", "Así se les dice a las Fiestas Patrias", 1], ["D", "Desierto florido", "Fenómeno de flores en Atacama cuando llueve más de lo normal", 2],
+  ["E", "Elqui", "Valle del pisco y de los observatorios", 2], ["E", "Esmeralda", "Corbeta de Arturo Prat en el combate naval de Iquique", 2],
+  ["F", "Fiestas Patrias", "Celebración del 18 y 19 de septiembre", 1], ["F", "Frutillar", "Pueblo junto al lago Llanquihue con su famoso teatro", 3],
+  ["G", "Guagua", "Así se le dice a un bebé en Chile", 1], ["G", "Guanaco", "Camélido salvaje de la Patagonia", 2],
+  ["H", "Humita", "Masa de choclo envuelta en hojas de choclo", 1], ["H", "Huaso", "Hombre de campo con manta, chupalla y espuelas", 1],
+  ["I", "Isla de Pascua", "Territorio chileno en la Polinesia, con moáis", 1], ["I", "Iquique", "Ciudad de la Zofri y de la playa Cavancha", 2],
+  ["J", "Jote", "Ave carroñera negra; también un pretendiente insistente", 2], ["J", "Juan Fernández", "Archipiélago de Robinson Crusoe", 2],
+  ["L", "La Moneda", "Palacio de gobierno de Chile", 1], ["L", "Lolo", "Adolescente, en chileno", 1],
+  ["M", "Moái", "Estatuas gigantes de Rapa Nui", 1], ["M", "Mote con huesillo", "La bebida chilena del verano", 1],
+  ["N", "Nevados de Chillán", "Centro de esquí y termas del sur", 3], ["N", "Neruda", "Poeta de Isla Negra, premio Nobel 1971", 2],
+  ["Ñ", "Ñuble", "La región más nueva de Chile, creada en 2018", 2], ["Ñ", "Viña del Mar", "Ciudad jardín, sede del Festival", 1, true],
+  ["O", "Osorno", "Volcán del sur famoso por su forma de cono perfecto", 2], ["O", "O'Higgins", "Bernardo, el padre de la patria", 1],
+  ["P", "Prat", "Héroe del combate naval de Iquique", 1], ["P", "Pudú", "El ciervo más pequeño del mundo, del sur de Chile", 2],
+  ["Q", "Quintrala", "Catalina de los Ríos, temida terrateniente de la Colonia", 3], ["Q", "Quillay", "Árbol nativo cuya corteza hace espuma con agua", 3],
+  ["R", "Rancagua", "Ciudad de la batalla de 1814 conocida como el desastre", 2], ["R", "Remolienda", "Fiesta muy animada, a la chilena", 3],
+  ["S", "Santiago", "Capital de Chile", 1], ["S", "Salar de Atacama", "El salar más grande de Chile", 2],
+  ["T", "Torres del Paine", "Parque nacional de Magallanes", 1], ["T", "Taco", "Atasco de autos, en chileno", 1],
+  ["U", "Unidad de fomento", "La UF: se usa para arriendos y créditos", 2], ["U", "Uva", "Fruta del pisco y del vino", 1],
+  ["V", "Valparaíso", "Puerto de los cerros y los ascensores", 1], ["V", "Vino", "Bebida cuya cepa emblemática en Chile es el carmenere", 2],
+  ["X", "Exportación", "Lo que hace Chile con la mayor parte de su cobre", 2, true], ["X", "Taxi colectivo", "Auto con recorrido fijo que lleva a varios pasajeros", 2, true],
+  ["Y", "Yungay", "Comuna de Ñuble, barrio de Santiago y batalla de 1839", 3], ["Y", "Playa", "Donde se veranea en enero", 1, true],
+  ["Z", "Zapallo", "Verdura que va en las sopaipillas", 1], ["Z", "Zona Franca", "La de Iquique, conocida como Zofri", 2],
+]);
+const AMOR = d([
+  ["A", "Altar", "Lugar al que llega la novia", 1], ["A", "Aniversario", "Celebración de cada año de casados", 1],
+  ["B", "Beso", "Lo que piden los invitados al grito de «¡que se besen!»", 1], ["B", "Banquete", "La gran comida de la celebración", 2],
+  ["C", "Cupido", "Dios del amor con arco y flecha", 1], ["C", "Corazón", "Símbolo del amor", 1],
+  ["D", "Despedida de soltero", "La última fiesta antes de casarse", 1], ["D", "Damas de honor", "Las que acompañan a la novia", 1],
+  ["E", "Enamorados", "Los que se celebran el 14 de febrero", 1], ["E", "Esposos", "Marido y mujer", 1],
+  ["F", "Fidelidad", "Lo que se promete en los votos", 2], ["F", "Flores", "Van en el ramo y en los centros de mesa", 1],
+  ["G", "Guirnalda", "Adorno de flores en forma de cordón", 2], ["G", "Garzón", "El que sirve en el banquete", 1],
+  ["H", "Hora loca", "Momento de la fiesta con cotillón y disfraces", 1], ["H", "Himeneo", "Nombre poético y antiguo de la boda", 3],
+  ["I", "Invitación", "Tarjeta que anuncia la boda", 1], ["I", "Ilusión", "Lo que se siente antes del gran día", 2],
+  ["J", "Juramento", "Promesa solemne", 2], ["J", "Jardín", "Lugar al aire libre donde muchos se casan", 1],
+  ["L", "Luna de miel", "El viaje después de la boda", 1], ["L", "Liga", "Prenda que el novio lanza a los solteros", 1],
+  ["M", "Matrimonio", "Unión de dos personas ante la ley", 1], ["M", "Madrina", "La que acompaña y respalda a los novios", 1],
+  ["N", "Novio", "Hombre que se casa", 1], ["N", "Nupcias", "Otra palabra para la boda", 2],
+  ["Ñ", "Sueño", "Lo que se cumple el día de la boda", 1, true], ["Ñ", "Cariño", "Afecto y ternura", 1, true],
+  ["O", "Orquídea", "Flor elegante para el ramo", 2], ["O", "Oro", "Las bodas de los 50 años", 1],
+  ["P", "Padrinos", "Los que acompañan a los novios y firman como testigos", 1], ["P", "Pétalos", "Lo que tiran los niños antes de que entre la novia", 1],
+  ["Q", "Química", "Cuando dos se atraen se dice que hay…", 2], ["Q", "Querer", "Amar a alguien", 1],
+  ["R", "Romance", "Relación amorosa", 1], ["R", "Registro Civil", "Donde se firma el matrimonio", 1],
+  ["S", "Smoking", "Traje elegante del novio", 1], ["S", "Suegra", "La mamá de tu pareja", 1],
+  ["T", "Testigo", "Firma el acta del matrimonio", 1], ["T", "Tul", "Tela liviana del velo", 2],
+  ["U", "Unión", "Lo que se celebra en una boda", 1], ["U", "Ujier", "En algunas bodas, el que acompaña a los invitados a su asiento", 3],
+  ["V", "Velo", "Tela que cubre a la novia", 1], ["V", "Votos", "Las promesas que se dicen los novios", 1],
+  ["X", "Éxito", "Lo que se le desea a todo matrimonio", 2, true], ["X", "Taxi", "Lo que piden los invitados al final de la fiesta", 1, true],
+  ["Y", "Yerno", "El esposo de tu hija", 2], ["Y", "Playa", "Destino típico de luna de miel", 1, true],
+  ["Z", "Zapatos", "Los de la novia, que a veces se saca para bailar", 1], ["Z", "Alianza", "Otra forma de llamar al anillo de matrimonio", 2, true],
+]);
+export type TemaRosco = "general" | "futbol" | "chile" | "amor" | "mezcla";
+export const TEMAS_ROSCO: [TemaRosco, string][] = [["general", "General"], ["futbol", "Futbolero"], ["chile", "Chile"], ["amor", "Amor y boda"], ["mezcla", "Mezcla"]];
+const GENERAL = [...deAntes(ROSCOS.general, [1, 1, 2]), ...GENERAL_NUEVAS], FUTBOL = [...deAntes(ROSCOS.futbol, [2, 2, 2]), ...FUTBOL_NUEVAS];
+export const BANCO: Record<TemaRosco, Def[]> = { general: GENERAL, futbol: FUTBOL, chile: CHILE, amor: AMOR, mezcla: [...GENERAL, ...FUTBOL, ...CHILE, ...AMOR] };
 
 /** Arma un rosco: para cada letra, una definición del nivel pedido (o la más cercana). `evitar` = respuestas ya usadas. */
-export function armarRosco(tema: "general" | "futbol", nivel: 1 | 2 | 3, evitar: Set<string> = new Set(), azar = Math.random): number[] {
-  const banco = BANCO[tema];
+export function armarRosco(tema: TemaRosco, nivel: 1 | 2 | 3, evitar: Set<string> = new Set(), azar = Math.random): number[] {
+  const banco = BANCO[tema] || BANCO.general;
   return LETRAS_ROSCO.map(l => {
     const deLetra = banco.map((x, i) => ({ x, i })).filter(({ x }) => x.l === l);
-    for (const dist of [0, 1, 2]) {
-      const ok = deLetra.filter(({ x }) => Math.abs(x.n - nivel) === dist && !evitar.has(x.r));
+    // Primero lo del nivel pedido que no salió hace poco; si no hay, el nivel más cercano; si todo salió, se repite.
+    for (const sinRepetir of [true, false]) for (const dist of [0, 1, 2]) {
+      const ok = deLetra.filter(({ x }) => Math.abs(x.n - nivel) === dist && (!sinRepetir || !evitar.has(x.r)));
       if (ok.length) { const e = ok[Math.floor(azar() * ok.length)]; evitar.add(e.x.r); return e.i; }
     }
     return deLetra[0]?.i ?? 0;
   });
+}
+/** Lo que salió en las últimas partidas de este teléfono (para no repetir). */
+const CLAVE_HIST = "mw_pasapalabra_salio";
+export function historial(): Set<string> { try { return new Set(JSON.parse(localStorage.getItem(CLAVE_HIST) || "[]")); } catch { return new Set(); } }
+export function anotarHistorial(usadas: string[]) {
+  try { const l = Array.from(historial()).concat(Array.from(usadas)); localStorage.setItem(CLAVE_HIST, JSON.stringify(l.slice(-400))); } catch { /* sin almacenamiento: no pasa nada */ }
 }
 
 // ── UNA DE CUATRO: [pregunta, correcta, incorrecta, incorrecta, incorrecta, nivel] ──
@@ -217,15 +278,17 @@ export const CUATRO: Record<"general" | "futbol", P[]> = {
 // ── Palabras para los puzzles: las respuestas de una sola palabra del banco, más algunas de la boda ──
 const EXTRA_PUZZLE = ["NOVIOS", "ANILLO", "BRINDIS", "PADRINOS", "VESTIDO", "INVITADOS", "CELEBRACION", "PROMESA", "TORTA", "CHAMPAÑA", "BAILE", "ALIANZA", "COMPROMISO", "LUNA DE MIEL"];
 const sinTilde = (s: string) => s.split("Ñ").map(x => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "")).join("Ñ");
-export function palabrasPuzzle(tema: "general" | "futbol", nivel: 1 | 2 | 3): string[] {
-  const base = BANCO[tema].filter(x => Math.abs(x.n - nivel) <= 1).map(x => x.r);
-  const todas = [...base, ...(tema === "general" ? EXTRA_PUZZLE : [])]
+/** Preguntas de «Una de cuatro» para un tema (los temas sin preguntas propias usan las generales). */
+export const cuatroDe = (tema: TemaRosco): P[] => tema === "futbol" ? CUATRO.futbol : tema === "mezcla" ? [...CUATRO.general, ...CUATRO.futbol] : CUATRO.general;
+export function palabrasPuzzle(tema: TemaRosco, nivel: 1 | 2 | 3): string[] {
+  const base = (BANCO[tema] || BANCO.general).filter(x => Math.abs(x.n - nivel) <= 1).map(x => x.r);
+  const todas = [...base, ...(tema !== "futbol" ? EXTRA_PUZZLE : [])]
     .map(p => sinTilde(p.toUpperCase()))
     .filter(p => /^[A-ZÑ]+$/.test(p) && p.length >= 4 && p.length <= (nivel === 1 ? 7 : nivel === 2 ? 9 : 12));
   return Array.from(new Set(todas));
 }
 /** La pista de cada palabra del puzzle: su definición en el banco (si la tiene). */
-export function pistaDe(tema: "general" | "futbol", palabra: string): string {
-  const x = BANCO[tema].find(b => sinTilde(b.r.toUpperCase()) === palabra);
-  return x ? x.d : tema === "general" ? "Tiene que ver con una boda" : "";
+export function pistaDe(tema: TemaRosco, palabra: string): string {
+  const x = (BANCO[tema] || BANCO.general).find(b => sinTilde(b.r.toUpperCase()) === palabra) || BANCO.mezcla.find(b => sinTilde(b.r.toUpperCase()) === palabra);
+  return x ? x.d : "Tiene que ver con una boda";
 }
