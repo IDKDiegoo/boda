@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { deleteField, doc, onSnapshot, runTransaction, serverTimestamp, Timestamp, updateDoc } from "firebase/firestore";
+import { deleteField, doc, getDocFromServer, onSnapshot, runTransaction, serverTimestamp, Timestamp, updateDoc } from "firebase/firestore";
 import { db } from "../../base/firebase";
 
 // ═══════════════════════════════════════════════════════════════════
@@ -64,24 +64,68 @@ export async function unirse(codigo: string, nombre: string) {
 }
 export const salir = (codigo: string) => { guardar(`mw_sala_${codigo}`, "0"); return updateDoc(doc(db, "salas", codigo), { [`jug.${miPid()}`]: deleteField(), [`v.${miPid()}`]: deleteField() }).catch(() => {}); };
 
-/** Cambia campos de la sala. Acepta rutas con punto ("ron.fase", `v.${pid}`). */
-export const cambiar = (codigo: string, patch: Record<string, any>) => updateDoc(doc(db, "salas", codigo), patch);
+/** Cambia campos de la sala. Acepta rutas con punto ("ron.fase", `v.${pid}`). Si falla, reintenta y avisa. */
+export async function cambiar(codigo: string, patch: Record<string, any>) {
+  for (let k = 0; k < 3; k++) {
+    try { await updateDoc(doc(db, "salas", codigo), patch); return; }
+    catch (e: any) {
+      if (e?.code === "permission-denied" || e?.code === "not-found" || k === 2) { window.dispatchEvent(new CustomEvent("mw-sala-error", { detail: e?.code || "error" })); return; }
+      await new Promise(r => setTimeout(r, 800 * (k + 1)));
+    }
+  }
+}
 export const borrarCampo = deleteField;
 
-/** La sala en vivo. undefined = cargando · null = no existe o venció. */
-export function useSala(codigo: string): [Sala | null | undefined, string] {
+export type Conexion = "ok" | "reconectando" | "guardando";
+/**
+ * La sala en vivo. undefined = cargando · null = no existe o venció.
+ * Para que ningún teléfono se quede pegado en una pantalla vieja:
+ *  - al volver a la app (pantalla encendida, red de vuelta) se vuelve a conectar desde cero;
+ *  - mientras se ve, cada 15 s se pide la sala al servidor por si la conexión en vivo se durmió
+ *    (es UNA lectura chica: con 10 teléfonos y 2 horas de fiesta son ~5.000, menos de $5 pesos);
+ *  - avisa si el teléfono está trabajando con datos viejos o con cambios que no han llegado.
+ */
+export function useSala(codigo: string): [Sala | null | undefined, string, Conexion] {
   const [sala, setSala] = useState<Sala | null | undefined>(undefined);
   const [error, setError] = useState("");
+  const [meta, setMeta] = useState({ cache: false, pendiente: false });
+  const [vuelta, setVuelta] = useState(0);
+  const [conexion, setConexion] = useState<Conexion>("ok");
+  const aplicar = (s: any) => {
+    if (!s.exists()) { setSala(null); return; }
+    const d: any = s.data();
+    if (d.expira?.toMillis && d.expira.toMillis() < Date.now()) { setSala(null); return; }
+    setSala(prev => { const nueva = { id: s.id, jug: {}, v: {}, ron: {}, cfg: {}, ...d }; return prev && JSON.stringify(prev) === JSON.stringify(nueva) ? prev : nueva; });
+  };
+  useEffect(() => {
+    const despertar = () => { if (document.visibilityState === "visible") setVuelta(v => v + 1); };
+    document.addEventListener("visibilitychange", despertar); window.addEventListener("online", despertar);
+    return () => { document.removeEventListener("visibilitychange", despertar); window.removeEventListener("online", despertar); };
+  }, []);
   useEffect(() => {
     if (!codigo) { setSala(null); return; }
-    return onSnapshot(doc(db, "salas", codigo), s => {
-      if (!s.exists()) { setSala(null); return; }
-      const d: any = s.data();
-      if (d.expira?.toMillis && d.expira.toMillis() < Date.now()) { setSala(null); return; }
-      setSala({ id: s.id, jug: {}, v: {}, ron: {}, cfg: {}, ...d });
+    setError("");
+    return onSnapshot(doc(db, "salas", codigo), { includeMetadataChanges: true }, s => {
+      setMeta({ cache: s.metadata.fromCache, pendiente: s.metadata.hasPendingWrites });
+      aplicar(s); setError("");
     }, e => setError(e.code === "permission-denied" ? "No tienes acceso a esta sala." : "Sin conexión. Revisa tu internet."));
-  }, [codigo]);
-  return [sala, error];
+  }, [codigo, vuelta]);
+  useEffect(() => {
+    if (!codigo) return;
+    const t = setInterval(async () => {
+      if (document.visibilityState !== "visible" || meta.pendiente) return;
+      try { aplicar(await getDocFromServer(doc(db, "salas", codigo))); } catch { /* sin red: ya avisa el indicador */ }
+    }, 15000);
+    return () => clearInterval(t);
+  }, [codigo, meta.pendiente]);
+  // El aviso aparece solo si dura más de 4 s (un parpadeo de red no molesta).
+  useEffect(() => {
+    const estado: Conexion = meta.pendiente ? "guardando" : meta.cache ? "reconectando" : "ok";
+    if (estado === "ok") { setConexion("ok"); return; }
+    const t = setTimeout(() => setConexion(estado), 4000);
+    return () => clearTimeout(t);
+  }, [meta.cache, meta.pendiente]);
+  return [sala, error, conexion];
 }
 
 /** Jugadores en orden de llegada. */

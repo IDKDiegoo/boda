@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, collection, connectFirestoreEmulator } from "firebase/firestore";
+import { initializeFirestore, doc, setDoc, collection, connectFirestoreEmulator } from "firebase/firestore";
 import { getStorage, ref, connectStorageEmulator } from "firebase/storage";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getMessaging, getToken } from "firebase/messaging";
@@ -14,7 +14,9 @@ export const FIREBASE_CONFIG = {
   appId:             "1:541671718502:web:ed236770ea20bd34cf37a7"
 };
 export const app  = initializeApp(FIREBASE_CONFIG);
-export const db   = getFirestore(app);
+// Detecta solo si la red no deja pasar la conexión en vivo (Wi-Fi de eventos, proxys, datos móviles malos)
+// y en ese caso usa consultas largas: sin esto, los juegos en grupo llegaban con retardo o se quedaban pegados.
+export const db   = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
 export const stor = getStorage(app);
 export const auth = getAuth(app);
 // Solo para probar en el Mac contra los emuladores (npm run build con REACT_APP_EMULADOR=1). En producción no existe.

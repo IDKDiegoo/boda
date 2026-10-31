@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BarraJuego, Boton, Escenario, IconoJuego, Opciones, confeti, vibrar } from "./comun";
-import { BANCO, CUATRO, LETRAS_ROSCO, armarRosco, palabrasPuzzle, pistaDe } from "./contenidoPasapalabra";
+import { BANCO, LETRAS_ROSCO, TEMAS_ROSCO, TemaRosco, anotarHistorial, armarRosco, cuatroDe, historial, palabrasPuzzle, pistaDe } from "./contenidoPasapalabra";
 import { azarDe, barajar, desordenar, estadoAhorcado, jugarRosco, pausarRosco, puntajeRosco, seguirRosco } from "./logica";
 import { Sala, anfitrion, cambiar, jugadores, useFaltan } from "./sala";
 import { Avatar, Panel, Pildora, PropsJuego, Rotulo, VACIO, VolverSala, nombreDe } from "./uiGrupo";
@@ -12,7 +12,7 @@ import { Avatar, Panel, Pildora, PropsJuego, Rotulo, VACIO, VolverSala, nombreDe
 //   2. El rosco: 85 s + lo ganado. Cada uno tiene su reloj: al pasar o fallar se detiene el suyo y
 //      parte solo el del otro. El presentador (el que abrió la sala) ve las respuestas y marca.
 // ═══════════════════════════════════════════════════════════════════
-type Tema = "general" | "futbol";
+type Tema = TemaRosco;
 type Nivel = 1 | 2 | 3;
 const PRUEBAS: Record<string, { t: string; desc: string; seg: number; dur: number; icono: string }> = {
   cuatro: { t: "Una de cuatro", desc: "Una pregunta y cuatro opciones. Toca la correcta: cada acierto suma 2 segundos.", seg: 2, dur: 40, icono: "pregunta" },
@@ -33,7 +33,7 @@ export function ConfigRosco({ sala, cfg, poner, color }: { sala: Sala; cfg: any;
     {js.length ? <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{js.map(j => <Pildora key={j.pid} on={conc.includes(j.pid)} color={color} onClick={() => toggle(j.pid)}>{j.n}</Pildora>)}</div>
       : <div style={{ fontSize: 13, opacity: .75 }}>Cuando alguien se una, aparece acá.</div>}
     <Rotulo style={{ marginTop: 14 }}>Tema</Rotulo>
-    <Opciones valor={cfg.tema} opciones={[["general", "General"], ["futbol", "Futbolero"]]} onCambiar={v => poner({ tema: v })}/>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{TEMAS_ROSCO.map(([id, l]) => <Pildora key={id} on={(cfg.tema || "general") === id} color={color} onClick={() => poner({ tema: id })}>{l}</Pildora>)}</div>
     <Rotulo style={{ marginTop: 14 }}>Dificultad</Rotulo>
     <Opciones valor={cfg.nivel || 2} opciones={NIVELES} onCambiar={v => poner({ nivel: v })}/>
     <Rotulo style={{ marginTop: 14 }}>Pruebas para ganar segundos</Rotulo>
@@ -50,10 +50,12 @@ export function ConfigRosco({ sala, cfg, poner, color }: { sala: Sala; cfg: any;
 /** Lo que se escribe al empezar: los roscos de cada concursante y, si hay pruebas, la primera. */
 export function inicioRosco(sala: Sala, cfg: any): Record<string, any> {
   const conc: string[] = (cfg.conc || []).filter((p: string) => sala.jug[p]).slice(0, 2);
-  const tema: Tema = cfg.tema === "futbol" ? "futbol" : "general", nivel: Nivel = cfg.nivel || 2;
-  const usadas = new Set<string>();
+  const tema: Tema = BANCO[cfg.tema as Tema] ? cfg.tema : "general", nivel: Nivel = cfg.nivel || 2;
+  // Lo de las últimas partidas en este teléfono no se repite (hasta que se acabe el banco).
+  const reciente = historial(), usadas = new Set<string>(reciente);
   // Mapa {0: [...], 1: [...]}: Firestore no acepta una lista dentro de otra.
   const sel = Object.fromEntries(conc.map((_, i) => [String(i), armarRosco(tema, nivel, usadas)]));
+  anotarHistorial(Object.values(sel).flat().map(k => BANCO[tema][k].r));
   const pruebas: string[] = (cfg.pruebas || []).filter((x: string) => PRUEBAS[x]);
   const bonus = Object.fromEntries(conc.map((_, i) => [String(i), 0]));
   const rosco = { tema, nivel, base: cfg.base || 85, conc, sel, est: conc.map(() => "-".repeat(25)), pos: conc.map(() => 0), turno: 0, desde: 0, bonus };
@@ -86,7 +88,7 @@ function Pruebas({ sala, yo, host, meta, onSalir }: PropsJuego) {
   const conc: string[] = r.conc || [];
   const quien = conc[pr.t], soyYo = quien === yo, estaAca = !!sala.jug[quien];
   const faltan = useFaltan(pr.est === "juega" ? pr.fin : 0);
-  const tema: Tema = r.tema === "futbol" ? "futbol" : "general", nivel: Nivel = r.nivel || 2;
+  const tema: Tema = BANCO[r.tema as Tema] ? r.tema : "general", nivel: Nivel = r.nivel || 2;
   const cerrado = useRef("");
   // Se acabó el tiempo: lo cierra el teléfono del concursante (o el anfitrión, si el concursante se fue).
   useEffect(() => {
@@ -100,7 +102,7 @@ function Pruebas({ sala, yo, host, meta, onSalir }: PropsJuego) {
   const partir = () => {
     const az = azarDe(`${sala.id}-${pr.k}-${pr.t}-${Date.now()}`);
     const items = id === "cuatro"
-      ? barajar(CUATRO[tema].map((q, i) => ({ q, i })).filter(({ q }) => Math.abs(q[5] - nivel) <= 1).map(x => x.i), az).slice(0, 30)
+      ? barajar(cuatroDe(tema).map((q, i) => ({ q, i })).filter(({ q }) => Math.abs(q[5] - nivel) <= 1).map(x => x.i), az).slice(0, 30)
       : barajar(palabrasPuzzle(tema, nivel), az).slice(0, 25);
     vibrar(30);
     cambiar(sala.id, { "ron.pr.est": "juega", "ron.pr.fin": Date.now() + P.dur * 1000, "ron.pr.items": items, "ron.pr.i": 0, "ron.pr.ok": 0, "ron.pr.us": "", "ron.pr.ult": null });
@@ -160,7 +162,7 @@ const Destello = ({ ult, i }: { ult: any; i: number }) => ult && ult.i === i - 1
 
 function UnaDeCuatro({ sala, pr, tema, soyYo, host, onBien, onMal }: PropsPrueba & { onBien: () => void; onMal: () => void }) {
   const qi = (pr.items || [])[pr.i || 0];
-  const q = CUATRO[tema][qi];
+  const q = cuatroDe(tema)[qi];
   const opciones = useMemo(() => q ? barajar(q.slice(1, 5) as string[], azarDe(`${sala.id}-${qi}`)) : [], [q, qi, sala.id]);
   if (!q) return <Panel>Se acabaron las preguntas.</Panel>;
   return (
@@ -269,7 +271,7 @@ function Rueda({ est, pos, tam, activo }: { est: string; pos: number; tam: numbe
 }
 function ElRosco({ sala, yo, host, meta, onSalir }: PropsJuego) {
   const r = sala.ron || VACIO, col = meta.color;
-  const banco = BANCO[r.tema === "futbol" ? "futbol" : "general"];
+  const banco = BANCO[r.tema as Tema] || BANCO.general;
   const conc: string[] = r.conc || [];
   const t = r.turno || 0;
   const letra = banco[((r.sel || {})[t] || [])[(r.pos || [])[t] || 0]] || banco[0];

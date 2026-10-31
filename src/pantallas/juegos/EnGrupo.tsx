@@ -72,9 +72,14 @@ export function EntrarConCodigo({ onEntrar, onVolver }: { onEntrar: (codigo: str
 
 // ── La sala: entrar, esperar y jugar ──────────────────────────────
 export function SalaJuego({ codigo, onSalir }: { codigo: string; onSalir: () => void }) {
-  const [sala, error] = useSala(codigo);
+  const [sala, error, conexion] = useSala(codigo);
   const yo = miPid();
   const [preguntar, setPreguntar] = useState(false);
+  const [fallo, setFallo] = useState("");
+  useEffect(() => {
+    const f = () => { setFallo("No se pudo guardar el último cambio. Revisa tu internet y vuelve a tocar el botón."); setTimeout(() => setFallo(""), 6000); };
+    window.addEventListener("mw-sala-error", f); return () => window.removeEventListener("mw-sala-error", f);
+  }, []);
   const volviendo = useRef(false);
   const fuera = async () => { await salir(codigo); onSalir(); };
   const enJuego = !!sala && sala.est === "juego" && !!sala.jug?.[yo];
@@ -116,7 +121,11 @@ export function SalaJuego({ codigo, onSalir }: { codigo: string; onSalir: () => 
   else if (sala.j === "rosco") juego = <RoscoSala {...p}/>;
   else if (sala.j === "quien") juego = <QuienSala {...p}/>;
   else juego = <ProbableSala {...p}/>;
+  const aviso = fallo || (conexion === "reconectando" ? "Reconectando… tu pantalla puede estar atrasada." : conexion === "guardando" ? "Guardando tus cambios… los demás todavía no los ven." : "");
   return <>
+    {aviso && <div role="status" style={{ position: "fixed", left: 12, right: 12, top: "calc(10px + env(safe-area-inset-top, 0px))", zIndex: 250, display: "flex", alignItems: "center", gap: 10,
+      background: fallo ? "#7f1d1d" : "#1f2937", color: "#fff", borderRadius: 14, padding: "10px 14px", fontSize: 13.5, fontWeight: 600, boxShadow: "0 10px 30px -10px rgba(0,0,0,.6)" }}>
+      <span style={{ width: 9, height: 9, borderRadius: "50%", background: fallo ? "#fca5a5" : "#fbbf24", flexShrink: 0, animation: "j-latir 1s ease-in-out infinite" }}/>{aviso}</div>}
     {juego}
     {preguntar && (
       <div role="dialog" aria-modal="true" aria-label="Salir de la partida" style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(8,6,16,.72)", display: "grid", placeItems: "center", padding: 20 }}>
