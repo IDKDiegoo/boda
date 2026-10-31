@@ -132,9 +132,10 @@ export function jugarRosco(ron, accion, ahora) {
   if (accion !== "ok" || !vivo(t)) turno = vivo(otro) ? otro : (vivo(t) ? t : -1);
   if (turno === -1) { r.fase = "fin"; r.desde = 0; r.turno = t; return r; }
   r.turno = turno;
-  // Como en la tele: al pasar o fallar se detiene el reloj de uno y parte solo el del otro.
-  // Jugando solo, «pasapalabra» deja el reloj en pausa hasta que el presentador diga «seguir».
-  r.desde = turno !== t ? ahora : (n === 1 && accion === "pasa") ? 0 : ahora;
+  // Al pasar o fallar se detiene TODO: el siguiente no ve su pregunta ni corre su reloj hasta que el
+  // presentador le da «play» (cuando el concursante dice que está listo). Así no se pierden segundos.
+  // Jugando solo, «pasapalabra» también pausa. Un acierto sigue corriendo.
+  r.desde = turno !== t ? 0 : (n === 1 && accion === "pasa") ? 0 : ahora;
   return r;
 }
 /** Pausa el reloj del que está jugando (descuenta lo que corrió) y lo vuelve a partir. */

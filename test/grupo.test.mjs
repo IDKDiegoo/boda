@@ -18,9 +18,11 @@ import { elegirPalabra, repartirSala, contarVotos, armarEquipos, siguientePendie
   // rosco de 2 jugadores
   let ron = { est: ["---", "---"], pos: [0, 0], rest: [10000, 10000], turno: 0, desde: 1000, fase: "juego" };
   ron = jugarRosco(ron, "ok", 2000); assert.equal(ron.est[0], "o--"); assert.equal(ron.pos[0], 1); assert.equal(ron.turno, 0); assert.equal(ron.rest[0], 9000);
-  ron = jugarRosco(ron, "pasa", 3000); assert.equal(ron.turno, 1); assert.equal(ron.pos[0], 2); assert.equal(ron.desde, 3000, "al pasar, parte solo el reloj del otro");
+  ron = jugarRosco(ron, "pasa", 3000); assert.equal(ron.turno, 1); assert.equal(ron.pos[0], 2); assert.equal(ron.desde, 0, "al pasar se pausa todo hasta el play");
   assert.equal(ron.rest[0], 8000, "el reloj del que pasó queda detenido");
-  ron = jugarRosco(ron, "mal", 4000); assert.equal(ron.est[1], "x--"); assert.equal(ron.turno, 0); assert.equal(ron.rest[1], 9000); assert.equal(ron.desde, 4000);
+  ron = seguirRosco(ron, 3500);   // el presentador le da play al otro
+  ron = jugarRosco(ron, "mal", 4000); assert.equal(ron.est[1], "x--"); assert.equal(ron.turno, 0); assert.equal(ron.rest[1], 9500); assert.equal(ron.desde, 0, "al fallar también se pausa");
+  ron = seguirRosco(ron, 4000);
   const p = pausarRosco(ron, 5000); assert.equal(p.desde, 0); assert.equal(p.rest[0], 7000, "la pausa descuenta lo que corrió");
   ron = seguirRosco(p, 7000); assert.equal(ron.desde, 7000);
   ron = jugarRosco(ron, "ok", 7500); ron = jugarRosco(ron, "ok", 8000);
