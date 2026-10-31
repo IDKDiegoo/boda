@@ -292,3 +292,54 @@ export function pistaDe(tema: TemaRosco, palabra: string): string {
   const x = (BANCO[tema] || BANCO.general).find(b => sinTilde(b.r.toUpperCase()) === palabra) || BANCO.mezcla.find(b => sinTilde(b.r.toUpperCase()) === palabra);
   return x ? x.d : "Tiene que ver con una boda";
 }
+
+// ── LA PISTA: un concepto y 5 pistas de más vaga a más clara. Con la 1ª pista se ganan 5 s, con la 5ª, 1 s. ──
+export const PISTAS: Record<"general" | "futbol", [string, string[]][]> = {
+  general: [
+    ["Torta", ["Se hace con harina", "Puede tener varios pisos", "A veces lleva velas", "Los novios la cortan juntos", "El pastel de la boda"]],
+    ["Pingüino", ["Es un ave", "No vuela", "Nada muy bien", "Es blanco y negro", "Vive en la Antártica"]],
+    ["Valparaíso", ["Es una ciudad chilena", "Tiene puerto", "Es Patrimonio de la Humanidad", "Es famosa por sus ascensores", "Allí está el Congreso"]],
+    ["Guitarra", ["Es un instrumento", "Tiene caja de resonancia", "Puede ser eléctrica o acústica", "Tiene seis cuerdas", "Acompaña la cueca en las fondas"]],
+    ["Luna", ["Está en el cielo", "Cambia de forma", "Provoca las mareas", "Neil Armstrong la pisó", "Es el satélite de la Tierra"]],
+    ["Empanada", ["Es una comida", "Puede ir al horno o frita", "Lleva masa", "Viene rellena de pino", "Infaltable para el 18"]],
+    ["Harry Potter", ["Es un personaje", "Usa lentes", "Tiene una cicatriz", "Estudia en Hogwarts", "El niño mago"]],
+    ["Reloj", ["Lo usamos todos los días", "Puede ir en la muñeca", "Tiene manecillas o pantalla", "Marca el tiempo", "Da la hora"]],
+    ["Café", ["Es una bebida", "Se toma caliente o frío", "Tiene cafeína", "Colombia y Brasil lo producen", "Expreso, capuchino, cortado"]],
+    ["Bicicleta", ["Es un medio de transporte", "No usa motor", "Tiene cadena", "Tiene dos ruedas", "Se pedalea"]],
+    ["Paraguas", ["Se lleva en la mano", "Se abre y se cierra", "Tiene varillas", "Se usa en invierno", "Protege de la lluvia"]],
+    ["Isla de Pascua", ["Es parte de Chile", "Está en medio del Pacífico", "Se llega en avión desde Santiago", "Se llama Rapa Nui", "Tiene moáis"]],
+    ["Anillo", ["Es una joya", "Es redondo", "Puede tener una piedra", "Va en el dedo", "Se intercambia en la boda"]],
+    ["Semáforo", ["Está en la calle", "Tiene luces", "Cambia de color", "Rojo, amarillo y verde", "Ordena el tránsito"]],
+    ["Volcán", ["Es una formación natural", "Chile tiene muchísimos", "Puede estar dormido", "Tiene cráter", "Hace erupción"]],
+    ["Chocolate", ["Es un dulce", "Se derrite con el calor", "Viene del cacao", "Puede ser blanco, de leche o amargo", "En Pascua viene con forma de huevo"]],
+    ["Avión", ["Es un medio de transporte", "Tiene alas", "Tiene piloto", "Despega y aterriza", "Vuela con pasajeros"]],
+    ["Cumpleaños", ["Es una celebración", "Pasa una vez al año", "Hay regalos", "Se canta una canción", "Se soplan las velas"]],
+    ["Sandía", ["Es una fruta", "Es de verano", "Tiene pepas", "Por fuera es verde", "Por dentro es roja"]],
+    ["Celular", ["Lo llevas en el bolsillo", "Tiene batería", "Tiene cámara", "Tiene WhatsApp", "Sirve para llamar"]],
+    ["Cueca", ["Es un baile", "Se baila en pareja", "Lleva pañuelo", "Se zapatea", "Es el baile nacional de Chile"]],
+    ["Luna de miel", ["Es un viaje", "Suele ser a un lugar romántico", "Se hace una sola vez", "Va justo después de una celebración", "El viaje de los recién casados"]],
+  ],
+  futbol: [
+    ["Messi", ["Es un jugador", "Es zurdo", "Jugó muchos años en España", "Ganó el Mundial 2022", "Argentino, «la Pulga»"]],
+    ["Colo-Colo", ["Es un club", "Es de Santiago", "Es el más popular de Chile", "Juega en el Monumental", "Campeón de la Libertadores 1991"]],
+    ["Penal", ["Es una jugada", "Se cobra por una falta", "Es dentro del área", "Es un mano a mano con el arquero", "Se patea desde los once metros"]],
+    ["Mundial", ["Es un torneo", "Se juega cada cuatro años", "Lo juegan selecciones", "Brasil lo ganó cinco veces", "La Copa del Mundo"]],
+    ["Arquero", ["Es una posición", "Usa guantes", "Puede usar las manos", "Se viste distinto al resto", "Cuida el arco"]],
+    ["Alexis Sánchez", ["Es un jugador chileno", "Nació en Tocopilla", "Jugó en el Barcelona y el Arsenal", "Le dicen «el Niño Maravilla»", "Máximo goleador de la Roja"]],
+    ["Maracaná", ["Es un estadio", "Está en Sudamérica", "Allí se jugaron dos finales de Mundial", "Está en Río de Janeiro", "El del Maracanazo"]],
+    ["Tarjeta roja", ["La lleva el árbitro", "Es de un color", "Viene después de dos amarillas", "Te deja con uno menos", "Expulsión"]],
+    ["Real Madrid", ["Es un club", "Es español", "Viste de blanco", "Juega en el Bernabéu", "El que más Champions tiene"]],
+    ["Offside", ["Es una regla", "La marca el juez de línea", "Tiene que ver con el último defensa", "Se revisa con el VAR", "Fuera de juego"]],
+    ["Copa América", ["Es un torneo", "Es de selecciones", "Es el más antiguo de su tipo", "Chile lo ganó en 2015 y 2016", "Lo juega Sudamérica"]],
+    ["Zamorano", ["Es un jugador chileno", "Fue delantero", "Jugó en el Real Madrid", "Usó la camiseta «1+8» en el Inter", "«Bam Bam»"]],
+    ["Chilena", ["Es una jugada", "Es acrobática", "Se patea de espaldas", "Con los pies por sobre la cabeza", "Lleva el nombre de nuestro país"]],
+    ["Bombonera", ["Es un estadio", "Está en Buenos Aires", "Está en el barrio de La Boca", "Dicen que «no tiembla, late»", "La casa de Boca Juniors"]],
+    ["VAR", ["Es una tecnología", "Llegó al fútbol hace pocos años", "Usa cámaras", "Revisa las jugadas polémicas", "El árbitro va a mirar la pantalla"]],
+    ["Claudio Bravo", ["Es un jugador chileno", "Fue capitán", "Jugó en el Barcelona y el Manchester City", "Atajó penales en finales de Copa América", "El arquero de la Roja bicampeona"]],
+  ],
+};
+export const pistasDe = (tema: TemaRosco) => tema === "futbol" ? PISTAS.futbol : tema === "mezcla" ? [...PISTAS.general, ...PISTAS.futbol] : PISTAS.general;
+/** Palabras con su definición para «Palabras cruzadas» y «La memoria» (palabras de 5 a 10 letras). */
+export function palabrasConDef(tema: TemaRosco, nivel: 1 | 2 | 3): string[] {
+  return palabrasPuzzle(tema, nivel).filter(p => p.length >= 5 && p.length <= 10);
+}
