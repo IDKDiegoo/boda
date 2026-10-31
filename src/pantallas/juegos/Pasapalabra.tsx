@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BarraJuego, Boton, Escenario, IconoJuego, Opciones, confeti, vibrar } from "./comun";
-import { BANCO, LETRAS_ROSCO, TEMAS_ROSCO, TemaRosco, anotarHistorial, armarRosco, cuatroDe, historial, palabrasPuzzle, pistaDe } from "./contenidoPasapalabra";
+import { BANCO, LETRAS_ROSCO, TEMAS_ROSCO, TemaRosco, anotarHistorial, armarRosco, cuatroDe, historial, palabrasConDef, palabrasPuzzle, pistaDe, pistasDe } from "./contenidoPasapalabra";
 import { azarDe, barajar, desordenar, estadoAhorcado, jugarRosco, pausarRosco, puntajeRosco, seguirRosco, siguientePendiente } from "./logica";
 import { Sala, anfitrion, cambiar, jugadores, useFaltan } from "./sala";
 import { Avatar, Panel, Pildora, PropsJuego, Rotulo, VACIO, VolverSala, nombreDe } from "./uiGrupo";
@@ -14,10 +14,14 @@ import { Avatar, Panel, Pildora, PropsJuego, Rotulo, VACIO, VolverSala, nombreDe
 // ═══════════════════════════════════════════════════════════════════
 type Tema = TemaRosco;
 type Nivel = 1 | 2 | 3;
-const PRUEBAS: Record<string, { t: string; desc: string; seg: number; dur: number; icono: string }> = {
+// `juntos`: la juegan todos a la vez y la lleva el presentador (La pista); las demás, cada uno en su turno.
+const PRUEBAS: Record<string, { t: string; desc: string; seg: number; dur: number; icono: string; juntos?: boolean }> = {
   cuatro: { t: "Una de cuatro", desc: "Una pregunta y cuatro opciones. Toca la correcta: cada acierto suma 2 segundos.", seg: 2, dur: 40, icono: "pregunta" },
   letras: { t: "Letras desordenadas", desc: "Arma la palabra tocando las letras en orden. Cada palabra suma 3 segundos.", seg: 3, dur: 45, icono: "barajar" },
   ahorcado: { t: "El ahorcado", desc: "Adivina la palabra letra por letra antes de 6 errores. Cada palabra suma 3 segundos.", seg: 3, dur: 60, icono: "equis" },
+  pista: { t: "La pista", desc: "El presentador muestra las pistas de a una y el primero que adivine en voz alta gana: 5 segundos con la 1ª pista, 4 con la 2ª… y 1 con la 5ª.", seg: 0, dur: 0, icono: "lupa", juntos: true },
+  cruzadas: { t: "Palabras cruzadas", desc: "Cada palabra está partida en dos columnas. Con la definición, toca la mitad de la izquierda y la de la derecha. Cada palabra suma 2 segundos.", seg: 2, dur: 75, icono: "barajar" },
+  memoria: { t: "La memoria", desc: "Memoriza 9 palabras: después se tapan y hay que tocar la que se pide. Cada acierto suma 2 segundos; si te equivocas, el panel parte de nuevo.", seg: 2, dur: 60, icono: "ojo" },
 };
 const NIVELES: [Nivel, string][] = [[1, "Fácil"], [2, "Normal"], [3, "Difícil"]];
 
@@ -43,7 +47,11 @@ export function ConfigRosco({ sala, cfg, poner, color }: { sala: Sala; cfg: any;
     </div>
     <div style={{ fontSize: 12, opacity: .75, marginTop: 8, lineHeight: 1.45 }}>{pruebas.length ? "Lo que ganen en las pruebas se suma a su tiempo del rosco." : "Sin pruebas: van directo al rosco."}</div>
     <Rotulo style={{ marginTop: 14 }}>Tiempo base del rosco</Rotulo>
-    <Opciones valor={cfg.base || 85} opciones={[[60, "60 s"], [85, "85 s (tele)"], [120, "120 s"]]} onCambiar={v => poner({ base: v })}/>
+    <Opciones valor={[60, 85, 120, 180].includes(cfg.base || 85) ? (cfg.base || 85) : 0} opciones={[[60, "60 s"], [85, "85 s (tele)"], [120, "120 s"], [180, "180 s"]]} onCambiar={v => poner({ base: v })}/>
+    <label htmlFor="rosco-base" style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, fontSize: 13, opacity: .9 }}>O escribe los segundos:
+      <input id="rosco-base" className="j-campo" type="number" inputMode="numeric" min={20} max={900} value={cfg.base || 85}
+        onChange={e => { const v = Math.round(Number(e.target.value)); if (v >= 1) poner({ base: Math.min(900, v) }); }} onBlur={e => { if (Number(e.target.value) < 20) poner({ base: 20 }); }}
+        style={{ width: 96, padding: "8px 10px", fontSize: 16, textAlign: "center" }}/></label>
   </>;
 }
 
@@ -68,9 +76,10 @@ export function inicioRosco(sala: Sala, cfg: any): Record<string, any> {
  *  concursante apriete «Partir»), así el presentador ya las tiene a la vista para leerlas. */
 function itemsPara(id: string, tema: Tema, nivel: Nivel, semilla: string): any[] {
   const az = azarDe(semilla);
-  return id === "cuatro"
-    ? barajar(cuatroDe(tema).map((q, i) => ({ q, i })).filter(({ q }) => Math.abs(q[5] - nivel) <= 1).map(x => x.i), az).slice(0, 30)
-    : barajar(palabrasPuzzle(tema, nivel), az).slice(0, 25);
+  if (id === "cuatro") return barajar(cuatroDe(tema).map((q, i) => ({ q, i })).filter(({ q }) => Math.abs(q[5] - nivel) <= 1).map(x => x.i), az).slice(0, 30);
+  if (id === "pista") return barajar(pistasDe(tema).map((_, i) => i), az).slice(0, 5);
+  if (id === "cruzadas" || id === "memoria") return barajar(palabrasConDef(tema, nivel), az).slice(0, 45);
+  return barajar(palabrasPuzzle(tema, nivel), az).slice(0, 25);
 }
 
 // ── La sala ───────────────────────────────────────────────────────
@@ -111,11 +120,12 @@ function Pruebas({ sala, yo, host, meta, onSalir }: PropsJuego) {
   const partir = () => {
     const items = (pr.items || []).length ? pr.items : itemsPara(id, tema, nivel, `${sala.id}-${pr.k}-${pr.t}-${Date.now()}`);
     vibrar(30);
-    cambiar(sala.id, { "ron.pr.est": "juega", "ron.pr.fin": Date.now() + P.dur * 1000, "ron.pr.items": items, "ron.pr.i": 0, "ron.pr.ok": 0, "ron.pr.us": "", "ron.pr.ult": null });
+    cambiar(sala.id, { "ron.pr.est": "juega", "ron.pr.fin": P.dur ? Date.now() + P.dur * 1000 : 0, "ron.pr.items": items, "ron.pr.i": 0, "ron.pr.ok": 0, "ron.pr.us": "", "ron.pr.ult": null,
+      "ron.pr.np": 1, "ron.pr.pan": 0, "ron.pr.mk": 0, "ron.pr.mem": id === "memoria" ? Date.now() + 6000 : 0 });
   };
   const avanzar = () => {
     const semilla = `${sala.id}-${Date.now()}`;
-    const sig = pr.t + 1 < conc.length ? { "ron.pr.t": pr.t + 1, "ron.pr.est": "espera", "ron.pr.items": itemsPara(id, tema, nivel, semilla), "ron.pr.i": 0, "ron.pr.ult": null }
+    const sig = !P.juntos && pr.t + 1 < conc.length ? { "ron.pr.t": pr.t + 1, "ron.pr.est": "espera", "ron.pr.items": itemsPara(id, tema, nivel, semilla), "ron.pr.i": 0, "ron.pr.ult": null }
       : pr.k + 1 < (pr.lista || []).length ? { "ron.pr.k": pr.k + 1, "ron.pr.t": 0, "ron.pr.est": "espera", "ron.pr.items": itemsPara(pr.lista[pr.k + 1], tema, nivel, semilla), "ron.pr.i": 0, "ron.pr.ult": null }
       : { "ron.fase": "juego", "ron.rest": conc.map((_, i) => ((r.base || 85) + (r.bonus?.[i] || 0)) * 1000), "ron.desde": 0, "ron.turno": 0 };
     cambiar(sala.id, sig);
@@ -130,8 +140,8 @@ function Pruebas({ sala, yo, host, meta, onSalir }: PropsJuego) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
         <span style={{ width: 42, height: 42, borderRadius: 14, background: "rgba(255,255,255,.14)", display: "grid", placeItems: "center" }}><IconoJuego n={P.icono} tam={22}/></span>
         <div style={{ flex: 1 }}><div style={{ fontFamily: "var(--titulo)", fontSize: 26, fontWeight: 600, lineHeight: 1 }}>{P.t}</div>
-          <div style={{ fontSize: 12.5, opacity: .8, marginTop: 3 }}>Juega {nombreDe(sala, quien)}{soyYo ? " (tú)" : ""}</div></div>
-        {pr.est === "juega" && <div style={{ fontFamily: "var(--titulo)", fontSize: 38, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: faltan <= 10 ? "#ffb3b3" : "#fff" }}>{faltan}</div>}
+          <div style={{ fontSize: 12.5, opacity: .8, marginTop: 3 }}>{P.juntos ? "Juegan todos" : <>Juega {nombreDe(sala, quien)}{soyYo ? " (tú)" : ""}</>}</div></div>
+        {pr.est === "juega" && !!P.dur && <div style={{ fontFamily: "var(--titulo)", fontSize: 38, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: faltan <= 10 ? "#ffb3b3" : "#fff" }}>{faltan}</div>}
       </div>
     </>);
 
@@ -140,27 +150,33 @@ function Pruebas({ sala, yo, host, meta, onSalir }: PropsJuego) {
     <Panel style={{ textAlign: "center", padding: 22 }}>
       <div style={{ fontSize: 14.5, lineHeight: 1.5 }}>{P.desc}</div>
       <div style={{ fontSize: 12.5, opacity: .75, marginTop: 6 }}>Tienes {P.dur} segundos.</div>
-      {soyYo ? <Boton color="#ffffff" claro style={{ width: "100%", marginTop: 16, color: col, padding: 17 }} onClick={partir}>¡Partir!</Boton>
+      {P.juntos ? (host ? <Boton color="#ffffff" claro style={{ width: "100%", marginTop: 16, color: col, padding: 17 }} onClick={partir}>Mostrar la primera pista</Boton>
+          : <div style={{ marginTop: 14, fontWeight: 600 }}>Juegan todos: atentos a las pistas.</div>)
+        : soyYo ? <Boton color="#ffffff" claro style={{ width: "100%", marginTop: 16, color: col, padding: 17 }} onClick={partir}>¡Partir!</Boton>
         : <div style={{ marginTop: 14, fontWeight: 600 }}>Esperando que {nombreDe(sala, quien)} parta…</div>}
-      {host && !soyYo && <Adelanto id={id} tema={tema} items={pr.items} desde={0} titulo="Lo primero que le va a salir (solo lo ves tú)"/>}
+      {host && !soyYo && !P.juntos && <Adelanto id={id} tema={tema} items={pr.items} desde={0} titulo="Lo primero que le va a salir (solo lo ves tú)"/>}
       {host && !soyYo && !estaAca && <Boton color="rgba(255,255,255,.14)" style={{ width: "100%", marginTop: 10 }} onClick={avanzar}>{nombreDe(sala, quien)} se fue: saltar</Boton>}
     </Panel>);
   else if (pr.est === "listo") cuerpo = (
     <Panel style={{ textAlign: "center", padding: 22 }}>
+      {P.juntos ? <div style={{ fontFamily: "var(--titulo)", fontSize: 34, fontWeight: 700 }}>Terminó «{P.t}»</div> : <>
       <div style={{ fontFamily: "var(--titulo)", fontSize: 56, fontWeight: 700, lineHeight: 1 }}>+{(pr.ok || 0) * P.seg} s</div>
-      <div style={{ fontSize: 13.5, opacity: .85, marginTop: 6 }}>{nombreDe(sala, quien)} acertó {pr.ok || 0} en «{P.t}».</div>
+      <div style={{ fontSize: 13.5, opacity: .85, marginTop: 6 }}>{nombreDe(sala, quien)} acertó {pr.ok || 0} en «{P.t}».</div></>}
       {(soyYo || host) && <Boton color="#ffffff" claro style={{ width: "100%", marginTop: 16, color: col }} onClick={avanzar}>
-        {pr.t + 1 < conc.length ? `Le toca a ${nombreDe(sala, conc[pr.t + 1])}` : pr.k + 1 < (pr.lista || []).length ? `Siguiente prueba: ${PRUEBAS[pr.lista[pr.k + 1]].t}` : "¡Al rosco!"}</Boton>}
+        {!P.juntos && pr.t + 1 < conc.length ? `Le toca a ${nombreDe(sala, conc[pr.t + 1])}` : pr.k + 1 < (pr.lista || []).length ? `Siguiente prueba: ${PRUEBAS[pr.lista[pr.k + 1]].t}` : "¡Al rosco!"}</Boton>}
     </Panel>);
   else if (id === "cuatro") cuerpo = <UnaDeCuatro sala={sala} pr={pr} tema={tema} soyYo={soyYo} host={host} onBien={acierto} onMal={fallo}/>;
   else if (id === "letras") cuerpo = <Letras sala={sala} pr={pr} tema={tema} soyYo={soyYo} host={host} onBien={acierto} onSaltar={fallo}/>;
+  else if (id === "pista") cuerpo = <LaPista sala={sala} r={r} pr={pr} tema={tema} host={host}/>;
+  else if (id === "cruzadas") cuerpo = <Cruzadas sala={sala} pr={pr} tema={tema} soyYo={soyYo} host={host} onBien={acierto} onSaltar={fallo}/>;
+  else if (id === "memoria") cuerpo = <Memoria sala={sala} pr={pr} r={r} soyYo={soyYo} host={host} seg={P.seg}/>;
   else cuerpo = <Ahorcado sala={sala} pr={pr} tema={tema} soyYo={soyYo} host={host} onBien={acierto} onMal={fallo}/>;
 
   return (
     <Escenario color={col} oscuro={meta.oscuro}>
       {cabecera}{cuerpo}
-      {host && !soyYo && pr.est === "juega" && <Adelanto id={id} tema={tema} items={pr.items} desde={(pr.i || 0) + 1} titulo="Lo que viene (solo lo ves tú)"/>}
-      {host && pr.est !== "listo" && <Boton color="rgba(255,255,255,.12)" style={{ width: "100%", marginTop: 12 }} onClick={() => cambiar(sala.id, { "ron.pr.est": "listo" })}>Terminar este turno</Boton>}
+      {host && !soyYo && !P.juntos && id !== "memoria" && pr.est === "juega" && <Adelanto id={id} tema={tema} items={pr.items} desde={(pr.i || 0) + 1} titulo="Lo que viene (solo lo ves tú)"/>}
+      {host && pr.est !== "listo" && <Boton color="rgba(255,255,255,.12)" style={{ width: "100%", marginTop: 12 }} onClick={() => cambiar(sala.id, { "ron.pr.est": "listo" })}>{P.juntos ? "Terminar esta prueba" : "Terminar este turno"}</Boton>}
       {host && <Boton color="rgba(255,255,255,.12)" style={{ width: "100%", marginTop: 8 }} onClick={() => cambiar(sala.id, { "ron.fase": "juego", "ron.rest": conc.map((_, i) => ((r.base || 85) + (r.bonus?.[i] || 0)) * 1000), "ron.desde": 0, "ron.turno": 0 })}>Saltar las pruebas e ir al rosco</Boton>}
     </Escenario>
   );
@@ -175,7 +191,7 @@ function Adelanto({ id, tema, items, desde, titulo }: { id: string; tema: Tema; 
       <Rotulo style={{ marginBottom: 6 }}>{titulo}</Rotulo>
       {lista.map((x, k) => { const q = id === "cuatro" ? cuatroDe(tema)[x] : null; return (
         <div key={k} style={{ fontSize: 13.5, lineHeight: 1.4, padding: "4px 0", borderTop: k ? "1px solid rgba(255,255,255,.1)" : "none" }}>
-          {q ? <>{q[0]} <b style={{ color: "#8be0a8" }}>→ {q[1]}</b></> : <>{pistaDe(tema, x)} <b style={{ color: "#8be0a8" }}>→ {x}</b></>}
+          {q ? <>{q[0]} <b style={{ color: "#8be0a8" }}>→ {q[1]}</b></> : id === "cruzadas" ? <>{pistaDe(tema, x)} <b style={{ color: "#8be0a8" }}>→ {partir2(x).join(" + ")}</b></> : <>{pistaDe(tema, x)} <b style={{ color: "#8be0a8" }}>→ {x}</b></>}
         </div>); })}
     </div>);
 }
@@ -371,4 +387,106 @@ function ElRosco({ sala, yo, host, meta, onSalir }: PropsJuego) {
       {host && <Boton color="rgba(255,255,255,.12)" style={{ width: "100%", marginTop: 10 }} onClick={() => cambiar(sala.id, { "ron.fase": "fin", "ron.desde": 0 })}>Terminar el rosco</Boton>}
     </Escenario>
   );
+}
+
+// ── La pista: la lleva el presentador; los demás ven las pistas que van saliendo ──
+function LaPista({ sala, r, pr, tema, host }: { sala: Sala; r: any; pr: any; tema: Tema; host: boolean }) {
+  const lista = pistasDe(tema), item = lista[(pr.items || [])[pr.i || 0]];
+  const np = Math.max(1, Math.min(5, pr.np || 1)), vale = 6 - np;
+  const conc: string[] = r.conc || [];
+  if (!item) return <Panel>Se acabaron los conceptos.</Panel>;
+  const siguiente = (extra: Record<string, any> = {}) => {
+    const ultimo = (pr.i || 0) + 1 >= (pr.items || []).length;
+    cambiar(sala.id, { "ron.pr.i": (pr.i || 0) + 1, "ron.pr.np": 1, ...(ultimo ? { "ron.pr.est": "listo" } : {}), ...extra });
+  };
+  return (
+    <div>
+      <Destello ult={pr.ult} i={pr.i || 0}/>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, opacity: .85, marginBottom: 8 }}><span>Concepto {(pr.i || 0) + 1} de {(pr.items || []).length}</span><b>Vale {vale} s</b></div>
+      <div key={pr.i} style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+        {item[1].map((x, k) => k < np
+          ? <div key={k} className="j-entrar" style={{ background: "#fffdfb", color: "#1d2a44", borderRadius: 16, padding: "12px 14px", fontSize: 16.5, fontWeight: 600, display: "flex", gap: 10 }}><span style={{ color: "#2f6fb0" }}>{k + 1}</span>{x}</div>
+          : <div key={k} style={{ border: "1.5px dashed rgba(255,255,255,.25)", borderRadius: 16, padding: "12px 14px", fontSize: 14, opacity: .5 }}>Pista {k + 1}</div>)}
+      </div>
+      {host ? <>
+        <div style={{ marginTop: 12, fontSize: 14 }}>Respuesta: <b style={{ fontSize: 18, color: "#ffd166" }}>{item[0]}</b></div>
+        <div style={{ display: "grid", gridTemplateColumns: conc.length > 1 ? "1fr 1fr" : "1fr", gap: 8, marginTop: 10 }}>
+          {conc.map((p, k) => <Boton key={p} color="#2f9a5c" onClick={() => { vibrar(25); siguiente({ [`ron.bonus.${k}`]: (r.bonus?.[k] || 0) + vale, "ron.pr.ult": { i: pr.i, bien: true } }); }}>Acertó {nombreDe(sala, p)} (+{vale} s)</Boton>)}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
+          <Boton color="#ffffff" claro style={{ color: "#2f6fb0" }} disabled={np >= 5} onClick={() => { vibrar(8); cambiar(sala.id, { "ron.pr.np": np + 1 }); }}>Otra pista</Boton>
+          <Boton color="rgba(255,255,255,.14)" onClick={() => siguiente({ "ron.pr.ult": { i: pr.i, bien: false } })}>Nadie: siguiente</Boton>
+        </div>
+      </> : <div style={{ textAlign: "center", fontSize: 13.5, opacity: .85, marginTop: 12 }}>¿Lo sabes? ¡Dilo en voz alta!</div>}
+    </div>);
+}
+
+// ── Palabras cruzadas: cada palabra partida en dos columnas ──
+const partir2 = (p: string) => { const m = Math.ceil(p.length / 2); return [p.slice(0, m), p.slice(m)]; };
+function Cruzadas({ sala, pr, tema, soyYo, host, onBien, onSaltar }: PropsPrueba & { onBien: () => void; onSaltar: () => void }) {
+  const items: string[] = pr.items || [], i = pr.i || 0, pan = Math.floor(i / 9);
+  const panel = items.slice(pan * 9, pan * 9 + 9), dentro = i - pan * 9, palabra = panel[dentro] || "";
+  const usadas = new Set(panel.slice(0, dentro));
+  const izq = useMemo(() => barajar(panel.map((p, k) => ({ p, k })), azarDe(`${sala.id}-${pan}-i`)), [panel, pan, sala.id]);
+  const der = useMemo(() => barajar(panel.map((p, k) => ({ p, k })), azarDe(`${sala.id}-${pan}-d`)), [panel, pan, sala.id]);
+  const [a, setA] = useState<number | null>(null);
+  const [mal, setMal] = useState(false);
+  useEffect(() => { setA(null); }, [i]);
+  if (!palabra) return <Panel>Se acabaron las palabras.</Panel>;
+  const tocarDer = (k: number) => {
+    if (!soyYo || a === null) return;
+    if (partir2(panel[a])[0] + partir2(panel[k])[1] === palabra) onBien();
+    else { setMal(true); vibrar([10, 30, 10]); setTimeout(() => { setMal(false); setA(null); }, 450); }
+  };
+  const ficha = (txt: string, on: boolean, usada: boolean, onClick: () => void) => (
+    <button disabled={!soyYo || usada} onClick={onClick} className="j-tile" style={{ width: "100%", minHeight: 44, borderRadius: 12, border: on ? "2px solid #ffd166" : "1px solid rgba(255,255,255,.22)", fontWeight: 800, fontSize: 16, letterSpacing: ".06em",
+      background: usada ? "rgba(47,154,92,.35)" : mal && on ? "#d23b4f" : on ? "rgba(255,209,102,.25)" : "rgba(255,255,255,.12)", color: "#fff", opacity: usada ? .55 : 1, cursor: soyYo && !usada ? "pointer" : "default" }}>{txt}</button>);
+  return (
+    <div>
+      <Destello ult={pr.ult} i={i}/>
+      <Panel style={{ textAlign: "center", marginBottom: 12 }}><Rotulo style={{ marginBottom: 4 }}>Palabra {dentro + 1} de {panel.length}</Rotulo><div style={{ fontSize: 16, lineHeight: 1.4 }}>{pistaDe(tema, palabra)}</div>
+        {host && !soyYo && <div style={{ fontSize: 13, marginTop: 6, color: "#8be0a8" }}>{partir2(palabra).join(" + ")}</div>}</Panel>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <div style={{ display: "grid", gap: 6 }}>{izq.map(({ p, k }) => <div key={"i" + k}>{ficha(partir2(p)[0], a === k, usadas.has(p), () => { vibrar(6); setA(k); })}</div>)}</div>
+        <div style={{ display: "grid", gap: 6 }}>{der.map(({ p, k }) => <div key={"d" + k}>{ficha(partir2(p)[1], false, usadas.has(p), () => tocarDer(k))}</div>)}</div>
+      </div>
+      {soyYo ? <Boton color="rgba(255,255,255,.14)" style={{ width: "100%", marginTop: 12 }} onClick={onSaltar}>Saltar palabra</Boton>
+        : <div style={{ textAlign: "center", fontSize: 12.5, opacity: .75, marginTop: 10 }}>Lo está armando en su teléfono.</div>}
+    </div>);
+}
+
+// ── La memoria: 9 palabras a la vista unos segundos; después se tapan y hay que encontrar la que se pide ──
+function Memoria({ sala, pr, r, soyYo, host, seg }: { sala: Sala; pr: any; r: any; soyYo: boolean; host: boolean; seg: number }) {
+  // `mk` = cuántas encontró en este panel (ojo: `pr.k` es en qué prueba va el juego).
+  const items: string[] = pr.items || [], pan = pr.pan || 0, k = pr.mk || 0;
+  const panel = useMemo(() => Array.from({ length: 9 }, (_, j) => items[(pan * 9 + j) % Math.max(1, items.length)]), [items, pan]);
+  const orden = useMemo(() => barajar([0, 1, 2, 3, 4, 5, 6, 7, 8], azarDe(`${sala.id}-${pan}-m`)), [pan, sala.id]);
+  const faltaVer = useFaltan(pr.mem || 0);
+  const viendo = faltaVer > 0, buscada = orden[k], hallados = new Set(orden.slice(0, k));
+  const [mal, setMal] = useState<number | null>(null);
+  if (!items.length) return <Panel>No hay palabras para este tema.</Panel>;
+  const nuevoPanel = (extra: Record<string, any>) => cambiar(sala.id, { "ron.pr.pan": pan + 1, "ron.pr.mk": 0, "ron.pr.mem": Date.now() + 6000, ...extra });
+  const tocar = (j: number) => {
+    if (!soyYo || viendo || hallados.has(j)) return;
+    if (j === buscada) {
+      vibrar(25);
+      const extra = { "ron.pr.ok": (pr.ok || 0) + 1, [`ron.bonus.${pr.t}`]: (r.bonus?.[pr.t] || 0) + seg, "ron.pr.ult": { i: (pr.i || 0), bien: true }, "ron.pr.i": (pr.i || 0) + 1 };
+      if (k + 1 >= 9) nuevoPanel(extra); else cambiar(sala.id, { "ron.pr.mk": k + 1, ...extra });
+    } else { setMal(j); vibrar([10, 30, 10]); setTimeout(() => setMal(null), 500); nuevoPanel({ "ron.pr.ult": { i: (pr.i || 0), bien: false }, "ron.pr.i": (pr.i || 0) + 1 }); }
+  };
+  return (
+    <div>
+      <Destello ult={pr.ult} i={pr.i || 0}/>
+      <Panel style={{ textAlign: "center", marginBottom: 12 }}>
+        {viendo ? <><Rotulo style={{ marginBottom: 2 }}>Memoriza</Rotulo><div style={{ fontFamily: "var(--titulo)", fontSize: 30, fontWeight: 700 }}>{faltaVer}</div></>
+          : <><Rotulo style={{ marginBottom: 4 }}>¿Dónde está…?</Rotulo><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: ".04em" }}>{panel[buscada]}</div></>}
+      </Panel>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+        {panel.map((w, j) => { const ver = viendo || hallados.has(j) || (host && !soyYo); return (
+          <button key={j} disabled={!soyYo || viendo || hallados.has(j)} onClick={() => tocar(j)} className="j-tile" style={{ aspectRatio: "1.25", borderRadius: 14, border: "1px solid rgba(255,255,255,.22)", fontWeight: 800, fontSize: 12.5, padding: 4, overflow: "hidden",
+            background: mal === j ? "#d23b4f" : hallados.has(j) ? "rgba(47,154,92,.4)" : ver ? "#fffdfb" : "linear-gradient(150deg,#2f6fb0,#1d3f75)", color: ver && !hallados.has(j) ? (host && !soyYo && !viendo ? "#94a3b8" : "#1d2a44") : "#fff", cursor: soyYo && !viendo ? "pointer" : "default" }}>
+            {ver ? w : <IconoJuego n="pregunta" tam={22}/>}</button>); })}
+      </div>
+      {!soyYo && <div style={{ textAlign: "center", fontSize: 12.5, opacity: .75, marginTop: 10 }}>{host ? "Tú ves las palabras en gris; el concursante las ve tapadas." : "Lo está jugando en su teléfono."}</div>}
+    </div>);
 }

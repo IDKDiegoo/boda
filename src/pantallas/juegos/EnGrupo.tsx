@@ -19,7 +19,7 @@ export const JUEGOS_SALA: Record<JuegoSala, Meta> = {
   mimica: { t: "Mímica por equipos", color: "#7d5ca8", oscuro: "#1d1430", icono: "teatro", min: 4, desc: "Dos equipos; el que actúa ve la palabra en su teléfono",
     cfg: { tiempo: 60, tema: "De la boda" } },
   rosco: { t: "Pasapalabra", color: "#2f6fb0", oscuro: "#0b1730", icono: "rosco", min: 2, desc: "Pruebas para ganar segundos y el rosco de la A a la Z, como en la tele",
-    cfg: { tema: "general", nivel: 2, base: 85, pruebas: ["cuatro", "letras", "ahorcado"], conc: [] } },
+    cfg: { tema: "general", nivel: 2, base: 85, pruebas: ["cuatro", "pista", "letras"], conc: [] } },
   quien: { t: "¿Quién es quién?", color: "#0f766e", oscuro: "#06201d", icono: "lupa", min: 2, desc: "Adivina el personaje secreto del otro con preguntas de sí o no",
     cfg: { conc: [] } },
   probable: { t: "¿Quién es más probable?", color: "#c0394f", oscuro: "#2e0d17", icono: "votar", min: 3, desc: "Cada uno vota en secreto. ¿Quién sale más votado?",
