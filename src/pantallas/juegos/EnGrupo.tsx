@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { LEGADO, bodaActual } from "../../base/firebase";
 import { AnilloTiempo, BarraJuego, Boton, Escenario, IconoJuego, Opciones, confeti, vibrar } from "./comun";
-import { IMPOSTOR_CLASICO, IMPOSTOR_FUTBOL, MIMICA_TEMAS, PROBABLE, ROSCOS } from "./contenidoGrupo";
-import { armarEquipos, barajar, contarVotos, elegirPalabra, jugarRosco, puntajeRosco, repartirSala } from "./logica";
+import { IMPOSTOR_CLASICO, IMPOSTOR_FUTBOL, MIMICA_TEMAS, PROBABLE } from "./contenidoGrupo";
+import { ConfigRosco, RoscoSala, inicioRosco } from "./Pasapalabra";
+import { ConfigQuien, QuienSala, inicioQuien } from "./QuienEsQuien";
+import { armarEquipos, barajar, contarVotos, elegirPalabra, repartirSala } from "./logica";
+import { Avatar, Meta, Panel, Pildora, PropsJuego, Rotulo, VACIO, VolverSala, nombreDe } from "./uiGrupo";
 import { JuegoSala, Sala, anfitrion, cambiar, crearSala, jugadores, limpiarCodigo, miNombre, miPid, qrDe, salir, unirse, urlSala, useFaltan, useSala } from "./sala";
 
 // ═══════════════════════════════════════════════════════════════════
@@ -10,31 +13,18 @@ import { JuegoSala, Sala, anfitrion, cambiar, crearSala, jugadores, limpiarCodig
 // teléfono y cada uno ve lo suyo. El anfitrión (el que creó la sala) es el que avanza las rondas.
 // ═══════════════════════════════════════════════════════════════════
 
-type Meta = { t: string; color: string; oscuro: string; icono: string; min: number; desc: string; cfg: any };
 export const JUEGOS_SALA: Record<JuegoSala, Meta> = {
   impostor: { t: "El impostor", color: "#6b55a0", oscuro: "#151024", icono: "mascara", min: 3, desc: "Todos tienen la palabra menos uno. ¿Quién miente?",
     cfg: { modo: "clasico", cat: "Todos", imp: 1, tiempo: 90, infiltrado: false } },
   mimica: { t: "Mímica por equipos", color: "#7d5ca8", oscuro: "#1d1430", icono: "teatro", min: 4, desc: "Dos equipos; el que actúa ve la palabra en su teléfono",
     cfg: { tiempo: 60, tema: "De la boda" } },
-  rosco: { t: "Pasapalabra", color: "#2f6fb0", oscuro: "#0b1730", icono: "rosco", min: 2, desc: "El rosco de la A a la Z, con presentador y reloj",
-    cfg: { tema: "general", seg: 150, conc: [] } },
+  rosco: { t: "Pasapalabra", color: "#2f6fb0", oscuro: "#0b1730", icono: "rosco", min: 2, desc: "Pruebas para ganar segundos y el rosco de la A a la Z, como en la tele",
+    cfg: { tema: "general", nivel: 2, base: 85, pruebas: ["cuatro", "letras", "ahorcado"], conc: [] } },
+  quien: { t: "¿Quién es quién?", color: "#0f766e", oscuro: "#06201d", icono: "lupa", min: 2, desc: "Adivina el personaje secreto del otro con preguntas de sí o no",
+    cfg: { conc: [] } },
   probable: { t: "¿Quién es más probable?", color: "#c0394f", oscuro: "#2e0d17", icono: "votar", min: 3, desc: "Cada uno vota en secreto. ¿Quién sale más votado?",
     cfg: { tragos: true } },
 };
-
-const PALETA = ["#6f6bd8", "#e0455f", "#3f9a6e", "#d08a3c", "#3c8ed0", "#b05fb5", "#c4605a", "#4aa3a0"];
-const colorDe = (n: string) => PALETA[String(n).split("").reduce((a, c) => a + c.charCodeAt(0), 0) % PALETA.length];
-export const Avatar = ({ n, tam = 44, style }: { n: string; tam?: number; style?: React.CSSProperties }) =>
-  <span style={{ width: tam, height: tam, borderRadius: "50%", display: "grid", placeItems: "center", fontWeight: 700, fontSize: tam * .4, color: "#fff", background: colorDe(n), flexShrink: 0, ...style }}>{(String(n).trim()[0] || "?").toUpperCase()}</span>;
-const Rotulo = ({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) =>
-  <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", opacity: .72, marginBottom: 8, ...style }}>{children}</div>;
-const Pildora = ({ children, on, onClick, color }: { children: React.ReactNode; on: boolean; onClick: () => void; color: string }) =>
-  <button onClick={() => { vibrar(6); onClick(); }} style={{ cursor: "pointer", borderRadius: 20, padding: "8px 13px", fontSize: 13, fontWeight: 600,
-    background: on ? "#fff" : "rgba(255,255,255,.08)", color: on ? color : "#fff", border: "1px solid rgba(255,255,255,.22)" }}>{children}</button>;
-const Panel = ({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) =>
-  <div style={{ background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", borderRadius: 20, padding: 14, ...style }}>{children}</div>;
-const VACIO: any = {};   // referencia fija para cuando la sala aún no tiene ronda
-const nombreDe = (s: Sala, pid: string) => s.jug?.[pid]?.n || "Alguien";
 
 // ── Crear una sala / entrar con código ─────────────────────────────
 export function NuevaSala({ juego, mesa, cfg, titulo, onLista, onVolver }: { juego: JuegoSala; mesa?: number | null; cfg?: any; titulo?: string; onLista: (codigo: string) => void; onVolver: () => void }) {
@@ -111,9 +101,9 @@ export function SalaJuego({ codigo, onSalir }: { codigo: string; onSalir: () => 
   if (sala.j === "impostor") return <ImpostorSala {...p}/>;
   if (sala.j === "mimica") return <MimicaSala {...p}/>;
   if (sala.j === "rosco") return <RoscoSala {...p}/>;
+  if (sala.j === "quien") return <QuienSala {...p}/>;
   return <ProbableSala {...p}/>;
 }
-type PropsJuego = { sala: Sala; yo: string; host: boolean; meta: Meta; onSalir: () => void };
 
 function Unirse({ sala, meta, onSalir }: { sala: Sala; meta: Meta; onSalir: () => void }) {
   const [nombre, setNombre] = useState(miNombre());
@@ -185,7 +175,7 @@ function Lobby({ sala, yo, host, meta, onSalir }: PropsJuego) {
           </Panel>
           {host ? <>
             <Panel><ConfigJuego sala={sala} cfg={cfg} poner={ponerCfg} color={meta.color}/></Panel>
-            <Boton color="#ffffff" claro disabled={js.length < minimo || (sala.j === "rosco" && !(cfg.conc || []).some((p: string) => sala.jug[p]))} style={{ color: meta.color, padding: 17 }} onClick={empezar}>
+            <Boton color="#ffffff" claro disabled={js.length < minimo || (sala.j === "rosco" && !(cfg.conc || []).some((p: string) => sala.jug[p])) || (sala.j === "quien" && (cfg.conc || []).filter((p: string) => sala.jug[p]).length < 2)} style={{ color: meta.color, padding: 17 }} onClick={empezar}>
               <IconoJuego n="dados" tam={19}/>{js.length < minimo ? "Esperando jugadores…" : "¡Empezar!"}</Boton>
           </> : (
             <Panel style={{ textAlign: "center" }}>
@@ -228,21 +218,8 @@ function ConfigJuego({ sala, cfg, poner, color }: { sala: Sala; cfg: any; poner:
     <Opciones valor={cfg.tiempo} opciones={[[45, "45 s"], [60, "60 s"], [90, "90 s"]]} onCambiar={v => poner({ tiempo: v })}/>
     <div style={{ fontSize: 12, opacity: .75, marginTop: 8 }}>Los equipos se arman solos al empezar.</div>
   </>;
-  if (sala.j === "rosco") {
-    const js = jugadores(sala).filter(j => j.pid !== anfitrion(sala));
-    const conc: string[] = (cfg.conc || []).filter((p: string) => sala.jug[p]);
-    const toggle = (p: string) => poner({ conc: conc.includes(p) ? conc.filter(x => x !== p) : [...conc, p].slice(-2) });
-    return <>
-      <div style={{ fontSize: 12.5, opacity: .85, marginBottom: 12, lineHeight: 1.45 }}>Tú eres el presentador: ves las respuestas y marcas si acertaron. Elige 1 o 2 concursantes.</div>
-      <Rotulo>Concursantes</Rotulo>
-      {js.length ? <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{js.map(j => <Pildora key={j.pid} on={conc.includes(j.pid)} color={color} onClick={() => toggle(j.pid)}>{j.n}</Pildora>)}</div>
-        : <div style={{ fontSize: 13, opacity: .75 }}>Cuando alguien se una, aparece acá.</div>}
-      <Rotulo style={{ marginTop: 14 }}>Rosco</Rotulo>
-      <Opciones valor={cfg.tema} opciones={[["general", "General"], ["futbol", "Futbolero"]]} onCambiar={v => poner({ tema: v })}/>
-      <Rotulo style={{ marginTop: 14 }}>Tiempo de cada uno</Rotulo>
-      <Opciones valor={cfg.seg} opciones={[[120, "2'"], [150, "2½'"], [200, "3'20"]]} onCambiar={v => poner({ seg: v })}/>
-    </>;
-  }
+  if (sala.j === "rosco") return <ConfigRosco sala={sala} cfg={cfg} poner={poner} color={color}/>;
+  if (sala.j === "quien") return <ConfigQuien sala={sala} cfg={cfg} poner={poner} color={color}/>;
   return <>
     <Rotulo>Penitencia</Rotulo>
     <Opciones valor={cfg.tragos ? 1 : 0} opciones={[[1, "El más votado toma"], [0, "Sin tragos"]]} onCambiar={v => poner({ tragos: !!v })}/>
@@ -261,18 +238,10 @@ function inicioDe(sala: Sala, cfg: any): Record<string, any> {
     const { eq, cola } = armarEquipos(ids);
     return { est: "juego", cfg, v: {}, ron: { eq, cola, k: 0, fase: "espera", pts: { A: 0, B: 0 }, ok: [], pas: [], pal: "", fin: 0, usadas: [] } };
   }
-  if (sala.j === "rosco") {
-    const conc: string[] = (cfg.conc || []).filter((p: string) => sala.jug[p]).slice(0, 2);
-    const roscos = barajar(ROSCOS[cfg.tema === "futbol" ? "futbol" : "general"].map((_, i) => i)).slice(0, conc.length);
-    return { est: "juego", cfg, v: {}, ron: { tema: cfg.tema, conc, r: roscos, est: conc.map(() => "-".repeat(25)), pos: conc.map(() => 0),
-      rest: conc.map(() => (cfg.seg || 150) * 1000), turno: 0, desde: 0, fase: "juego" } };
-  }
+  if (sala.j === "rosco") return inicioRosco(sala, cfg);
+  if (sala.j === "quien") return inicioQuien(sala, cfg);
   return { est: "juego", cfg, v: {}, ron: { orden: barajar(PROBABLE.map((_, i) => i)), k: 0, fase: "votar" } };
 }
-
-/** Barra de abajo del anfitrión: volver a la sala de espera. */
-const VolverSala = ({ sala, host }: { sala: Sala; host: boolean }) => host
-  ? <Boton color="rgba(255,255,255,.14)" style={{ width: "100%", marginTop: 10 }} onClick={() => cambiar(sala.id, { est: "lobby", ron: {}, v: {} })}>Volver a la sala de espera</Boton> : null;
 
 // ── EL IMPOSTOR ───────────────────────────────────────────────────
 function ImpostorSala({ sala, yo, host, meta, onSalir }: PropsJuego) {
@@ -419,7 +388,7 @@ function MimicaSala({ sala, yo, host, meta, onSalir }: PropsJuego) {
   useEffect(() => {
     if (r.fase !== "juega" || faltan > 0 || !r.fin) return;
     const quien = actorAca ? actor : anfitrion(sala);
-    const clave = `${r.k}`;
+    const clave = `${r.k}-${r.fin}`;
     if (quien !== yo || cerrado.current === clave) return;
     cerrado.current = clave; vibrar([60, 40, 60]);
     cambiar(sala.id, { "ron.fase": "res", [`ron.pts.${eqActor}`]: (r.pts?.[eqActor] || 0) + (r.ok || []).length });
@@ -517,93 +486,6 @@ function MimicaSala({ sala, yo, host, meta, onSalir }: PropsJuego) {
           {host && <Boton color="rgba(255,255,255,.14)" style={{ width: "100%", marginTop: 10 }} onClick={() => cambiar(sala.id, { "ron.fase": "final" })}>Terminar y ver quién ganó</Boton>}
         </div>)}
       {!actorAca && r.fase !== "res" && host && <Boton color="rgba(255,255,255,.14)" style={{ width: "100%", marginTop: 10 }} onClick={siguiente}>{nombreDe(sala, actor)} se fue: saltar turno</Boton>}
-    </Escenario>
-  );
-}
-
-// ── PASAPALABRA ───────────────────────────────────────────────────
-const COLOR_LETRA: Record<string, string> = { "-": "#2f6fb0", o: "#2f9a5c", x: "#d23b4f" };
-function Rosco({ est, pos, letras, tam, activo }: { est: string; pos: number; letras: string[]; tam: number; activo: boolean }) {
-  const R = tam / 2 - tam * .07, b = tam * .105;
-  return (
-    <div style={{ position: "relative", width: tam, height: tam, margin: "0 auto", maxWidth: "100%" }}>
-      {letras.map((l, i) => {
-        const a = (-90 + (i * 360) / letras.length) * Math.PI / 180, x = tam / 2 + R * Math.cos(a) - b / 2, y = tam / 2 + R * Math.sin(a) - b / 2;
-        const aca = activo && i === pos && est[i] === "-";
-        return <span key={l} style={{ position: "absolute", left: x, top: y, width: b, height: b, borderRadius: "50%", display: "grid", placeItems: "center", fontWeight: 700, fontSize: b * .5,
-          background: COLOR_LETRA[est[i]] || "#2f6fb0", color: "#fff", border: "2px solid rgba(255,255,255,.85)", transform: aca ? "scale(1.28)" : "none",
-          boxShadow: aca ? "0 0 0 4px #ffd166, 0 0 18px #ffd166" : "0 2px 6px rgba(0,0,0,.35)", transition: "transform .25s ease, background .3s ease", zIndex: aca ? 2 : 1 }}>{l}</span>;
-      })}
-    </div>);
-}
-function RoscoSala({ sala, yo, host, meta, onSalir }: PropsJuego) {
-  const r = sala.ron || VACIO, col = meta.color;
-  const banco = ROSCOS[r.tema === "futbol" ? "futbol" : "general"];
-  const conc: string[] = r.conc || [];
-  const t = r.turno || 0;
-  const rosco = banco[(r.r || [])[t]] || banco[0];
-  const letra = rosco[(r.pos || [])[t] || 0];
-  const letras = rosco.map(x => x.l);
-  const restante = (r.rest || [])[t] || 0;
-  const fin = r.desde ? r.desde + restante : 0;
-  const faltan = useFaltan(fin);
-  const seg = r.desde ? faltan : Math.ceil(restante / 1000);
-  const presentador = host;
-  const jugar = (acc: "ok" | "mal" | "pasa" | "tiempo") => { vibrar(acc === "ok" ? 25 : [10, 30, 10]); cambiar(sala.id, { ron: jugarRosco(r, acc, Date.now()) }); };
-  useEffect(() => { if (presentador && r.fase === "juego" && r.desde && faltan === 0) cambiar(sala.id, { ron: jugarRosco(r, "tiempo", Date.now()) }); }, [presentador, faltan, r, sala.id]);
-  useEffect(() => { if (r.fase === "fin") confeti(); }, [r.fase]);
-  const tablero = (
-    <div style={{ display: "grid", gridTemplateColumns: conc.length > 1 ? "1fr 1fr" : "1fr", gap: 8, marginBottom: 12 }}>
-      {conc.map((p, i) => { const pj = puntajeRosco((r.est || [])[i] || ""); const s = i === t && r.desde ? faltan : Math.ceil(((r.rest || [])[i] || 0) / 1000); return (
-        <div key={p} style={{ borderRadius: 16, padding: "8px 10px", background: i === t && r.fase === "juego" ? "rgba(255,209,102,.22)" : "rgba(255,255,255,.08)", border: i === t && r.fase === "juego" ? "2px solid #ffd166" : "1px solid rgba(255,255,255,.16)", display: "flex", alignItems: "center", gap: 8 }}>
-          <Avatar n={nombreDe(sala, p)} tam={30}/>
-          <div style={{ minWidth: 0, flex: 1 }}><div style={{ fontWeight: 700, fontSize: 13.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nombreDe(sala, p)}{p === yo ? " (tú)" : ""}</div>
-            <div style={{ fontSize: 12, opacity: .85, fontVariantNumeric: "tabular-nums" }}><span style={{ color: "#8be0a8" }}>✓ {pj.ok}</span> · <span style={{ color: "#ff9aa8" }}>✗ {pj.mal}</span> · {Math.floor(s / 60)}:{String(s % 60).padStart(2, "0")}</div></div>
-        </div>); })}
-    </div>);
-
-  if (r.fase === "fin") {
-    const tabla = conc.map((p, i) => ({ p, ...puntajeRosco((r.est || [])[i] || "") })).sort((a, b) => b.ok - a.ok || a.mal - b.mal);
-    return (
-      <Escenario color={col} oscuro={meta.oscuro}>
-        <BarraJuego titulo="Pasapalabra" onVolver={onSalir}/>
-        <div className="j-entrar" style={{ textAlign: "center", padding: "6px 0 16px" }}>
-          <IconoJuego n="copa" tam={54}/>
-          <div style={{ fontFamily: "var(--titulo)", fontSize: 38, fontWeight: 600 }}>{tabla.length > 1 && tabla[0].ok === tabla[1].ok && tabla[0].mal === tabla[1].mal ? "¡Empate!" : `¡Ganó ${nombreDe(sala, tabla[0].p)}!`}</div>
-          <div style={{ fontSize: 14, opacity: .85 }}>{tabla[0].ok} aciertos{tabla[0].ok === 25 ? " · ¡rosco completo!" : ""}</div>
-        </div>
-        {tablero}
-        {host && <><Boton color="#ffffff" claro style={{ width: "100%", color: col }} onClick={() => cambiar(sala.id, inicioDe(sala, sala.cfg))}>Otro rosco</Boton><VolverSala sala={sala} host={host}/></>}
-      </Escenario>);
-  }
-
-  return (
-    <Escenario color={col} oscuro={meta.oscuro}>
-      <BarraJuego titulo="Pasapalabra" onVolver={onSalir} derecha={<span style={{ fontSize: 12, background: "rgba(0,0,0,.22)", borderRadius: 20, padding: "5px 10px" }}>{presentador ? "Presentas tú" : sala.id}</span>}/>
-      {tablero}
-      <div style={{ position: "relative" }}>
-        <Rosco est={(r.est || [])[t] || ""} pos={(r.pos || [])[t] || 0} letras={letras} tam={Math.min(340, typeof window !== "undefined" ? window.innerWidth - 56 : 320)} activo/>
-        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", pointerEvents: "none" }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "var(--titulo)", fontSize: 54, fontWeight: 700, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{seg}</div>
-            <div style={{ fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", opacity: .75 }}>{r.desde ? "segundos" : "en pausa"}</div>
-          </div>
-        </div>
-      </div>
-      <div key={`${t}-${letra.l}`} className="j-entrar" style={{ background: "#fffdfb", color: "#1d2a44", borderRadius: 22, padding: "16px 18px", marginTop: 14 }}>
-        <div style={{ fontSize: 11.5, letterSpacing: ".18em", textTransform: "uppercase", color: col, fontWeight: 700 }}>{letra.c ? "Contiene la" : "Empieza por"} {letra.l} · {nombreDe(sala, conc[t])}</div>
-        <div style={{ fontSize: 19, lineHeight: 1.4, marginTop: 6, fontWeight: 500 }}>{letra.d}</div>
-        {presentador && <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed #d8dde8", fontSize: 14 }}>Respuesta: <b style={{ fontSize: 18 }}>{letra.r}</b></div>}
-      </div>
-      {presentador ? (r.desde
-        ? <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 12 }}>
-            <Boton color="#2f9a5c" onClick={() => jugar("ok")}><IconoJuego n="check" tam={18} grosor={2.4}/>Bien</Boton>
-            <Boton color="#d23b4f" onClick={() => jugar("mal")}><IconoJuego n="equis" tam={18} grosor={2.4}/>Mal</Boton>
-            <Boton color="#ffffff" claro style={{ color: col }} onClick={() => jugar("pasa")}>Pasapalabra</Boton>
-          </div>
-        : <Boton color="#ffd166" style={{ width: "100%", marginTop: 12, color: "#2a2000", padding: 17 }} onClick={() => cambiar(sala.id, { "ron.desde": Date.now() })}>Partir el reloj de {nombreDe(sala, conc[t])}</Boton>)
-        : <div style={{ textAlign: "center", fontSize: 13, opacity: .8, marginTop: 12 }}>{conc[t] === yo ? (r.desde ? "¡Responde en voz alta!" : "Prepárate: el presentador va a partir tu reloj.") : `Juega ${nombreDe(sala, conc[t])}.`}</div>}
-      {host && <Boton color="rgba(255,255,255,.14)" style={{ width: "100%", marginTop: 10 }} onClick={() => cambiar(sala.id, { "ron.fase": "fin", "ron.desde": 0 })}>Terminar el rosco</Boton>}
     </Escenario>
   );
 }

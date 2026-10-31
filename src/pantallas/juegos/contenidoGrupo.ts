@@ -76,7 +76,12 @@ export const MIMICA_TEMAS: Record<string, string[]> = {
     "Superman", "La casa de papel", "El Chavo del 8", "Mamma Mia", "Buscando a Nemo", "King Kong", "El exorcista"],
   "Cosas de Chile": ["Bailar cueca", "Tomar mote con huesillo", "Jugar rayuela", "Encumbrar un volantín", "Hacer un asado",
     "Ir a la fonda", "Tomar once", "Esperar la micro", "Hacer la fila en el banco", "Temblor de 6 grados", "Comer un completo",
-    "Pedir una piscola", "Ir a la playa en enero", "Pelear en el Transantiago", "Taco en la Costanera", "Hacer un brindis el 18"],
+    "Pedir una piscola", "Ir a la playa en enero", "Pelear en el Transantiago", "Taco en la Costanera", "Hacer un brindis el 18",
+    "Comprar en la feria", "Pedir la cuenta en una picada", "Bañarse en el mar helado", "Andar en el metro en hora punta", "Comer mote con huesillo",
+    "Subir el cerro San Cristóbal", "Hacer cola para la Teletón", "Ver el Festival de Viña", "Elevar un volantín y que te lo corten", "Celebrar un gol de la Roja"],
+  "Acciones": ["Cambiar una rueda", "Hacer la cama", "Pintar una pared", "Atrapar una mosca", "Bañar a un perro", "Lavarse los dientes", "Pelar una cebolla y llorar",
+    "Pescar un pez grande", "Escalar una montaña", "Patinar en hielo", "Andar en monociclo", "Sacar la basura", "Buscar las llaves", "Hacer malabares",
+    "Inflar un globo que revienta", "Tocar la batería", "Dirigir una orquesta", "Remar en un bote", "Esconderse de la suegra", "Despertar con la alarma"],
 };
 
 // ── PASAPALABRA: roscos de 25 letras. `c` = «contiene» (si no, «empieza por»). ──
@@ -185,4 +190,16 @@ export const PROBABLE = [
   "…que se haga amigo del garzón", "…que llegue a la fiesta de mañana sin dormir", "…que se equivoque de mesa",
   "…que baile mejor que los novios", "…que se quede pegado en el celular en la fiesta", "…que se ponga a cantar rancheras",
   "…que arme una conga", "…que pida el último Uber", "…que se coma la última empanada", "…que termine dando consejos de amor",
+  "…que llore viendo una película de Disney", "…que se olvide de su propio cumpleaños", "…que gane la lotería y no le cuente a nadie",
+  "…que se pierda en un mall", "…que adopte un perro callejero esta semana", "…que se vaya a vivir a otro país", "…que escriba un libro",
+  "…que se ría de su propio chiste antes de terminarlo", "…que llegue disfrazado a una fiesta que no era de disfraces", "…que hable dormido",
+  "…que se haga un tatuaje del que se arrepienta", "…que conteste el teléfono en el cine", "…que se quede encerrado fuera de su casa",
+  "…que confunda a los novios con otra pareja", "…que cante «Gracias a la vida» a todo pulmón", "…que se case con alguien que conoció en una boda",
+  "…que bote el celular al inodoro", "…que se duerma en una reunión de trabajo", "…que pida comida a las 4 de la mañana",
+  "…que se le olvide dónde estacionó", "…que tenga una cuenta secreta en TikTok", "…que haga un asado aunque llueva",
+  "…que se coma un completo de un solo bocado", "…que lleve tupper a la boda", "…que haga el ridículo en la hora loca",
+  "…que se ponga a llorar con el ramo", "…que le dé un consejo matrimonial a los novios sin estar casado", "…que se sepa todas las canciones del DJ",
+  "…que mande el primer mensaje después de una pelea", "…que nunca devuelva lo que le prestan", "…que sea el primero en bailar",
+  "…que termine con la corbata de otro", "…que pierda la apuesta de esta noche", "…que se ofrezca a pagar la cuenta y no tenga plata",
+  "…que tenga un plan B para todo", "…que se emocione con el discurso de los padrinos",
 ];
