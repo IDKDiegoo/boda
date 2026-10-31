@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BarraJuego, Boton, Escenario, IconoJuego, Opciones, confeti, vibrar } from "./comun";
 import { BANCO, LETRAS_ROSCO, TEMAS_ROSCO, TemaRosco, anotarHistorial, armarRosco, cuatroDe, historial, palabrasPuzzle, pistaDe } from "./contenidoPasapalabra";
-import { azarDe, barajar, desordenar, estadoAhorcado, jugarRosco, pausarRosco, puntajeRosco, seguirRosco } from "./logica";
+import { azarDe, barajar, desordenar, estadoAhorcado, jugarRosco, pausarRosco, puntajeRosco, seguirRosco, siguientePendiente } from "./logica";
 import { Sala, anfitrion, cambiar, jugadores, useFaltan } from "./sala";
 import { Avatar, Panel, Pildora, PropsJuego, Rotulo, VACIO, VolverSala, nombreDe } from "./uiGrupo";
 
@@ -60,8 +60,17 @@ export function inicioRosco(sala: Sala, cfg: any): Record<string, any> {
   const bonus = Object.fromEntries(conc.map((_, i) => [String(i), 0]));
   const rosco = { tema, nivel, base: cfg.base || 85, conc, sel, est: conc.map(() => "-".repeat(25)), pos: conc.map(() => 0), turno: 0, desde: 0, bonus };
   return { est: "juego", cfg, v: {}, ron: pruebas.length
-    ? { ...rosco, fase: "pruebas", rest: conc.map(() => 0), pr: { lista: pruebas, k: 0, t: 0, est: "espera" } }
+    ? { ...rosco, fase: "pruebas", rest: conc.map(() => 0), pr: { lista: pruebas, k: 0, t: 0, est: "espera", items: itemsPara(pruebas[0], tema, nivel, `${sala.id}-0-0-${Date.now()}`), i: 0 } }
     : { ...rosco, fase: "juego", rest: conc.map(() => (cfg.base || 85) * 1000) } };
+}
+
+/** Las preguntas o palabras de un turno de prueba. Se eligen apenas empieza el turno (antes de que el
+ *  concursante apriete «Partir»), así el presentador ya las tiene a la vista para leerlas. */
+function itemsPara(id: string, tema: Tema, nivel: Nivel, semilla: string): any[] {
+  const az = azarDe(semilla);
+  return id === "cuatro"
+    ? barajar(cuatroDe(tema).map((q, i) => ({ q, i })).filter(({ q }) => Math.abs(q[5] - nivel) <= 1).map(x => x.i), az).slice(0, 30)
+    : barajar(palabrasPuzzle(tema, nivel), az).slice(0, 25);
 }
 
 // ── La sala ───────────────────────────────────────────────────────
@@ -100,16 +109,14 @@ function Pruebas({ sala, yo, host, meta, onSalir }: PropsJuego) {
   }, [pr.est, faltan, pr.fin, pr.k, pr.t, soyYo, host, estaAca, sala.id]);
 
   const partir = () => {
-    const az = azarDe(`${sala.id}-${pr.k}-${pr.t}-${Date.now()}`);
-    const items = id === "cuatro"
-      ? barajar(cuatroDe(tema).map((q, i) => ({ q, i })).filter(({ q }) => Math.abs(q[5] - nivel) <= 1).map(x => x.i), az).slice(0, 30)
-      : barajar(palabrasPuzzle(tema, nivel), az).slice(0, 25);
+    const items = (pr.items || []).length ? pr.items : itemsPara(id, tema, nivel, `${sala.id}-${pr.k}-${pr.t}-${Date.now()}`);
     vibrar(30);
     cambiar(sala.id, { "ron.pr.est": "juega", "ron.pr.fin": Date.now() + P.dur * 1000, "ron.pr.items": items, "ron.pr.i": 0, "ron.pr.ok": 0, "ron.pr.us": "", "ron.pr.ult": null });
   };
   const avanzar = () => {
-    const sig = pr.t + 1 < conc.length ? { "ron.pr.t": pr.t + 1, "ron.pr.est": "espera" }
-      : pr.k + 1 < (pr.lista || []).length ? { "ron.pr.k": pr.k + 1, "ron.pr.t": 0, "ron.pr.est": "espera" }
+    const semilla = `${sala.id}-${Date.now()}`;
+    const sig = pr.t + 1 < conc.length ? { "ron.pr.t": pr.t + 1, "ron.pr.est": "espera", "ron.pr.items": itemsPara(id, tema, nivel, semilla), "ron.pr.i": 0, "ron.pr.ult": null }
+      : pr.k + 1 < (pr.lista || []).length ? { "ron.pr.k": pr.k + 1, "ron.pr.t": 0, "ron.pr.est": "espera", "ron.pr.items": itemsPara(pr.lista[pr.k + 1], tema, nivel, semilla), "ron.pr.i": 0, "ron.pr.ult": null }
       : { "ron.fase": "juego", "ron.rest": conc.map((_, i) => ((r.base || 85) + (r.bonus?.[i] || 0)) * 1000), "ron.desde": 0, "ron.turno": 0 };
     cambiar(sala.id, sig);
   };
@@ -135,6 +142,7 @@ function Pruebas({ sala, yo, host, meta, onSalir }: PropsJuego) {
       <div style={{ fontSize: 12.5, opacity: .75, marginTop: 6 }}>Tienes {P.dur} segundos.</div>
       {soyYo ? <Boton color="#ffffff" claro style={{ width: "100%", marginTop: 16, color: col, padding: 17 }} onClick={partir}>¡Partir!</Boton>
         : <div style={{ marginTop: 14, fontWeight: 600 }}>Esperando que {nombreDe(sala, quien)} parta…</div>}
+      {host && !soyYo && <Adelanto id={id} tema={tema} items={pr.items} desde={0} titulo="Lo primero que le va a salir (solo lo ves tú)"/>}
       {host && !soyYo && !estaAca && <Boton color="rgba(255,255,255,.14)" style={{ width: "100%", marginTop: 10 }} onClick={avanzar}>{nombreDe(sala, quien)} se fue: saltar</Boton>}
     </Panel>);
   else if (pr.est === "listo") cuerpo = (
@@ -151,12 +159,26 @@ function Pruebas({ sala, yo, host, meta, onSalir }: PropsJuego) {
   return (
     <Escenario color={col} oscuro={meta.oscuro}>
       {cabecera}{cuerpo}
+      {host && !soyYo && pr.est === "juega" && <Adelanto id={id} tema={tema} items={pr.items} desde={(pr.i || 0) + 1} titulo="Lo que viene (solo lo ves tú)"/>}
       {host && pr.est !== "listo" && <Boton color="rgba(255,255,255,.12)" style={{ width: "100%", marginTop: 12 }} onClick={() => cambiar(sala.id, { "ron.pr.est": "listo" })}>Terminar este turno</Boton>}
       {host && <Boton color="rgba(255,255,255,.12)" style={{ width: "100%", marginTop: 8 }} onClick={() => cambiar(sala.id, { "ron.fase": "juego", "ron.rest": conc.map((_, i) => ((r.base || 85) + (r.bonus?.[i] || 0)) * 1000), "ron.desde": 0, "ron.turno": 0 })}>Saltar las pruebas e ir al rosco</Boton>}
     </Escenario>
   );
 }
 type PropsPrueba = { sala: Sala; pr: any; tema: Tema; soyYo: boolean; host: boolean };
+/** Para el presentador: las próximas preguntas o palabras, con su respuesta, para leerlas antes. */
+function Adelanto({ id, tema, items, desde, titulo }: { id: string; tema: Tema; items?: any[]; desde: number; titulo: string }) {
+  const lista = (items || []).slice(desde, desde + 2);
+  if (!lista.length) return null;
+  return (
+    <div style={{ marginTop: 12, background: "rgba(0,0,0,.22)", border: "1px dashed rgba(255,255,255,.3)", borderRadius: 16, padding: "10px 12px" }}>
+      <Rotulo style={{ marginBottom: 6 }}>{titulo}</Rotulo>
+      {lista.map((x, k) => { const q = id === "cuatro" ? cuatroDe(tema)[x] : null; return (
+        <div key={k} style={{ fontSize: 13.5, lineHeight: 1.4, padding: "4px 0", borderTop: k ? "1px solid rgba(255,255,255,.1)" : "none" }}>
+          {q ? <>{q[0]} <b style={{ color: "#8be0a8" }}>→ {q[1]}</b></> : <>{pistaDe(tema, x)} <b style={{ color: "#8be0a8" }}>→ {x}</b></>}
+        </div>); })}
+    </div>);
+}
 const Destello = ({ ult, i }: { ult: any; i: number }) => ult && ult.i === i - 1
   ? <div key={`u${i}`} style={{ textAlign: "center", fontSize: 13, fontWeight: 700, color: ult.bien ? "#8be0a8" : "#ff9aa8", marginBottom: 8, animation: "j-pop .35s ease" }}>{ult.bien ? "¡Correcto!" : "No era…"}</div> : null;
 
@@ -320,11 +342,17 @@ function ElRosco({ sala, yo, host, meta, onSalir }: PropsJuego) {
           </div>
         </div>
       </div>
-      <div key={`${t}-${letra.l}`} className="j-entrar" style={{ background: "#fffdfb", color: "#1d2a44", borderRadius: 22, padding: "16px 18px", marginTop: 14 }}>
+      {/* La pregunta solo se destapa con el reloj corriendo: el presentador la lee y la ve antes que nadie. */}
+      <div key={`${t}-${letra.l}-${!!r.desde}`} className="j-entrar" style={{ background: "#fffdfb", color: "#1d2a44", borderRadius: 22, padding: "16px 18px", marginTop: 14 }}>
         <div style={{ fontSize: 11.5, letterSpacing: ".18em", textTransform: "uppercase", color: col, fontWeight: 700 }}>{letra.c ? "Contiene la" : "Empieza por"} {letra.l} · {nombreDe(sala, conc[t])}</div>
-        <div style={{ fontSize: 19, lineHeight: 1.4, marginTop: 6, fontWeight: 500 }}>{letra.d}</div>
-        {host && <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed #d8dde8", fontSize: 14 }}>Respuesta: <b style={{ fontSize: 18 }}>{letra.r}</b></div>}
+        {host || r.desde
+          ? <div style={{ fontSize: 19, lineHeight: 1.4, marginTop: 6, fontWeight: 500 }}>{letra.d}</div>
+          : <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8, color: "#64748b" }}><IconoJuego n="ojo" tam={20}/><span style={{ fontSize: 15 }}>{conc[t] === yo ? "Tu pregunta está tapada. Dile al presentador cuando estés listo." : `Tapada hasta que ${nombreDe(sala, conc[t])} esté listo.`}</span></div>}
+        {host && <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed #d8dde8", fontSize: 14 }}>Respuesta: <b style={{ fontSize: 18 }}>{letra.r}</b>{!r.desde && <span style={{ color: "#94a3b8" }}> · todavía nadie la ve</span>}</div>}
       </div>
+      {host && (() => { const sig = siguientePendiente((r.est || [])[t] || "", (r.pos || [])[t] || 0); const x = sig >= 0 && sig !== ((r.pos || [])[t] || 0) ? banco[((r.sel || {})[t] || [])[sig]] : null; return x
+        ? <div style={{ marginTop: 8, background: "rgba(0,0,0,.22)", border: "1px dashed rgba(255,255,255,.3)", borderRadius: 14, padding: "8px 12px", fontSize: 13, lineHeight: 1.4 }}>
+            <span style={{ opacity: .7 }}>Después ({x.c ? "contiene" : "empieza por"} {x.l}):</span> {x.d} <b style={{ color: "#8be0a8" }}>→ {x.r}</b></div> : null; })()}
       {host ? (r.desde
         ? <>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 12 }}>
@@ -334,9 +362,12 @@ function ElRosco({ sala, yo, host, meta, onSalir }: PropsJuego) {
             </div>
             <Boton color="rgba(255,255,255,.12)" style={{ width: "100%", marginTop: 8 }} onClick={() => cambiar(sala.id, { ron: pausarRosco(r, Date.now()) })}><IconoJuego n="reloj" tam={16}/>Pausa</Boton>
           </>
-        : <Boton color="#ffd166" style={{ width: "100%", marginTop: 12, color: "#2a2000", padding: 17 }} onClick={() => cambiar(sala.id, { ron: seguirRosco(r, Date.now()) })}>
-            {empezado ? `Seguir: juega ${nombreDe(sala, conc[t])}` : `Partir el rosco de ${nombreDe(sala, conc[t])}`}</Boton>)
-        : <div style={{ textAlign: "center", fontSize: 13, opacity: .8, marginTop: 12 }}>{conc[t] === yo ? (r.desde ? "¡Responde en voz alta!" : "Prepárate: el presentador va a partir tu reloj.") : `Juega ${nombreDe(sala, conc[t])}.`}</div>}
+        : <>
+            <div style={{ fontSize: 12.5, opacity: .85, marginTop: 12, textAlign: "center" }}>Todo en pausa. Cuando {nombreDe(sala, conc[t])} diga que está listo, aprieta play: se destapa su pregunta y parte su reloj.</div>
+            <Boton color="#ffd166" style={{ width: "100%", marginTop: 8, color: "#2a2000", padding: 18, fontSize: 16 }} onClick={() => cambiar(sala.id, { ron: seguirRosco(r, Date.now()) })}>
+              ▶ {empezado ? `${nombreDe(sala, conc[t])} está listo` : `Partir el rosco de ${nombreDe(sala, conc[t])}`}</Boton>
+          </>)
+        : <div style={{ textAlign: "center", fontSize: 13, opacity: .8, marginTop: 12 }}>{conc[t] === yo ? (r.desde ? "¡Responde en voz alta!" : "Tu reloj está detenido. Cuando estés listo, díselo al presentador.") : r.desde ? `Juega ${nombreDe(sala, conc[t])}.` : `En pausa: espera a ${nombreDe(sala, conc[t])}.`}</div>}
       {host && <Boton color="rgba(255,255,255,.12)" style={{ width: "100%", marginTop: 10 }} onClick={() => cambiar(sala.id, { "ron.fase": "fin", "ron.desde": 0 })}>Terminar el rosco</Boton>}
     </Escenario>
   );
