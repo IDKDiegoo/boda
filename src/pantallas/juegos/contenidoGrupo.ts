@@ -203,3 +203,75 @@ export const PROBABLE = [
   "…que termine con la corbata de otro", "…que pierda la apuesta de esta noche", "…que se ofrezca a pagar la cuenta y no tenga plata",
   "…que tenga un plan B para todo", "…que se emocione con el discurso de los padrinos",
 ];
+
+// ── PISTA PARA EL IMPOSTOR (31-oct-2026): una palabra que lo orienta sin regalarle la respuesta ──
+// (si una palabra no tiene, se le muestra la temática)
+const P_ = (texto: string): Record<string, string> => Object.fromEntries(texto.trim().split("\n").flatMap(l => l.split(";")).map(x => x.trim()).filter(Boolean).map(x => x.split(":").map(y => y.trim()) as [string, string]));
+export const PISTAS_IMPOSTOR: Record<string, string> = P_(`
+Torta: Pisos; Ramo: Lanzar; Anillos: Dedo; Vals: Baile; Velo: Cabeza; Brindis: Copas; Luna de miel: Viaje; Padrinos: Testigos; Altar: Iglesia; Fotógrafo: Recuerdos
+Cotillón: Gorritos; Liga: Pierna; Smoking: Elegante; Despedida de soltero: Amigos; Invitación: Sobre; Mesa de dulces: Postres; Pista de baile: Luces; Libreta de familia: Documento
+Registro Civil: Firma; Arroz: Grano; Champaña: Burbujas; Discurso: Palabras; Primer beso: Labios; Corbata: Cuello; Tacos: Pies
+Completo: Palta; Empanada de pino: Horno; Sopaipilla: Zapallo; Pastel de choclo: Greda; Cazuela: Caldo; Humitas: Hoja; Charquicán: Guiso; Mote con huesillo: Verano; Churrasco: Pan
+Chorrillana: Papas fritas; Anticucho: Palito; Porotos con riendas: Tallarines; Marraqueta: Panadería; Manjar: Dulce; Terremoto: Helado; Piscola: Vaso; Choripán: Parrilla; Curanto: Chiloé
+Leche asada: Postre; Calzones rotos: Azúcar flor
+San Pedro de Atacama: Desierto; Isla de Pascua: Polinesia; Valparaíso: Cerros; Torres del Paine: Patagonia; Viña del Mar: Festival; Pucón: Volcán; Chiloé: Palafitos; La Serena: Faro
+Cajón del Maipo: Río; Costanera Center: Torre; Cerro San Cristóbal: Funicular; Lampa: Norte de Santiago; Iquique: Zofri; Puerto Varas: Lago; Valle del Elqui: Estrellas; Mercado Central: Mariscos
+La Moneda: Presidente; Arica: Morro; Punta Arenas: Estrecho; Pichilemu: Olas
+Hervidor: Agua; Control remoto: Pilas; Almohada: Cama; Microondas: Calentar; Escoba: Barrer; Plancha: Ropa; Refrigerador: Frío; Ducha: Baño; Lavaloza: Cocina; Tostador: Pan; Cortina: Ventana
+Velador: Noche; Alfombra: Piso; Espejo: Reflejo; Lavadora: Centrifugar; Sillón: Living; Ampolleta: Luz; Basurero: Bolsa
+Pingüino: Hielo; Cóndor: Escudo; Huemul: Ciervo; Llama: Altiplano; Perro: Ladrido; Gato: Bigotes; Jirafa: Cuello; Delfín: Mar; Elefante: Trompa; Tiburón: Aleta; Loro: Habla; Pudú: Chiquitito
+Caballo: Galope; Tortuga: Caparazón; Mono: Plátano; Pulpo: Tentáculos; Murciélago: Cueva; Abeja: Miel
+Doctor: Receta; Profesor: Pizarra; Bombero: Sirena; Carabinero: Verde; Chef: Gorro; Piloto: Cabina; Dentista: Muelas; Camionero: Carretera; Peluquero: Tijeras; Abogado: Juicio; Garzón: Bandeja
+Mecánico: Taller; Veterinario: Mascotas; Electricista: Cables; Futbolista: Cancha; Cantante: Micrófono; Panadero: Harina; Jardinero: Pasto
+Fútbol: Pelota; Tenis: Raqueta; Natación: Piscina; Rayuela: Tejo; Ajedrez: Tablero; Básquetbol: Canasta; Surf: Tabla; Boxeo: Guantes; Ciclismo: Pedales; Cueca: Pañuelo; Trompo: Cordel
+Volantín: Hilo; Emboque: Palito y bola; Esquí: Nieve; Pichanga: Amigos; Póker: Cartas; Dominó: Fichas; Karaoke: Cantar
+Titanic: Barco; Harry Potter: Magia; El Rey León: Sabana; Toy Story: Juguetes; Shrek: Ogro; Frozen: Nieve; Star Wars: Galaxia; Los Simpson: Amarillo; La casa de papel: Atraco
+Stranger Things: Monstruo; El juego del calamar: Corea; Avengers: Superhéroes; Spider-Man: Telaraña; Jurassic Park: Dinosaurios; Mi pobre angelito: Navidad; Rápido y furioso: Autos
+Piratas del Caribe: Tesoro; Breaking Bad: Químico; Friends: Café; El Chavo del 8: Barril; 31 minutos: Títeres; Coco: México; Barbie: Rosado; Batman: Murciélago
+Pikachu: Pokémon; Mario Bros: Hongos; Bob Esponja: Fondo del mar; Homero Simpson: Donas; Mickey Mouse: Orejas; Superman: Capa; La Mujer Maravilla: Lazo; Dora la exploradora: Mochila
+Sherlock Holmes: Lupa; Drácula: Colmillos; El Viejo Pascuero: Regalos; El Chapulín Colorado: Antenas; Cenicienta: Zapato; Goku: Esferas; Darth Vader: Casco; Tarzán: Selva; Pinocho: Nariz
+Condorito: Pelotillehue; Tulio Triviño: Noticias; Pac-Man: Fantasmas; Elsa: Reina; Yoda: Verde
+Chile: Cordillera; Argentina: Asado; Brasil: Samba; Perú: Ceviche; México: Tacos; Estados Unidos: Hamburguesa; Canadá: Arce; España: Paella; Francia: Torre; Italia: Pizza; Alemania: Cerveza
+Japón: Sushi; China: Muralla; India: Curry; Egipto: Pirámides; Australia: Canguro; Rusia: Frío; Grecia: Olimpo; Marruecos: Desierto; Cuba: Habano; Colombia: Café; Inglaterra: Té; Tailandia: Elefantes; Islandia: Volcanes
+Coca-Cola: Bebida; McDonald's: Papas fritas; Apple: Manzana; Nike: Zapatillas; Adidas: Tres rayas; Samsung: Celular; Netflix: Series; Google: Buscar; Lego: Bloques; IKEA: Muebles; Starbucks: Café
+Toyota: Autos; Ferrari: Rojo; Disney: Castillo; Zara: Ropa; Spotify: Música; Uber: Viaje; Mercado Libre: Envío; WhatsApp: Mensajes; Instagram: Fotos; Nintendo: Consola; PlayStation: Control
+Bad Bunny: Puerto Rico; Shakira: Caderas; Karol G: Colombia; Michael Jackson: Moonwalk; Queen: Rock; Los Prisioneros: San Miguel; Mon Laferte: Viña; Myriam Hernández: Baladas; Daddy Yankee: Gasolina
+Luis Miguel: Boleros; Taylor Swift: Estadios; The Beatles: Liverpool; Chayanne: Baile; Los Jaivas: Andes; Violeta Parra: Folclor; Marc Anthony: Salsa; Soda Stereo: Argentina; Juan Gabriel: Mexicano
+Madonna: Pop; Peso Pluma: Corridos; Ricky Martin: Menudo; Américo: Cumbia; La Sonora de Tommy Rey: Año Nuevo
+Quitasol: Sombra; Bloqueador: Piel; Toalla: Secar; Castillo de arena: Balde; Salvavidas: Rescate; Ola: Espuma; Gaviota: Ave; Chalas: Pies; Heladero: Carrito; Cooler: Hielo; Paleta: Madera
+Tabla de surf: Olas; Cangrejo: Pinzas; Medusa: Picadura; Traje de baño: Agua; Lentes de sol: Ojos; Pelota de playa: Inflable
+DJ: Música; Resaca: Mañana; Hielo: Frío; Previa: Antes; Bailar: Pista; Fonda: Septiembre; Selfie: Celular; Uber de vuelta: Madrugada; Copete: Trago; Cumbia: Baile; Reggaetón: Perreo
+Guardia: Puerta; After: Tarde; Shot: Pequeño; Choripán a las 5 AM: Hambre
+Paraguas: Lluvia; Mochila: Espalda; Llaves: Puerta; Billetera: Plata; Audífonos: Oídos; Cargador: Batería; Reloj: Hora; Tijeras: Cortar; Linterna: Oscuridad; Candado: Cerrar; Calculadora: Números
+Termo: Agua caliente; Encendedor: Fuego; Peineta: Pelo; Cepillo de dientes: Pasta; Corchetera: Papeles; Control de la tele: Sillón; Vela: Cumpleaños
+Astronauta: Espacio; Payaso: Circo; Mago: Conejo; Detective: Pistas; Influencer: Seguidores; Youtuber: Videos; Cirujano: Quirófano; Arquitecto: Planos; Pastelero: Tortas; Taxista: Taxímetro
+Árbitro: Silbato; Periodista: Noticias; Cartero: Cartas; Barista: Café; Piloto de Fórmula 1: Velocidad
+Real Madrid: Blanco; Barcelona: Cataluña; Manchester United: Diablos; Manchester City: Celeste; Liverpool: Anfield; Chelsea: Londres; Arsenal: Cañón; Bayern Múnich: Alemania; Borussia Dortmund: Amarillo
+Juventus: Turín; Inter de Milán: Nerazzurri; AC Milan: Rossoneri; PSG: París; Atlético de Madrid: Colchoneros; Boca Juniors: Bombonera; River Plate: Millonarios; Flamengo: Río de Janeiro; Palmeiras: Verde
+Santos: Pelé; Ajax: Ámsterdam; Benfica: Lisboa; Porto: Dragones; Napoli: Maradona; Tottenham: Gallo; Inter Miami: Rosado; Al Nassr: Arabia
+Colo-Colo: Cacique; Universidad de Chile: Azul; Universidad Católica: Cruzados; Cobreloa: Calama; Palestino: Tricolor; Unión Española: Santa Laura; Audax Italiano: Itálicos; Everton: Viña
+Santiago Wanderers: Puerto; O'Higgins: Rancagua; Huachipato: Acero; Coquimbo Unido: Piratas; Deportes Iquique: Dragones; Cobresal: Minería; Ñublense: Chillán; Deportes La Serena: Papayeros
+Rangers de Talca: Rojinegro; Deportes Temuco: Araucanía; Magallanes: Academia; Unión La Calera: Cementeros
+Messi: Rosario; Cristiano Ronaldo: Portugal; Neymar: Brasil; Mbappé: Francia; Haaland: Noruega; Vinícius Júnior: Baile; Lamine Yamal: Joven; Bellingham: Inglaterra; Modric: Croacia; Salah: Egipto
+Lewandowski: Polonia; Harry Kane: Tottenham; De Bruyne: Bélgica; Pelé: Rey; Maradona: Mano; Zidane: Cabezazo; Ronaldinho: Sonrisa; Ronaldo Nazário: Fenómeno; Beckenbauer: Káiser; Cruyff: Holanda
+Iniesta: Mundial 2010; Xavi: Pases; Buffon: Italia; Casillas: Portero; Thierry Henry: Arsenal; Kaká: Milan; Ibrahimović: Suecia; Luis Suárez: Uruguay; Benzema: Lyon
+Alexis Sánchez: Tocopilla; Arturo Vidal: Mohicano; Claudio Bravo: Guantes; Gary Medel: Pitbull; Charles Aránguiz: Príncipe; Eduardo Vargas: Turboman; Mauricio Isla: Lateral; Jean Beausejour: Zurdo
+Marcelo Díaz: Carepato; Iván Zamorano: Bam Bam; Marcelo Salas: Matador; Elías Figueroa: Defensa; Carlos Caszely: Metro cuadrado; Matías Fernández: Tiro libre; Humberto Suazo: Chupete
+Jorge Valdivia: Mago; Esteban Paredes: Goleador; Ben Brereton: Inglaterra; Erick Pulgar: Volante; Darío Osorio: Joven
+Mundial: Cada cuatro años; Copa América: Sudamérica; Champions League: Himno; Copa Libertadores: Gloria eterna; Copa Sudamericana: Segunda copa; Premier League: Inglaterra; LaLiga: España
+Serie A: Italia; Bundesliga: Alemania; Eurocopa: Europa; Mundial de Clubes: Campeones continentales; Copa del Rey: España; Copa Chile: Eliminación directa; Campeonato Nacional: Torneo; Juegos Olímpicos: Medalla; Supercopa: Campeones
+Recopa Sudamericana: Dos partidos; Clasificatorias: Eliminatorias; Ligue 1: Francia; Copa Confederaciones: Ensayo
+Maracaná: Río de Janeiro; Santiago Bernabéu: Madrid; Camp Nou: Barcelona; Old Trafford: Teatro de los sueños; Anfield: Liverpool; Wembley: Londres; La Bombonera: Boca; Monumental de River: Núñez
+Estadio Nacional: Ñuñoa; Monumental David Arellano: Macul; San Siro: Milán; Allianz Arena: Múnich; Estadio Azteca: México; Parque de los Príncipes: París; Metropolitano: Atlético
+San Carlos de Apoquindo: Las Condes; Estadio Centenario: Montevideo; Signal Iduna Park: Muralla amarilla
+Guardiola: Calvo; Mourinho: Special One; Ancelotti: Ceja; Klopp: Liverpool; Simeone: Cholo; Bielsa: Loco; Pellegrini: Ingeniero; Sampaoli: Copa América 2015; Alex Ferguson: Manchester
+Luis Enrique: Asturias; Scaloni: Argentina; Arteta: Arsenal; Xabi Alonso: Leverkusen; Arsène Wenger: Francés; Vicente del Bosque: Bigote; Ricardo Gareca: Perú; Tite: Brasil; Hansi Flick: Alemania
+Arquero: Manos; Lateral: Banda; Central: Defensa; Volante de contención: Recuperar; Enganche: Diez; Extremo: Punta; Centrodelantero: Nueve; Falso nueve: Engaño; Chilena: Acrobacia
+Rabona: Piernas cruzadas; Caño: Entre las piernas; Sombrerito: Por arriba; Bicicleta: Pedalear; Taquito: Talón; Tiro libre: Barrera; Penal: Once metros; Córner: Esquina; Offside: Línea
+Tarjeta roja: Expulsión; VAR: Pantalla; Gol olímpico: Directo; Autogol: Propio; Hat-trick: Tres; Pared: Rebote; Contragolpe: Rápido; Barrera: Muro; Saque de banda: Con las manos; Tiki-taka: Toque
+Balón de Oro: Premio; Brazalete de capitán: Brazo; Canilleras: Piernas; Chuteadores: Estoperoles; Silbato: Árbitro; Banderín: Esquina; Camarín: Vestirse; Banca: Suplentes; Hinchada: Cánticos
+Bombo: Tambor; Bengala: Humo; Camiseta: Número; Red del arco: Malla; Travesaño: Arriba; Palo: Poste; Pizarra táctica: Técnico; Álbum Panini: Láminas; Tribuna: Asientos
+Medio tiempo: Descanso; Alargue: Extra; Definición a penales: Suspenso; Fichaje: Contrato; Mercado de pases: Verano
+`);
+/** La ayuda que ve el impostor: una pista (o la temática, si la palabra no tiene pista). */
+export const pistaImpostor = (palabra: string, tema: string) => PISTAS_IMPOSTOR[palabra] || tema;

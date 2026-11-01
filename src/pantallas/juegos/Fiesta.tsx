@@ -3,7 +3,7 @@ import { useData } from "../../base/hooks";
 import { infoBoda } from "../../base/firebase";
 import { AnilloTiempo, BarraJuego, Boton, CartaGiro, Escenario, IconoJuego, Opciones, confeti, guardarLocal, leerLista, leerLocal, useReloj, vibrar } from "./comun";
 import { BINGO, CAZA_FOTOS, MIMICA } from "./contenido";
-import { temasDe } from "./contenidoGrupo";
+import { pistaImpostor, temasDe } from "./contenidoGrupo";
 import { barajar, carton, hayLinea, repartirImpostor, sacar } from "./logica";
 
 // Juegos para la fiesta (v2), con un solo teléfono que se va pasando (o el del animador).
@@ -16,7 +16,7 @@ const Avatar = ({ n, tam = 44, style }: { n: string; tam?: number; style?: React
 // ── EL IMPOSTOR ──────────────────────────────────────────────────
 type Jug = { nombre: string; palabra: string | null };
 export function Impostor({ onVolver }: { onVolver: () => void }) {
-  const [aj, setAj] = useState(() => leerLocal("imp", { nombres: "", categoria: "Todos", impostores: 1, tiempo: 90, modo: "clasico", ayuda: "tema" }));
+  const [aj, setAj] = useState(() => leerLocal("imp", { nombres: "", categoria: "Todos", impostores: 1, tiempo: 90, modo: "clasico", ayuda: "pista" }));
   const [nuevo, setNuevo] = useState("");
   const [reparto, setReparto] = useState<Jug[] | null>(null);
   const [fase, setFase] = useState<"reparto" | "discusion" | "votar" | "final">("reparto");
@@ -72,7 +72,7 @@ export function Impostor({ onVolver }: { onVolver: () => void }) {
             background: on ? "#fff" : "rgba(255,255,255,.08)", color: on ? col : "#fff", border: "1px solid rgba(255,255,255,.22)" }}>{k === "Todos" ? "Mezclar todo" : k}</button>); })}
       </div>
       <div style={{ fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", opacity: .7, margin: "16px 0 8px" }}>Ayuda para el impostor</div>
-      <Opciones valor={aj.ayuda || "tema"} opciones={[["nada", "Nada"], ["tema", "La temática"], ["inicial", "Temática + 1ª letra"]]} onCambiar={v => cambiar({ ayuda: v })}/>
+      <Opciones valor={aj.ayuda === "nada" || aj.ayuda === "tema" ? aj.ayuda : "pista"} opciones={[["nada", "Nada"], ["pista", "Una pista"], ["tema", "La temática"]]} onCambiar={v => cambiar({ ayuda: v })}/>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 18 }}>
         <div><div style={{ fontSize: 12, opacity: .75, marginBottom: 6 }}>Impostores</div><Opciones valor={aj.impostores} opciones={[[1, "1"], [2, "2"], [3, "3"]]} onCambiar={v => cambiar({ impostores: v })}/></div>
         <div><div style={{ fontSize: 12, opacity: .75, marginBottom: 6 }}>Tiempo para discutir</div><Opciones valor={aj.tiempo} opciones={[[60, "1'"], [90, "1½'"], [120, "2'"]]} onCambiar={v => cambiar({ tiempo: v })}/></div>
@@ -101,8 +101,8 @@ export function Impostor({ onVolver }: { onVolver: () => void }) {
             background: mirando ? (j.palabra ? "#fffdfb" : "linear-gradient(150deg,#e0455f,#8d1a3c)") : "rgba(255,255,255,.08)", color: mirando && j.palabra ? "#3b2a21" : "#fff",
             border: mirando ? "none" : "2px dashed rgba(255,255,255,.35)", transition: "background .25s ease, transform .2s", transform: mirando ? "scale(1.02)" : "none" }}>
           {mirando ? (j.palabra
-            ? <div><div style={{ fontSize: 11, letterSpacing: ".24em", textTransform: "uppercase", color: col }}>Tu palabra{(aj.ayuda || "tema") !== "nada" && tema ? ` · ${tema}` : ""}</div><div style={{ fontFamily: "var(--titulo)", fontSize: 40, fontWeight: 600, marginTop: 6 }}>{j.palabra}</div></div>
-            : <div><IconoJuego n="mascara" tam={52}/><div style={{ fontFamily: "var(--titulo)", fontSize: 34, fontWeight: 600, marginTop: 6 }}>Eres el impostor</div><div style={{ fontSize: 13, opacity: .85, marginTop: 4, lineHeight: 1.45 }}>{(aj.ayuda || "tema") === "nada" ? "Escucha las pistas y haz como que sabes" : <>Temática: <b>{tema}</b>{aj.ayuda === "inicial" && palabra ? <> · empieza con <b>«{palabra[0]}»</b></> : null}. Escucha y disimula.</>}</div></div>)
+            ? <div><div style={{ fontSize: 11, letterSpacing: ".24em", textTransform: "uppercase", color: col }}>Tu palabra{aj.ayuda === "tema" && tema ? ` · ${tema}` : ""}</div><div style={{ fontFamily: "var(--titulo)", fontSize: 40, fontWeight: 600, marginTop: 6 }}>{j.palabra}</div></div>
+            : <div><IconoJuego n="mascara" tam={52}/><div style={{ fontFamily: "var(--titulo)", fontSize: 34, fontWeight: 600, marginTop: 6 }}>Eres el impostor</div><div style={{ fontSize: 13, opacity: .85, marginTop: 4, lineHeight: 1.45 }}>{aj.ayuda === "nada" ? "Escucha las pistas y haz como que sabes" : aj.ayuda === "tema" ? <>Temática: <b>{tema}</b>. Escucha y disimula.</> : <>Tu pista: <b style={{ fontSize: 17 }}>{pistaImpostor(palabra || "", tema)}</b>. Escucha y disimula.</>}</div></div>)
             : <div style={{ display: "grid", placeItems: "center", gap: 10 }}><IconoJuego n="ojo" tam={40}/><div style={{ fontSize: 15, fontWeight: 600 }}>Mantén presionado para ver</div><div style={{ fontSize: 12.5, opacity: .7 }}>Suelta antes de pasar el teléfono</div></div>}
         </div>
         <Boton color="#ffffff" claro disabled={!yaVio || mirando} style={{ width: "100%", marginTop: 16, color: col }} onClick={() => { setYaVio(false); if (i + 1 < reparto.length) setI(i + 1); else { setFase("discusion"); reloj.partir(aj.tiempo); } }}>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LEGADO, bodaActual } from "../../base/firebase";
 import { AnilloTiempo, BarraJuego, Boton, Escenario, IconoJuego, Opciones, confeti, vibrar } from "./comun";
-import { IMPOSTOR_CLASICO, IMPOSTOR_FUTBOL, MIMICA_TEMAS, PROBABLE } from "./contenidoGrupo";
+import { IMPOSTOR_CLASICO, IMPOSTOR_FUTBOL, MIMICA_TEMAS, PROBABLE, pistaImpostor } from "./contenidoGrupo";
 import { ConfigRosco, RoscoSala, inicioRosco } from "./Pasapalabra";
 import { ConfigQuien, QuienSala, inicioQuien } from "./QuienEsQuien";
 import { armarEquipos, barajar, contarVotos, elegirPalabra, repartirSala } from "./logica";
@@ -15,7 +15,7 @@ import { JuegoSala, Sala, anfitrion, cambiar, crearSala, jugadores, limpiarCodig
 
 export const JUEGOS_SALA: Record<JuegoSala, Meta> = {
   impostor: { t: "El impostor", color: "#6b55a0", oscuro: "#151024", icono: "mascara", min: 3, desc: "Todos tienen la palabra menos uno. ¿Quién miente?",
-    cfg: { modo: "clasico", cat: "Todos", imp: 1, tiempo: 90, infiltrado: false, ayuda: "tema" } },
+    cfg: { modo: "clasico", cat: "Todos", imp: 1, tiempo: 90, infiltrado: false, ayuda: "pista" } },
   mimica: { t: "Mímica por equipos", color: "#7d5ca8", oscuro: "#1d1430", icono: "teatro", min: 4, desc: "Dos equipos; el que actúa ve la palabra en su teléfono",
     cfg: { tiempo: 60, tema: "De la boda" } },
   rosco: { t: "Pasapalabra", color: "#2f6fb0", oscuro: "#0b1730", icono: "rosco", min: 2, desc: "Pruebas para ganar segundos y el rosco de la A a la Z, como en la tele",
@@ -25,6 +25,9 @@ export const JUEGOS_SALA: Record<JuegoSala, Meta> = {
   probable: { t: "¿Quién es más probable?", color: "#c0394f", oscuro: "#2e0d17", icono: "votar", min: 3, desc: "Cada uno vota en secreto. ¿Quién sale más votado?",
     cfg: { tragos: true } },
 };
+
+/** La ayuda del impostor («inicial», de antes, ahora es la pista). */
+const ayudaDe = (cfg: any): "nada" | "pista" | "tema" => cfg?.ayuda === "nada" || cfg?.ayuda === "tema" ? cfg.ayuda : "pista";
 
 // ── Crear una sala / entrar con código ─────────────────────────────
 export function NuevaSala({ juego, mesa, cfg, titulo, onLista, onVolver }: { juego: JuegoSala; mesa?: number | null; cfg?: any; titulo?: string; onLista: (codigo: string) => void; onVolver: () => void }) {
@@ -255,8 +258,8 @@ function ConfigJuego({ sala, cfg, poner, color }: { sala: Sala; cfg: any; poner:
         <div><Rotulo>Para discutir</Rotulo><Opciones valor={cfg.tiempo} opciones={[[60, "1'"], [90, "1½'"], [150, "2½'"]]} onCambiar={v => poner({ tiempo: v })}/></div>
       </div>
       <Rotulo style={{ marginTop: 14 }}>Ayuda para el impostor</Rotulo>
-      <Opciones valor={cfg.ayuda || "tema"} opciones={[["nada", "Nada"], ["tema", "La temática"], ["inicial", "Temática + 1ª letra"]]} onCambiar={v => poner({ ayuda: v })}/>
-      <div style={{ fontSize: 12, opacity: .75, marginTop: 8, lineHeight: 1.45 }}>{(cfg.ayuda || "tema") === "nada" ? "Nadie ve la temática: el impostor juega a ciegas." : (cfg.ayuda === "inicial" ? "El impostor ve la temática y con qué letra empieza la palabra." : "El impostor ve de qué temática es la palabra (sirve cuando se mezclan temas).")}</div>
+      <Opciones valor={ayudaDe(cfg)} opciones={[["nada", "Nada"], ["pista", "Una pista"], ["tema", "La temática"]]} onCambiar={v => poner({ ayuda: v })}/>
+      <div style={{ fontSize: 12, opacity: .75, marginTop: 8, lineHeight: 1.45 }}>{ayudaDe(cfg) === "nada" ? "El impostor juega a ciegas." : ayudaDe(cfg) === "pista" ? "El impostor recibe una pista que lo orienta sin regalarle la palabra (por ejemplo, «Torta» → «Pisos»)." : "El impostor ve de qué temática es la palabra (sirve cuando se mezclan temas)."}</div>
       <Rotulo style={{ marginTop: 14 }}>Variante</Rotulo>
       <Opciones valor={cfg.infiltrado ? 1 : 0} opciones={[[0, "Impostor sin palabra"], [1, "Infiltrado"]]} onCambiar={v => poner({ infiltrado: !!v })}/>
       <div style={{ fontSize: 12, opacity: .75, marginTop: 8, lineHeight: 1.45 }}>{cfg.infiltrado
@@ -308,7 +311,7 @@ function ImpostorSala({ sala, yo, host, meta, onSalir }: PropsJuego) {
   const votaron = enRonda.filter(p => sala.v?.[p]).length;
   const decidieron = enRonda.filter(p => r.dec?.[p]).length;
   const porOtra = enRonda.filter(p => r.dec?.[p] === "otra").length;
-  const ayuda = sala.cfg?.ayuda || "tema";
+  const ayuda = ayudaDe(sala.cfg);
   const [mirando, setMirando] = useState(false);
   const otraVuelta = () => cambiar(sala.id, { "ron.fase": "pistas", "ron.fin": Date.now() + (sala.cfg?.tiempo || 90) * 1000, "ron.vuelta": (r.vuelta || 1) + 1, "ron.dec": {} });
   // El anfitrión avanza solo cuando todos vieron, se acaba el tiempo o todos votaron.
@@ -330,8 +333,8 @@ function ImpostorSala({ sala, yo, host, meta, onSalir }: PropsJuego) {
         background: mirando ? (mia ? "#fffdfb" : "linear-gradient(150deg,#e0455f,#8d1a3c)") : "rgba(255,255,255,.08)", color: mirando && mia ? "#3b2a21" : "#fff",
         border: mirando ? "none" : "2px dashed rgba(255,255,255,.35)", transition: "background .25s ease, transform .2s", transform: mirando ? "scale(1.02)" : "none" }}>
       {mirando ? (mia
-        ? <div><div style={{ fontSize: 11, letterSpacing: ".24em", textTransform: "uppercase", color: col }}>Tu palabra{ayuda !== "nada" ? ` · ${r.cat}` : ""}</div><div style={{ fontFamily: "var(--titulo)", fontSize: "clamp(30px, 9vw, 44px)", fontWeight: 600, marginTop: 6, lineHeight: 1.1 }}>{mia}</div></div>
-        : <div><IconoJuego n="mascara" tam={50}/><div style={{ fontFamily: "var(--titulo)", fontSize: 32, fontWeight: 600, marginTop: 6 }}>Eres el impostor</div><div style={{ fontSize: 13, opacity: .9, marginTop: 4, lineHeight: 1.45 }}>{ayuda === "nada" ? "No sabes nada: escucha y disimula." : <>Temática: <b>{r.cat}</b>{ayuda === "inicial" && r.palabra ? <> · empieza con <b>«{String(r.palabra)[0]}»</b></> : null}. Escucha y disimula.</>}</div></div>)
+        ? <div><div style={{ fontSize: 11, letterSpacing: ".24em", textTransform: "uppercase", color: col }}>Tu palabra{ayuda === "tema" ? ` · ${r.cat}` : ""}</div><div style={{ fontFamily: "var(--titulo)", fontSize: "clamp(30px, 9vw, 44px)", fontWeight: 600, marginTop: 6, lineHeight: 1.1 }}>{mia}</div></div>
+        : <div><IconoJuego n="mascara" tam={50}/><div style={{ fontFamily: "var(--titulo)", fontSize: 32, fontWeight: 600, marginTop: 6 }}>Eres el impostor</div><div style={{ fontSize: 13, opacity: .9, marginTop: 4, lineHeight: 1.45 }}>{ayuda === "nada" ? "No sabes nada: escucha y disimula." : ayuda === "pista" ? <>Tu pista: <b style={{ fontSize: 17 }}>{pistaImpostor(r.palabra, r.cat)}</b>. Escucha y disimula.</> : <>Temática: <b>{r.cat}</b>. Escucha y disimula.</>}</div></div>)
         : <div style={{ display: "grid", placeItems: "center", gap: 10 }}><IconoJuego n="ojo" tam={38}/><div style={{ fontSize: 15, fontWeight: 600 }}>Mantén presionado para ver lo tuyo</div><div style={{ fontSize: 12.5, opacity: .7 }}>Que nadie mire tu pantalla</div></div>}
     </div>);
 
