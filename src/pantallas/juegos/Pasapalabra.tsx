@@ -24,15 +24,18 @@ const PRUEBAS: Record<string, { t: string; desc: string; seg: number; dur: numbe
   memoria: { t: "La memoria", desc: "Memoriza 9 palabras: después se tapan y hay que tocar la que se pide. Cada acierto suma 2 segundos; si te equivocas, el panel parte de nuevo.", seg: 2, dur: 60, icono: "ojo" },
 };
 const NIVELES: [Nivel, string][] = [[1, "Fácil"], [2, "Normal"], [3, "Difícil"]];
+const MAX_CONC = 6;
+/** Columnas del marcador según cuántos juegan (2 por fila en el teléfono, hasta 3 si son muchos). */
+const columnas = (n: number) => `repeat(${n <= 1 ? 1 : n === 3 || n >= 5 ? 3 : 2}, minmax(0, 1fr))`;
 
 // ── Opciones (sala de espera) ─────────────────────────────────────
 export function ConfigRosco({ sala, cfg, poner, color }: { sala: Sala; cfg: any; poner: (c: any) => void; color: string }) {
   const js = jugadores(sala).filter(j => j.pid !== anfitrion(sala));
   const conc: string[] = (cfg.conc || []).filter((p: string) => sala.jug[p]);
-  const toggle = (p: string) => poner({ conc: conc.includes(p) ? conc.filter(x => x !== p) : [...conc, p].slice(-2) });
+  const toggle = (p: string) => poner({ conc: conc.includes(p) ? conc.filter(x => x !== p) : [...conc, p].slice(-MAX_CONC) });
   const pruebas: string[] = cfg.pruebas || [];
   return <>
-    <div style={{ fontSize: 12.5, opacity: .85, marginBottom: 12, lineHeight: 1.45 }}>Tú eres el presentador: ves las respuestas y marcas si acertaron. Elige 1 o 2 concursantes.</div>
+    <div style={{ fontSize: 12.5, opacity: .85, marginBottom: 12, lineHeight: 1.45 }}>Tú eres el presentador: ves las respuestas y marcas si acertaron. Elige de 1 a {MAX_CONC} concursantes (en la tele son 2).</div>
     <Rotulo>Concursantes</Rotulo>
     {js.length ? <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{js.map(j => <Pildora key={j.pid} on={conc.includes(j.pid)} color={color} onClick={() => toggle(j.pid)}>{j.n}</Pildora>)}</div>
       : <div style={{ fontSize: 13, opacity: .75 }}>Cuando alguien se una, aparece acá.</div>}
@@ -57,7 +60,7 @@ export function ConfigRosco({ sala, cfg, poner, color }: { sala: Sala; cfg: any;
 
 /** Lo que se escribe al empezar: los roscos de cada concursante y, si hay pruebas, la primera. */
 export function inicioRosco(sala: Sala, cfg: any): Record<string, any> {
-  const conc: string[] = (cfg.conc || []).filter((p: string) => sala.jug[p]).slice(0, 2);
+  const conc: string[] = (cfg.conc || []).filter((p: string) => sala.jug[p]).slice(0, MAX_CONC);
   const tema: Tema = BANCO[cfg.tema as Tema] ? cfg.tema : "general", nivel: Nivel = cfg.nivel || 2;
   // Lo de las últimas partidas en este teléfono no se repite (hasta que se acabe el banco).
   const reciente = historial(), usadas = new Set<string>(reciente);
@@ -90,7 +93,7 @@ export function RoscoSala(props: PropsJuego) {
 }
 
 const marcadorBonus = (sala: Sala, r: any, yo: string, activo = -1) => (
-  <div style={{ display: "grid", gridTemplateColumns: (r.conc || []).length > 1 ? "1fr 1fr" : "1fr", gap: 8, marginBottom: 12 }}>
+  <div style={{ display: "grid", gridTemplateColumns: columnas((r.conc || []).length), gap: 8, marginBottom: 12 }}>
     {(r.conc || []).map((p: string, i: number) => (
       <div key={p} style={{ borderRadius: 16, padding: "8px 10px", display: "flex", alignItems: "center", gap: 8, background: i === activo ? "rgba(255,209,102,.22)" : "rgba(255,255,255,.08)", border: i === activo ? "2px solid #ffd166" : "1px solid rgba(255,255,255,.16)" }}>
         <Avatar n={nombreDe(sala, p)} tam={30}/>
@@ -321,7 +324,7 @@ function ElRosco({ sala, yo, host, meta, onSalir }: PropsJuego) {
   useEffect(() => { if (host && r.fase === "juego" && r.desde && faltan === 0) cambiar(sala.id, { ron: jugarRosco(r, "tiempo", Date.now()) }); }, [host, faltan, r, sala.id]);
   useEffect(() => { if (r.fase === "fin") confeti(); }, [r.fase]);
   const tablero = (
-    <div style={{ display: "grid", gridTemplateColumns: conc.length > 1 ? "1fr 1fr" : "1fr", gap: 8, marginBottom: 12 }}>
+    <div style={{ display: "grid", gridTemplateColumns: columnas(conc.length), gap: 8, marginBottom: 12 }}>
       {conc.map((p, i) => { const pj = puntajeRosco((r.est || [])[i] || ""); const s = i === t && r.desde ? faltan : Math.ceil(((r.rest || [])[i] || 0) / 1000); const juega = i === t && r.fase === "juego"; return (
         <div key={p} style={{ borderRadius: 16, padding: "8px 10px", background: juega ? "rgba(255,209,102,.22)" : "rgba(255,255,255,.08)", border: juega ? "2px solid #ffd166" : "1px solid rgba(255,255,255,.16)", display: "flex", alignItems: "center", gap: 8 }}>
           <Avatar n={nombreDe(sala, p)} tam={30}/>
