@@ -38,5 +38,11 @@ import { elegirPalabra, repartirSala, contarVotos, armarEquipos, siguientePendie
   assert.deepEqual(desordenar("ANILLO"), desordenar("ANILLO"), "todos los teléfonos ven el mismo desorden");
   let a = estadoAhorcado("TORTA", "TXA"); assert.equal(a.vista.join(""), "T__TA"); assert.equal(a.errores, 1); assert.equal(a.resuelta, false);
   a = estadoAhorcado("TORTA", "TXAOR"); assert.equal(a.resuelta, true);
+  // tres concursantes: el turno rota 0 → 1 → 2 → 0 y se salta al que ya no tiene tiempo
+  let t3 = { est: ["---", "---", "---"], pos: [0, 0, 0], rest: [9000, 9000, 9000], turno: 0, desde: 100, fase: "juego" };
+  t3 = jugarRosco(t3, "pasa", 200); assert.equal(t3.turno, 1); assert.equal(t3.desde, 0);
+  t3 = seguirRosco(t3, 300); t3 = jugarRosco(t3, "mal", 400); assert.equal(t3.turno, 2);
+  t3 = seguirRosco(t3, 500); t3 = jugarRosco(t3, "tiempo", 600); assert.equal(t3.turno, 0, "al 2 se le acabó el tiempo: vuelve al 0");
+  t3 = seguirRosco(t3, 700); t3 = jugarRosco(t3, "pasa", 800); assert.equal(t3.turno, 1, "el 2 sin tiempo se salta");
   console.log("juegos en grupo ok");
 }

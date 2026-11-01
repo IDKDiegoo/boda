@@ -127,9 +127,10 @@ export function jugarRosco(ron, accion, ahora) {
     if (sig >= 0) r.pos[t] = sig;
   }
   if (accion === "tiempo") r.rest[t] = 0;
-  const otro = n === 2 ? 1 - t : t;
-  let turno = t;
-  if (accion !== "ok" || !vivo(t)) turno = vivo(otro) ? otro : (vivo(t) ? t : -1);
+  // Con varios concursantes el turno rota en orden: al pasar, fallar o acabarse el tiempo le toca al
+  // siguiente que todavía tenga letras y reloj (si no queda otro, sigue el mismo; si nadie, termina).
+  const siguienteVivo = () => { for (let k = 1; k <= n; k++) { const c = (t + k) % n; if (vivo(c)) return c; } return -1; };
+  const turno = accion === "ok" && vivo(t) ? t : siguienteVivo();
   if (turno === -1) { r.fase = "fin"; r.desde = 0; r.turno = t; return r; }
   r.turno = turno;
   // Al pasar o fallar se detiene TODO: el siguiente no ve su pregunta ni corre su reloj hasta que el
