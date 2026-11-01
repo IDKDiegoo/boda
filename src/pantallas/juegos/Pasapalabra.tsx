@@ -4,6 +4,7 @@ import { BANCO, LETRAS_ROSCO, TEMAS_ROSCO, TemaRosco, anotarHistorial, armarRosc
 import { azarDe, barajar, desordenar, estadoAhorcado, jugarRosco, pausarRosco, puntajeRosco, seguirRosco, siguientePendiente } from "./logica";
 import { Sala, anfitrion, cambiar, jugadores, useFaltan } from "./sala";
 import { Avatar, Panel, Pildora, PropsJuego, Rotulo, VACIO, VolverSala, nombreDe } from "./uiGrupo";
+import { IMPOSTOR_CLASICO, IMPOSTOR_FUTBOL } from "./contenidoGrupo";
 
 // ═══════════════════════════════════════════════════════════════════
 // PASAPALABRA v2 (31-oct-2026), como en la tele:
@@ -15,13 +16,14 @@ import { Avatar, Panel, Pildora, PropsJuego, Rotulo, VACIO, VolverSala, nombreDe
 type Tema = TemaRosco;
 type Nivel = 1 | 2 | 3;
 // `juntos`: la juegan todos a la vez y la lleva el presentador (La pista); las demás, cada uno en su turno.
-const PRUEBAS: Record<string, { t: string; desc: string; seg: number; dur: number; icono: string; juntos?: boolean }> = {
+// `presentador`: la parte el presentador (la memoria: él dice las palabras).
+const PRUEBAS: Record<string, { t: string; desc: string; seg: number; dur: number; icono: string; juntos?: boolean; presentador?: boolean }> = {
   cuatro: { t: "Una de cuatro", desc: "Una pregunta y cuatro opciones. Toca la correcta: cada acierto suma 2 segundos.", seg: 2, dur: 40, icono: "pregunta" },
   letras: { t: "Letras desordenadas", desc: "Arma la palabra tocando las letras en orden. Cada palabra suma 3 segundos.", seg: 3, dur: 45, icono: "barajar" },
   ahorcado: { t: "El ahorcado", desc: "Adivina la palabra letra por letra antes de 6 errores. Cada palabra suma 3 segundos.", seg: 3, dur: 60, icono: "equis" },
   pista: { t: "La pista", desc: "El presentador muestra las pistas de a una y el primero que adivine en voz alta gana: 5 segundos con la 1ª pista, 4 con la 2ª… y 1 con la 5ª.", seg: 0, dur: 0, icono: "lupa", juntos: true },
   cruzadas: { t: "Palabras cruzadas", desc: "Cada palabra está partida en dos columnas. Con la definición, toca la mitad de la izquierda y la de la derecha. Cada palabra suma 2 segundos.", seg: 2, dur: 75, icono: "barajar" },
-  memoria: { t: "La memoria", desc: "Memoriza 9 palabras: después se tapan y hay que tocar la que se pide. Cada acierto suma 2 segundos; si te equivocas, el panel parte de nuevo.", seg: 2, dur: 60, icono: "ojo" },
+  memoria: { t: "La memoria", desc: "El presentador dice una palabra y el concursante la repite. Después dice otra y hay que repetir las dos, en orden, y así sigue la cadena. Cada vez que repite todo bien suma 2 segundos; si se equivoca, la cadena parte de nuevo.", seg: 2, dur: 60, icono: "ojo", presentador: true },
 };
 const NIVELES: [Nivel, string][] = [[1, "Fácil"], [2, "Normal"], [3, "Difícil"]];
 const MAX_CONC = 6;
@@ -77,12 +79,31 @@ export function inicioRosco(sala: Sala, cfg: any): Record<string, any> {
 
 /** Las preguntas o palabras de un turno de prueba. Se eligen apenas empieza el turno (antes de que el
  *  concursante apriete «Partir»), así el presentador ya las tiene a la vista para leerlas. */
+// Lo que ya salió (en esta partida y en las anteriores) lo recuerda el teléfono del presentador, que es el
+// que elige las preguntas de cada turno: así no se repite «Ronaldo» seis veces. Si se acaba, se repite lo más viejo.
+const HIST_ITEMS = "mw_pp_items"; let memHist: string[] = [];
+const histItems = (): string[] => { try { return JSON.parse(localStorage.getItem(HIST_ITEMS) || "null") || memHist; } catch { return memHist; } };
+const anotarItems = (claves: string[]) => { const l = histItems().filter(x => !claves.includes(x)).concat(claves).slice(-800); memHist = l; try { localStorage.setItem(HIST_ITEMS, JSON.stringify(l)); } catch { /* sin almacenamiento */ } };
+const claveItem = (id: string, tema: Tema, x: any) => id === "cuatro" ? "c:" + (cuatroDe(tema)[x]?.[0] || x) : id === "pista" ? "p:" + (pistasDe(tema)[x]?.[0] || x) : "w:" + x;
+/** Palabras para La memoria: nombres y cosas fáciles de decir (jugadores y equipos en el futbolero). */
+function palabrasMemoria(tema: Tema): string[] {
+  const f = IMPOSTOR_FUTBOL, c = IMPOSTOR_CLASICO;
+  const futbol = [...f["Cracks del mundo"], ...f["Jugadores chilenos"], ...f["Equipos del mundo"], ...f["Equipos chilenos"], ...f["Estadios"]];
+  const lista = tema === "futbol" ? futbol : tema === "chile" ? [...c["Comida chilena"], ...c["Lugares de Chile"]] : tema === "amor" ? [...c["De la boda"], ...c["En la playa"]]
+    : tema === "mezcla" ? [...futbol, ...Object.values(c).flat()] : Object.values(c).flat();
+  return Array.from(new Set(lista));
+}
 function itemsPara(id: string, tema: Tema, nivel: Nivel, semilla: string): any[] {
   const az = azarDe(semilla);
-  if (id === "cuatro") return barajar(cuatroDe(tema).map((q, i) => ({ q, i })).filter(({ q }) => Math.abs(q[5] - nivel) <= 1).map(x => x.i), az).slice(0, 30);
-  if (id === "pista") return barajar(pistasDe(tema).map((_, i) => i), az).slice(0, 5);
-  if (id === "cruzadas" || id === "memoria") return barajar(palabrasConDef(tema, nivel), az).slice(0, 45);
-  return barajar(palabrasPuzzle(tema, nivel), az).slice(0, 25);
+  const [pool, cuantos] = id === "cuatro" ? [cuatroDe(tema).map((q, i) => ({ q, i })).filter(({ q }) => Math.abs(q[5] - nivel) <= 1).map(x => x.i), 15]
+    : id === "pista" ? [pistasDe(tema).map((_, i) => i), 5]
+    : id === "cruzadas" ? [palabrasConDef(tema, nivel), 27]
+    : id === "memoria" ? [palabrasMemoria(tema), 60]
+    : [palabrasPuzzle(tema, nivel), id === "ahorcado" ? 10 : 14];
+  const orden = histItems(), ya = new Set(orden);
+  const frescos = barajar((pool as any[]).filter(x => !ya.has(claveItem(id, tema, x))), az);
+  const viejos = (pool as any[]).filter(x => ya.has(claveItem(id, tema, x))).sort((a, b) => orden.indexOf(claveItem(id, tema, a)) - orden.indexOf(claveItem(id, tema, b)));
+  return [...frescos, ...viejos].slice(0, cuantos as number);
 }
 
 // ── La sala ───────────────────────────────────────────────────────
@@ -115,18 +136,20 @@ function Pruebas({ sala, yo, host, meta, onSalir }: PropsJuego) {
   useEffect(() => {
     if (pr.est !== "juega" || faltan > 0 || !pr.fin) return;
     const clave = `${pr.k}-${pr.t}-${pr.fin}`; if (cerrado.current === clave) return;
-    if (!(soyYo || (host && !estaAca))) return;
+    if (!(P.presentador ? host : (soyYo || (host && !estaAca)))) return;
     cerrado.current = clave; vibrar([60, 40, 60]);
     cambiar(sala.id, { "ron.pr.est": "listo" });
-  }, [pr.est, faltan, pr.fin, pr.k, pr.t, soyYo, host, estaAca, sala.id]);
+  }, [pr.est, faltan, pr.fin, pr.k, pr.t, soyYo, host, estaAca, sala.id, P.presentador]);
 
   const partir = () => {
     const items = (pr.items || []).length ? pr.items : itemsPara(id, tema, nivel, `${sala.id}-${pr.k}-${pr.t}-${Date.now()}`);
     vibrar(30);
     cambiar(sala.id, { "ron.pr.est": "juega", "ron.pr.fin": P.dur ? Date.now() + P.dur * 1000 : 0, "ron.pr.items": items, "ron.pr.i": 0, "ron.pr.ok": 0, "ron.pr.us": "", "ron.pr.ult": null,
-      "ron.pr.np": 1, "ron.pr.pan": 0, "ron.pr.mk": 0, "ron.pr.mem": id === "memoria" ? Date.now() + 6000 : 0 });
+      "ron.pr.np": 1, "ron.pr.mb": 0, "ron.pr.mk": 1 });
   };
   const avanzar = () => {
+    const vistos = id === "memoria" ? (pr.mb || 0) + (pr.mk || 0) : (pr.i || 0) + 1;
+    anotarItems((pr.items || []).slice(0, vistos).map((x: any) => claveItem(id, tema, x)));
     const semilla = `${sala.id}-${Date.now()}`;
     const sig = !P.juntos && pr.t + 1 < conc.length ? { "ron.pr.t": pr.t + 1, "ron.pr.est": "espera", "ron.pr.items": itemsPara(id, tema, nivel, semilla), "ron.pr.i": 0, "ron.pr.ult": null }
       : pr.k + 1 < (pr.lista || []).length ? { "ron.pr.k": pr.k + 1, "ron.pr.t": 0, "ron.pr.est": "espera", "ron.pr.items": itemsPara(pr.lista[pr.k + 1], tema, nivel, semilla), "ron.pr.i": 0, "ron.pr.ult": null }
@@ -155,9 +178,11 @@ function Pruebas({ sala, yo, host, meta, onSalir }: PropsJuego) {
       <div style={{ fontSize: 12.5, opacity: .75, marginTop: 6 }}>Tienes {P.dur} segundos.</div>
       {P.juntos ? (host ? <Boton color="#ffffff" claro style={{ width: "100%", marginTop: 16, color: col, padding: 17 }} onClick={partir}>Mostrar la primera pista</Boton>
           : <div style={{ marginTop: 14, fontWeight: 600 }}>Juegan todos: atentos a las pistas.</div>)
+        : P.presentador ? (host ? <Boton color="#ffffff" claro style={{ width: "100%", marginTop: 16, color: col, padding: 17 }} onClick={partir}>¡Partir! (dices la primera palabra)</Boton>
+          : <div style={{ marginTop: 14, fontWeight: 600 }}>{soyYo ? "Atento: el presentador te va a decir las palabras." : `Juega ${nombreDe(sala, quien)}.`}</div>)
         : soyYo ? <Boton color="#ffffff" claro style={{ width: "100%", marginTop: 16, color: col, padding: 17 }} onClick={partir}>¡Partir!</Boton>
         : <div style={{ marginTop: 14, fontWeight: 600 }}>Esperando que {nombreDe(sala, quien)} parta…</div>}
-      {host && !soyYo && !P.juntos && <Adelanto id={id} tema={tema} items={pr.items} desde={0} titulo="Lo primero que le va a salir (solo lo ves tú)"/>}
+      {host && !soyYo && !P.juntos && id !== "memoria" && <Adelanto id={id} tema={tema} items={pr.items} desde={0} titulo="Lo primero que le va a salir (solo lo ves tú)"/>}
       {host && !soyYo && !estaAca && <Boton color="rgba(255,255,255,.14)" style={{ width: "100%", marginTop: 10 }} onClick={avanzar}>{nombreDe(sala, quien)} se fue: saltar</Boton>}
     </Panel>);
   else if (pr.est === "listo") cuerpo = (
@@ -172,7 +197,7 @@ function Pruebas({ sala, yo, host, meta, onSalir }: PropsJuego) {
   else if (id === "letras") cuerpo = <Letras sala={sala} pr={pr} tema={tema} soyYo={soyYo} host={host} onBien={acierto} onSaltar={fallo}/>;
   else if (id === "pista") cuerpo = <LaPista sala={sala} r={r} pr={pr} tema={tema} host={host}/>;
   else if (id === "cruzadas") cuerpo = <Cruzadas sala={sala} pr={pr} tema={tema} soyYo={soyYo} host={host} onBien={acierto} onSaltar={fallo}/>;
-  else if (id === "memoria") cuerpo = <Memoria sala={sala} pr={pr} r={r} soyYo={soyYo} host={host} seg={P.seg}/>;
+  else if (id === "memoria") cuerpo = <Memoria sala={sala} pr={pr} r={r} soyYo={soyYo} host={host} seg={P.seg} quien={quien}/>;
   else cuerpo = <Ahorcado sala={sala} pr={pr} tema={tema} soyYo={soyYo} host={host} onBien={acierto} onMal={fallo}/>;
 
   return (
@@ -248,7 +273,7 @@ function Letras({ sala, pr, tema, soyYo, host, onBien, onSaltar }: PropsPrueba &
               background: usada ? "rgba(255,255,255,.08)" : "#ffd166", color: usada ? "transparent" : "#2a2000", boxShadow: usada ? "none" : "0 4px 0 #b8860b" }}>{c}</button>); })}
       </div>
       {soyYo ? <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
-          <Boton color="rgba(255,255,255,.14)" onClick={() => setToc([])}>Borrar</Boton>
+          <Boton color="rgba(255,255,255,.14)" disabled={!toc.length} onClick={() => setToc(t => t.slice(0, -1))}>← Borrar letra</Boton>
           <Boton color="rgba(255,255,255,.14)" onClick={onSaltar}>Saltar palabra</Boton>
         </div>
         : <div style={{ textAlign: "center", fontSize: 12.5, opacity: .8, marginTop: 12 }}>{host ? <>Respuesta: <b>{palabra}</b></> : "Lo está armando en su teléfono."}</div>}
@@ -459,38 +484,36 @@ function Cruzadas({ sala, pr, tema, soyYo, host, onBien, onSaltar }: PropsPrueba
     </div>);
 }
 
-// ── La memoria: 9 palabras a la vista unos segundos; después se tapan y hay que encontrar la que se pide ──
-function Memoria({ sala, pr, r, soyYo, host, seg }: { sala: Sala; pr: any; r: any; soyYo: boolean; host: boolean; seg: number }) {
-  // `mk` = cuántas encontró en este panel (ojo: `pr.k` es en qué prueba va el juego).
-  const items: string[] = useMemo(() => pr.items || [], [pr.items]), pan = pr.pan || 0, k = pr.mk || 0;
-  const panel = useMemo(() => Array.from({ length: 9 }, (_, j) => items[(pan * 9 + j) % Math.max(1, items.length)]), [items, pan]);
-  const orden = useMemo(() => barajar([0, 1, 2, 3, 4, 5, 6, 7, 8], azarDe(`${sala.id}-${pan}-m`)), [pan, sala.id]);
-  const faltaVer = useFaltan(pr.mem || 0);
-  const viendo = faltaVer > 0, buscada = orden[k], hallados = new Set(orden.slice(0, k));
-  const [mal, setMal] = useState<number | null>(null);
+// ── La memoria, como en la tele: el presentador dice una palabra y el concursante la repite; después
+// dice otra y hay que repetir las dos, en orden; y así hasta que se acabe el tiempo. Un error parte la cadena de nuevo.
+function Memoria({ sala, pr, r, soyYo, host, seg, quien }: { sala: Sala; pr: any; r: any; soyYo: boolean; host: boolean; seg: number; quien: string }) {
+  const items: string[] = pr.items || [], base = pr.mb || 0, largo = Math.max(1, pr.mk || 1);
+  const cadena = items.slice(base, base + largo);
   if (!items.length) return <Panel>No hay palabras para este tema.</Panel>;
-  const nuevoPanel = (extra: Record<string, any>) => cambiar(sala.id, { "ron.pr.pan": pan + 1, "ron.pr.mk": 0, "ron.pr.mem": Date.now() + 6000, ...extra });
-  const tocar = (j: number) => {
-    if (!soyYo || viendo || hallados.has(j)) return;
-    if (j === buscada) {
-      vibrar(25);
-      const extra = { "ron.pr.ok": (pr.ok || 0) + 1, [`ron.bonus.${pr.t}`]: (r.bonus?.[pr.t] || 0) + seg, "ron.pr.ult": { i: (pr.i || 0), bien: true }, "ron.pr.i": (pr.i || 0) + 1 };
-      if (k + 1 >= 9) nuevoPanel(extra); else cambiar(sala.id, { "ron.pr.mk": k + 1, ...extra });
-    } else { setMal(j); vibrar([10, 30, 10]); setTimeout(() => setMal(null), 500); nuevoPanel({ "ron.pr.ult": { i: (pr.i || 0), bien: false }, "ron.pr.i": (pr.i || 0) + 1 }); }
-  };
+  const bien = () => { vibrar(25); cambiar(sala.id, { "ron.pr.mk": largo + 1, "ron.pr.ok": (pr.ok || 0) + 1, [`ron.bonus.${pr.t}`]: (r.bonus?.[pr.t] || 0) + seg, "ron.pr.ult": { i: pr.i || 0, bien: true }, "ron.pr.i": (pr.i || 0) + 1 }); };
+  const mal = () => { vibrar([10, 30, 10]); cambiar(sala.id, { "ron.pr.mb": base + largo < items.length - 3 ? base + largo : 0, "ron.pr.mk": 1, "ron.pr.ult": { i: pr.i || 0, bien: false }, "ron.pr.i": (pr.i || 0) + 1 }); };
+  if (host && !soyYo) return (
+    <div>
+      <Destello ult={pr.ult} i={pr.i || 0}/>
+      <div style={{ background: "#fffdfb", color: "#1d2a44", borderRadius: 22, padding: "16px 18px" }}>
+        <div style={{ fontSize: 11.5, letterSpacing: ".18em", textTransform: "uppercase", color: "#2f6fb0", fontWeight: 700 }}>Di en voz alta</div>
+        <div key={largo} className="j-entrar" style={{ fontFamily: "var(--titulo)", fontSize: 34, fontWeight: 700, lineHeight: 1.1, marginTop: 4 }}>{cadena[largo - 1]}</div>
+        <div style={{ fontSize: 13, color: "#64748b", marginTop: 8 }}>{nombreDe(sala, quien)} tiene que repetir, en orden:</div>
+        <ol style={{ margin: "6px 0 0", paddingLeft: 22, fontSize: 15, fontWeight: 600, lineHeight: 1.55 }}>{cadena.map((w, k) => <li key={k} style={{ color: k === largo - 1 ? "#2f6fb0" : "#1d2a44" }}>{w}</li>)}</ol>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+        <Boton color="#2f9a5c" onClick={bien}><IconoJuego n="check" tam={18} grosor={2.4}/>Repitió todo (+{seg} s)</Boton>
+        <Boton color="#d23b4f" onClick={mal}><IconoJuego n="equis" tam={18} grosor={2.4}/>Se equivocó</Boton>
+      </div>
+    </div>);
   return (
     <div>
       <Destello ult={pr.ult} i={pr.i || 0}/>
-      <Panel style={{ textAlign: "center", marginBottom: 12 }}>
-        {viendo ? <><Rotulo style={{ marginBottom: 2 }}>Memoriza</Rotulo><div style={{ fontFamily: "var(--titulo)", fontSize: 30, fontWeight: 700 }}>{faltaVer}</div></>
-          : <><Rotulo style={{ marginBottom: 4 }}>¿Dónde está…?</Rotulo><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: ".04em" }}>{panel[buscada]}</div></>}
+      <Panel style={{ textAlign: "center", padding: 22 }}>
+        <IconoJuego n="ojo" tam={36}/>
+        <div style={{ fontFamily: "var(--titulo)", fontSize: 30, fontWeight: 700, marginTop: 8 }}>{largo} {largo === 1 ? "palabra" : "palabras"}</div>
+        <div style={{ fontSize: 14.5, opacity: .88, marginTop: 6, lineHeight: 1.5 }}>{soyYo ? "Escucha al presentador y repite TODAS las palabras en voz alta, en orden." : `${nombreDe(sala, quien)} tiene que repetir la cadena de memoria.`}</div>
+        <div style={{ fontSize: 12.5, opacity: .7, marginTop: 8 }}>Las palabras no aparecen en pantalla: es de memoria.</div>
       </Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-        {panel.map((w, j) => { const ver = viendo || hallados.has(j) || (host && !soyYo); return (
-          <button key={j} disabled={!soyYo || viendo || hallados.has(j)} onClick={() => tocar(j)} className="j-tile" style={{ aspectRatio: "1.25", borderRadius: 14, border: "1px solid rgba(255,255,255,.22)", fontWeight: 800, fontSize: 12.5, padding: 4, overflow: "hidden",
-            background: mal === j ? "#d23b4f" : hallados.has(j) ? "rgba(47,154,92,.4)" : ver ? "#fffdfb" : "linear-gradient(150deg,#2f6fb0,#1d3f75)", color: ver && !hallados.has(j) ? (host && !soyYo && !viendo ? "#94a3b8" : "#1d2a44") : "#fff", cursor: soyYo && !viendo ? "pointer" : "default" }}>
-            {ver ? w : <IconoJuego n="pregunta" tam={22}/>}</button>); })}
-      </div>
-      {!soyYo && <div style={{ textAlign: "center", fontSize: 12.5, opacity: .75, marginTop: 10 }}>{host ? "Tú ves las palabras en gris; el concursante las ve tapadas." : "Lo está jugando en su teléfono."}</div>}
     </div>);
 }
