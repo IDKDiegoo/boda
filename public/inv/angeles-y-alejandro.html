@@ -281,6 +281,8 @@
   .fc-prepara .cuenta div + div::before{content:":";position:absolute;left:-.12em;top:0;font-family:var(--grabado);font-size:clamp(26px,7vw,38px);line-height:1;color:var(--salvia-osc);opacity:.6;transform:translateX(-50%)}
   .fc-prepara .cuenta b{font-weight:400}
   .fc-prepara .cuenta span{letter-spacing:.1em;font-size:9px}
+  /* la fecha ya está en «Celebra con nosotros»: no se repite en la primera tarjeta */
+  .principal #dia-semana,.principal #fecha-grande{display:none!important}
   /* monograma del sobre: dos letras anchas (A A) no deben tocar el borde de la solapa */
   .monograma-sobre span{font-size:clamp(100px,26vmin,176px)}
   .monograma-sobre .c{margin:.34em 0 0 -1.3em}
@@ -1175,6 +1177,16 @@ window.Grabado = (() => {
   P = personalizar({ ...cfg, paleta: null }, false);   // los colores ya vienen puestos arriba (window.__PALETA)
   const I1 = "A", I2 = "A";
   txt("#mono-1", I1); txt("#mono-2", I2); txt("#pie-mono", I1 + "&" + I2);
+  // Nombres largos (ALEJANDRO): se achican hasta caber dentro del filete de la tarjeta, en cualquier pantalla
+  const ajustarNombres = () => {
+    const h = $("#nombres"); if (!h) return; h.style.fontSize = "";
+    const tarjeta = h.closest(".tarjeta"), filete = tarjeta?.querySelector(".filete");
+    const caja = (filete || tarjeta).getBoundingClientRect(), margen = 22;
+    let t = parseFloat(getComputedStyle(h).fontSize), n = 0;
+    const ancho = () => { const rg = document.createRange(); rg.selectNodeContents(h); return Math.max(...[...rg.getClientRects()].map((x) => x.width), h.scrollWidth > h.clientWidth ? h.scrollWidth : 0); };
+    while (n++ < 40 && (ancho() > caja.width - 2 * margen) && t > 18) { t -= 1.5; h.style.fontSize = t + "px"; }
+  };
+  ajustarNombres(); document.fonts?.ready.then(ajustarNombres); addEventListener("resize", ajustarNombres);
   $("#lugar-nombre").textContent = cfg.lugarNombre; $("#lugar-dir").textContent = cfg.direccion;
   if (cfg.hora) $("#hora").textContent = cfg.hora;
   else { const h = $(".hora-grande"); h.textContent = "Hora por confirmar"; h.style.fontSize = "15px"; h.style.letterSpacing = ".18em"; h.style.textTransform = "uppercase"; }
