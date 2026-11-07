@@ -105,12 +105,41 @@ r("</head>", `<style>
   .monograma-sobre .c{margin:.34em 0 0 -1.3em}
 </style>\n</head>`);
 
+// ── Sobre liso de papel con textura (sin flores), monograma grande en relieve y sellos de cera dorados;
+//    fondo de tela tipo satín y papel moteado en la tarjeta greige (referencias Donato Planner, 7-nov) ──
+r("Grabado.pintar(W, H, Grabado.mapaFlores(W, H, 7), c1)", "Grabado.pintar(W, H, window.__TEXTURA(W, H, 7), c1, { escala: 2.4, brillo: .05 })");
+r("Grabado.pintar(Math.round(W * 1.44), Math.round(H * .56), Grabado.mapaFlores(Math.round(W * 1.44), Math.round(H * .56), 23), c2)",
+  "Grabado.pintar(Math.round(W * 1.44), Math.round(H * .56), window.__TEXTURA(Math.round(W * 1.44), Math.round(H * .56), 23), c2, { escala: 2.4, brillo: .05 })");
+r('Grabado.sello(180, "#e9e3d5", 31), Grabado.sello(180, c3, 31)', 'Grabado.sello(180, "#b8913f", 31), Grabado.sello(180, "#a98538", 31)');
+r('specularConstant=".12" specularExponent="30"', 'specularConstant=".7" specularExponent="16"');   // brillo de metal en el sello
+r("window.Grabado = (() => {", `// Relieve de papel con grano (en vez de flores): ruido fino + manchas suaves, como cartulina texturizada
+window.__TEXTURA = (W, H, s) => \`<defs>
+  <filter id="tf\${s}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3" seed="\${s}"/><feColorMatrix values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1"/></filter>
+  <filter id="tm\${s}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".012" numOctaves="3" seed="\${s + 5}"/><feColorMatrix values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1"/></filter></defs>
+  <rect width="\${W}" height="\${H}" fill="#7a7a7a"/><rect width="\${W}" height="\${H}" filter="url(#tm\${s})" opacity=".35"/><rect width="\${W}" height="\${H}" filter="url(#tf\${s})" opacity=".55"/>\`;
+window.Grabado = (() => {`);
+r("</head>", `<style>
+  /* monograma grande, en relieve sobre el papel (letras romanas, la segunda corrida abajo a la derecha) */
+  .monograma-sobre{top:calc(9% - .1 * clamp(150px,40vmin,260px))}
+  .monograma-sobre span{font-family:var(--grabado);font-weight:400;font-size:clamp(150px,40vmin,260px);padding:.1em .2em .2em;background:none;-webkit-background-clip:border-box;background-clip:border-box;
+    color:color-mix(in srgb,var(--salvia-2) 72%,#fff 28%);filter:none;text-shadow:-1px -1px 0 rgba(255,255,255,.28),2px 3px 2px rgba(25,32,16,.42),5px 9px 14px rgba(25,32,16,.25)}
+  .monograma-sobre .c{margin:.52em 0 0 -.5em !important}
+  .toca{background:rgba(40,50,28,.28)}
+  .sello-img{background:radial-gradient(circle at 38% 32%,#f3e2a8,#c9a457 45%,#8d6d2c 100%)}
+  /* fondo de tela (se pinta una vez, abajo) */
+  #tela{position:fixed;inset:0;z-index:0;pointer-events:none;background:#f3f1ec url(/inv/texturas/tela.jpg) center/cover no-repeat}
+  /* papel moteado tipo piedra para las tarjetas greige */
+  .tarjeta.greige,.fc{background-color:#d8d2c3;background-image:url(/inv/texturas/papel.jpg)!important;background-size:512px 512px}
+</style>
+</head>`);
+r("</body>", `<div id="tela" aria-hidden="true"></div>\n</body>`);   // fondo de tela (texturas.py)
+
 // ── El módulo: sin Firebase; los datos van escritos y la respuesta va al Google Forms ──
 const ini = html.indexOf('  import { initializeApp }'), finDb = html.indexOf("const db = getFirestore(app);");
 if (ini < 0 || finDb < 0) throw new Error("No encontré la conexión a Firebase en invitacion.html");
 html = html.slice(0, ini) + "  const db = null;   // invitación suelta: sin base de datos" + html.slice(finDb + "const db = getFirestore(app);".length);
 const corte = html.indexOf("  // My Wedding: el índice dice de qué boda es este link");
-const cierre = html.lastIndexOf("</script>");
+const cierre = html.indexOf("</script>", corte);   // el fin del módulo (después hay más scripts nuestros)
 if (corte < 0 || cierre < corte) throw new Error("No encontré dónde cargar los datos en invitacion.html");
 const datos = JSON.stringify(c).replace(/</g, "\\u003c");
 html = html.slice(0, corte) + `

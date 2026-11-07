@@ -287,6 +287,19 @@
   .monograma-sobre span{font-size:clamp(100px,26vmin,176px)}
   .monograma-sobre .c{margin:.34em 0 0 -1.3em}
 </style>
+<style>
+  /* monograma grande, en relieve sobre el papel (letras romanas, la segunda corrida abajo a la derecha) */
+  .monograma-sobre{top:calc(9% - .1 * clamp(150px,40vmin,260px))}
+  .monograma-sobre span{font-family:var(--grabado);font-weight:400;font-size:clamp(150px,40vmin,260px);padding:.1em .2em .2em;background:none;-webkit-background-clip:border-box;background-clip:border-box;
+    color:color-mix(in srgb,var(--salvia-2) 72%,#fff 28%);filter:none;text-shadow:-1px -1px 0 rgba(255,255,255,.28),2px 3px 2px rgba(25,32,16,.42),5px 9px 14px rgba(25,32,16,.25)}
+  .monograma-sobre .c{margin:.52em 0 0 -.5em !important}
+  .toca{background:rgba(40,50,28,.28)}
+  .sello-img{background:radial-gradient(circle at 38% 32%,#f3e2a8,#c9a457 45%,#8d6d2c 100%)}
+  /* fondo de tela (se pinta una vez, abajo) */
+  #tela{position:fixed;inset:0;z-index:0;pointer-events:none;background:#f3f1ec url(/inv/texturas/tela.jpg) center/cover no-repeat}
+  /* papel moteado tipo piedra para las tarjetas greige */
+  .tarjeta.greige,.fc{background-color:#d8d2c3;background-image:url(/inv/texturas/papel.jpg)!important;background-size:512px 512px}
+</style>
 </head><body class="cerrada">
 <script>document.documentElement.classList.add("cerrada");</script>
 
@@ -618,6 +631,11 @@
 <script>
 // Relieve de papel prensado: se dibuja un "mapa de alturas" en gris (líneas blancas = alto) y un filtro de luz
 // SVG lo convierte en relieve iluminado. Se pinta UNA vez en un canvas (las animaciones no recalculan la luz).
+// Relieve de papel con grano (en vez de flores): ruido fino + manchas suaves, como cartulina texturizada
+window.__TEXTURA = (W, H, s) => `<defs>
+  <filter id="tf${s}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3" seed="${s}"/><feColorMatrix values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1"/></filter>
+  <filter id="tm${s}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".012" numOctaves="3" seed="${s + 5}"/><feColorMatrix values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1"/></filter></defs>
+  <rect width="${W}" height="${H}" fill="#7a7a7a"/><rect width="${W}" height="${H}" filter="url(#tm${s})" opacity=".35"/><rect width="${W}" height="${H}" filter="url(#tf${s})" opacity=".55"/>`;
 window.Grabado = (() => {
   let semilla = 7; const azar = () => (semilla = (semilla * 16807) % 2147483647) / 2147483647;
   const f = (n) => n.toFixed(1);
@@ -734,7 +752,7 @@ window.Grabado = (() => {
         <feColorMatrix in="SourceGraphic" type="luminanceToAlpha" result="alto"/>
         <feGaussianBlur in="alto" stdDeviation="${f(S * .005)}" result="suave"/>
         <feDiffuseLighting in="suave" surfaceScale="${f(S * .028)}" diffuseConstant="1.12" lighting-color="#fff" result="luz"><feDistantLight azimuth="235" elevation="58"/></feDiffuseLighting>
-        <feSpecularLighting in="suave" surfaceScale="${f(S * .028)}" specularConstant=".12" specularExponent="30" lighting-color="#fff" result="brillo"><feDistantLight azimuth="235" elevation="50"/></feSpecularLighting>
+        <feSpecularLighting in="suave" surfaceScale="${f(S * .028)}" specularConstant=".7" specularExponent="16" lighting-color="#fff" result="brillo"><feDistantLight azimuth="235" elevation="50"/></feSpecularLighting>
         <feFlood flood-color="${base}"/><feComposite in2="luz" operator="arithmetic" k1="1.08" result="tinta"/>
         <feComposite in="tinta" in2="brillo" operator="arithmetic" k2="1" k3=".6" result="pintado"/>
         <feComposite in="pintado" in2="SourceAlpha" operator="in"/>
@@ -773,9 +791,9 @@ window.Grabado = (() => {
     const [c1, c2, c3] = pal ? [pal[0], pal[1], mezcla(pal[2], pal[3])] : ["#7d8a6a", "#889577", "#4c5543"];
     const W = innerWidth, H = innerHeight;
     const [fondo, solapa, crema, verde] = await Promise.all([
-      Grabado.pintar(W, H, Grabado.mapaFlores(W, H, 7), c1),
-      Grabado.pintar(Math.round(W * 1.44), Math.round(H * .56), Grabado.mapaFlores(Math.round(W * 1.44), Math.round(H * .56), 23), c2),
-      Grabado.sello(180, "#e9e3d5", 31), Grabado.sello(180, c3, 31),
+      Grabado.pintar(W, H, window.__TEXTURA(W, H, 7), c1, { escala: 2.4, brillo: .05 }),
+      Grabado.pintar(Math.round(W * 1.44), Math.round(H * .56), window.__TEXTURA(Math.round(W * 1.44), Math.round(H * .56), 23), c2, { escala: 2.4, brillo: .05 }),
+      Grabado.sello(180, "#b8913f", 31), Grabado.sello(180, "#a98538", 31),
     ]);
     if (pintado !== clave) return;   // llegó otra paleta mientras se pintaba
     if (fondo && sobre.isConnected) sobre.style.backgroundImage = `url(${fondo})`;
@@ -1250,4 +1268,5 @@ window.Grabado = (() => {
   };
 </script>
 
+<div id="tela" aria-hidden="true"></div>
 </body></html>
