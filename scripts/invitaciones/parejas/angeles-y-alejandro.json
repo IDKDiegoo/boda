@@ -1,0 +1,29 @@
+{
+  "slug": "angeles-y-alejandro",
+  "ella": "Ángeles",
+  "el": "Alejandro",
+  "apellidos": "Rodríguez · González",
+  "monograma": ["A", "A"],
+  "fecha": "2027-01-16",
+  "fechaLarga": "Sábado 16 de enero de 2027",
+  "frase": "El amor es paciente, es bondadoso. Todo lo disculpa, todo lo cree, todo lo espera, todo lo soporta.",
+  "fraseCita": "1 Corintios 13, 4-7",
+  "foto": null,
+  "ceremonia": {
+    "titulo": "Ceremonia religiosa",
+    "lugar": "Capilla Santa Cruz",
+    "direccion": "La Capilla 115, Pudahuel, Región Metropolitana",
+    "hora": null
+  },
+  "celebracion": {
+    "titulo": "Celebración",
+    "lugar": "Lomas de Lo Aguirre",
+    "direccion": "Doña Isabel 745, Lomas de Lo Aguirre, Pudahuel",
+    "hora": null
+  },
+  "vestimenta": { "nombre": "Formal", "detalle": "Ellas: vestido largo o de cóctel · Ellos: traje y corbata" },
+  "itinerario": [],
+  "regalos": null,
+  "rsvp": { "fechaLimite": null, "formUrl": null, "accion": null, "campos": null },
+  "cancion": null
+}
