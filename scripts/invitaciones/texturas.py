@@ -48,3 +48,18 @@ relieve = luz(m * .5 + grano * .06, 1.2, (255, 255, 255), difusa=.35, amb=.75)
 img = np.clip(img * (relieve / relieve.mean()), 0, 1)
 Image.fromarray((img * 255).astype(np.uint8)).save(f"{SAL}/papel.jpg", quality=86, optimize=True)
 print("ok")
+
+# ── Lino / cartulina con trama (gris medio, para mezclar con el color con «soft-light»): fibras finas
+#    horizontales y verticales cruzadas, algo irregulares, como el sobre de la referencia ──
+T = 768
+def fibras(sx, sy, semilla):
+    r = np.random.default_rng(semilla).standard_normal((T, T))
+    fy = np.fft.fftfreq(T)[:, None]; fx = np.fft.fftfreq(T)[None, :]
+    g = np.exp(-2 * np.pi ** 2 * ((fx * sx) ** 2 + (fy * sy) ** 2))
+    n = np.real(np.fft.ifft2(np.fft.fft2(r) * g)); return (n - n.mean()) / n.std()
+alto = fibras(6, .9, 31) * .6 + fibras(.9, 6, 32) * .6 + fibras(1.2, 1.2, 33) * .35 + ruido(T, T, 30, 34) * .25
+relieve = luz(alto, 1.1, (255, 255, 255), difusa=.55, amb=.55)[..., 0]
+g = (relieve - relieve.mean()) / relieve.std()
+img = np.clip(.5 + g * .11, 0, 1)
+Image.fromarray((img * 255).astype(np.uint8), "L").save(f"{SAL}/lino.jpg", quality=86, optimize=True)
+print("lino ok")
