@@ -13,7 +13,10 @@ module.exports = async (req, res) => {
     // ojo: la app responde 200 a cualquier ruta (index.html), así que se mira que sea de verdad una invitación
     try { const r = await fetch(`https://${host}/inv/${limpio}.html`); existe = r.ok && (await r.text()).includes("Invitación suelta (scripts/invitaciones/generar.mjs)"); } catch (e) {}
   }
-  const q = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")).replace(/([?&])s=[^&]*&?/, "$1").replace(/[?&]$/, "") : "";
+  // se conserva lo que traía el link (?para=…) y se quitan los parámetros internos de la regla (s, slug)
+  const params = new URLSearchParams(req.url.includes("?") ? req.url.slice(req.url.indexOf("?") + 1) : "");
+  params.delete("s"); params.delete("slug");
+  const q = params.toString() ? "?" + params.toString() : "";
   res.setHeader("Cache-Control", "public, s-maxage=300");
   res.writeHead(existe ? 308 : 302, { Location: existe ? `/${limpio}${q}` : "/" });
   res.end();
