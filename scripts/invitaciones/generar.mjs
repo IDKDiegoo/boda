@@ -45,6 +45,64 @@ const pal = c.paleta;
 r('<meta name="theme-color" content="#7f8c6c">', `<meta name="theme-color" content="${pal[0]}">`);
 r("</head>", `<style>:root{--salvia:${pal[0]};--salvia-2:${pal[1]};--salvia-osc:${pal[2]};--bosque:${pal[3]}}</style><script>window.__PALETA=${JSON.stringify(pal)}</script>\n</head>`);
 
+// ── «Celebra con nosotros» + «¡Prepárate!» (referencia de Donato Planner que eligió Diego, 7-nov):
+//    mes en arco, día de la semana | día grande | hora, los novios dibujados, lugar y «Ver mapa»; abajo la
+//    cuenta regresiva en una tarjeta de arco con dos puntos entre las cifras. Reemplaza la sección «Faltan».
+const MES_CORTO = MESES[M - 1].toUpperCase(), DIA_SEM = DIAS[dia.getUTCDay()].toUpperCase();
+const horaBonita = (h) => { const [a, b] = String(h).split(":").map(Number); return `${((a + 11) % 12) + 1}:${String(b || 0).padStart(2, "0")} ${a >= 12 ? "P.M." : "A.M."}`; };
+const nuevaFecha = `<section class="faltan fc-seccion" aria-labelledby="t-faltan">
+    <article class="tarjeta greige fc revela">
+      <span class="filete" aria-hidden="true"></span>
+      <span class="sello-pega"><img class="sello-img" data-sello="crema" alt=""></span>
+      <h2 class="titulo fc-titulo">Celebra con nosotros</h2>
+      <svg class="fc-mes" viewBox="0 0 220 56" aria-hidden="true"><path id="fc-arco" d="M40 52 Q110 8 180 52" fill="none"/><text><textPath href="#fc-arco" startOffset="50%" text-anchor="middle">${MES_CORTO}</textPath></text></svg>
+      <div class="fc-fila"><span>${DIA_SEM}</span><b>${D}</b><span id="fc-hora">${c.hora ? horaBonita(c.hora) : "HORA POR<br>CONFIRMAR"}</span></div>
+      <svg class="icono-linea fc-novios" aria-hidden="true"><use href="#i-novios"/></svg>
+      <p class="cap fc-que">${esc(c.comoLlegar || "Ceremonia")} &amp; ${esc(c.celebracion || "Celebración").toLowerCase()}</p>
+      <p class="fc-lugar">${esc(c.lugarNombre)}</p>
+      <a class="boton" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(c.lugarNombre + ", " + c.direccion)}"><svg aria-hidden="true"><use href="#i-ubicacion"/></svg>Ver mapa</a>
+    </article>
+    <article class="tarjeta crema arco fc-prepara revela">
+      <span class="filete" aria-hidden="true"></span>
+      <h2 class="titulo" id="t-faltan">¡Prepárate!</h2>
+      <p class="cap fc-sub">Nos vemos dentro de</p>
+      <div class="cuenta" role="timer" aria-live="off">
+        <div><b id="dd">—</b><span>días</span></div><div><b id="hh">—</b><span>horas</span></div>
+        <div><b id="mm">—</b><span>minutos</span></div><div><b id="ss">—</b><span>segundos</span></div>
+      </div>
+      <a class="boton" id="cal" target="_blank" rel="noopener" style="color:var(--salvia-osc)" href="#"><svg aria-hidden="true"><use href="#i-calendario"/></svg>Guardar en mi calendario</a>
+    </article>
+  </section>`;
+const antes = html.length;
+html = html.replace(/<section class="faltan"[\s\S]*?<\/section>/, nuevaFecha);
+if (html.length === antes) throw new Error("No encontré la sección «Faltan» en invitacion.html");
+r("</head>", `<style>
+  .fc-seccion{gap:0;padding:0 4px}
+  .fc{width:min(420px,100%);padding:58px 26px 70px;border-radius:26px;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .fc .sello-pega{left:50%;top:-30px;width:64px;height:64px;margin-left:-32px;transform:rotate(-8deg)}
+  .fc-titulo{font-size:clamp(17px,4.6vw,21px);letter-spacing:.22em}
+  .fc-mes{width:150px;height:40px;margin:4px 0 -10px;overflow:visible}
+  .fc-mes text{font-family:var(--grabado);font-size:17px;letter-spacing:.18em;fill:var(--tinta)}
+  .fc-fila{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;width:100%}
+  .fc-fila span{font-family:var(--grabado);font-size:clamp(11px,3.2vw,14px);letter-spacing:.14em;line-height:1.35;padding:7px 0;border-top:.75px solid currentColor;border-bottom:.75px solid currentColor;opacity:.9}
+  .fc-fila b{font-family:var(--grabado);font-weight:400;font-size:clamp(52px,14vw,68px);line-height:1;font-variant-numeric:lining-nums}
+  .fc-novios{width:150px;height:150px;margin:4px 0 2px}
+  .fc-que{letter-spacing:.2em;font-size:13px}
+  .fc-lugar{margin:2px 0 8px;font-family:var(--palo);font-size:13px;letter-spacing:.1em}
+  .fc-prepara{width:min(440px,96%);margin-top:-40px;padding-bottom:34px;z-index:3}
+  .fc-prepara .titulo{letter-spacing:.24em}
+  .fc-sub{margin:6px 0 14px;letter-spacing:.24em;font-size:11px}
+  .fc-prepara .cuenta{background:none;box-shadow:none;padding:6px 0 10px}
+  .fc-prepara .cuenta div + div{border-left:0}
+  .fc-prepara .cuenta div{position:relative}
+  .fc-prepara .cuenta div + div::before{content:":";position:absolute;left:-.12em;top:0;font-family:var(--grabado);font-size:clamp(26px,7vw,38px);line-height:1;color:var(--salvia-osc);opacity:.6;transform:translateX(-50%)}
+  .fc-prepara .cuenta b{font-weight:400}
+  .fc-prepara .cuenta span{letter-spacing:.1em;font-size:9px}
+  /* monograma del sobre: dos letras anchas (A A) no deben tocar el borde de la solapa */
+  .monograma-sobre span{font-size:clamp(100px,26vmin,176px)}
+  .monograma-sobre .c{margin:.34em 0 0 -1.3em}
+</style>\n</head>`);
+
 // ── El módulo: sin Firebase; los datos van escritos y la respuesta va al Google Forms ──
 const ini = html.indexOf('  import { initializeApp }'), finDb = html.indexOf("const db = getFirestore(app);");
 if (ini < 0 || finDb < 0) throw new Error("No encontré la conexión a Firebase en invitacion.html");
