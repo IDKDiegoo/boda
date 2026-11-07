@@ -110,8 +110,8 @@ r("</head>", `<style>
 r("Grabado.pintar(W, H, Grabado.mapaFlores(W, H, 7), c1)", "Grabado.pintar(W, H, window.__TEXTURA(W, H, 7), c1, { escala: 2.4, brillo: .05 })");
 r("Grabado.pintar(Math.round(W * 1.44), Math.round(H * .56), Grabado.mapaFlores(Math.round(W * 1.44), Math.round(H * .56), 23), c2)",
   "Grabado.pintar(Math.round(W * 1.44), Math.round(H * .56), window.__TEXTURA(Math.round(W * 1.44), Math.round(H * .56), 23), c2, { escala: 2.4, brillo: .05 })");
-r('Grabado.sello(180, "#e9e3d5", 31), Grabado.sello(180, c3, 31)', 'Grabado.sello(180, "#b8913f", 31), Grabado.sello(180, "#a98538", 31)');
-r('specularConstant=".12" specularExponent="30"', 'specularConstant=".7" specularExponent="16"');   // brillo de metal en el sello
+r('Grabado.sello(180, "#e9e3d5", 31), Grabado.sello(180, c3, 31)', 'Grabado.sello(180, "#a08356", 31), Grabado.sello(180, "#a08356", 31)');
+r('specularConstant=".12" specularExponent="30"', 'specularConstant=".32" specularExponent="18"');   // brillo de metal envejecido, como el sello de la referencia
 r("window.Grabado = (() => {", `// Relieve de papel con grano (en vez de flores): ruido fino + manchas suaves, como cartulina texturizada
 window.__TEXTURA = (W, H, s) => \`<defs>
   <filter id="tf\${s}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3" seed="\${s}"/><feColorMatrix values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1"/></filter>
@@ -125,7 +125,7 @@ r("</head>", `<style>
     color:color-mix(in srgb,var(--salvia-2) 72%,#fff 28%);filter:none;text-shadow:-1px -1px 0 rgba(255,255,255,.28),2px 3px 2px rgba(25,32,16,.42),5px 9px 14px rgba(25,32,16,.25)}
   .monograma-sobre .c{margin:.52em 0 0 -.5em !important}
   .toca{background:rgba(40,50,28,.28)}
-  .sello-img{background:radial-gradient(circle at 38% 32%,#f3e2a8,#c9a457 45%,#8d6d2c 100%)}
+  .sello-img{background:radial-gradient(circle at 38% 32%,#d9bd8a,#b39261 45%,#684a13 100%)}
   /* fondo de tela (se pinta una vez, abajo) */
   #tela{position:fixed;inset:0;z-index:0;pointer-events:none;background:#f3f1ec url(/inv/texturas/tela.jpg) center/cover no-repeat}
   /* papel moteado tipo piedra para las tarjetas greige */
