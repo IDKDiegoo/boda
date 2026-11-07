@@ -288,11 +288,20 @@
   .monograma-sobre .c{margin:.34em 0 0 -1.3em}
 </style>
 <style>
-  /* monograma grande, en relieve sobre el papel (letras romanas, la segunda corrida abajo a la derecha) */
-  .monograma-sobre{top:calc(9% - .1 * clamp(150px,40vmin,260px))}
-  .monograma-sobre span{font-family:var(--grabado);font-weight:400;font-size:clamp(150px,40vmin,260px);padding:.1em .2em .2em;background:none;-webkit-background-clip:border-box;background-clip:border-box;
-    color:color-mix(in srgb,var(--salvia-2) 72%,#fff 28%);filter:none;text-shadow:-1px -1px 0 rgba(255,255,255,.28),2px 3px 2px rgba(25,32,16,.42),5px 9px 14px rgba(25,32,16,.25)}
-  .monograma-sobre .c{margin:.52em 0 0 -.5em !important}
+  /* monograma igual al de la referencia (A P de Donato Planner): romana fina, alta y angosta, la segunda letra
+     montada abajo a la derecha sobre la pierna de la primera; clara y en relieve sobre el papel */
+  .monograma-sobre{display:block;top:6.5%;width:.86em;height:1.2em;font-size:clamp(170px,48vmin,300px);line-height:1}
+  .monograma-sobre span{position:absolute;font-family:"Cormorant Garamond",var(--grabado);font-weight:300;font-size:1em;line-height:1;padding:0;margin:0!important;transform-origin:0 0;transform:scaleX(.74);
+    background:none;-webkit-background-clip:border-box;background-clip:border-box;filter:none;color:color-mix(in srgb,var(--salvia-2) 55%,#f3efe2 45%);
+    text-shadow:-1px -1px 0 rgba(255,255,255,.3),2px 3px 2px rgba(25,32,16,.38),5px 9px 14px rgba(25,32,16,.28)}
+  .monograma-sobre .d{left:0;top:-.06em}
+  .monograma-sobre .c{left:.27em;top:.36em}
+  /* trama de lino en el sobre y en todas las tarjetas (más realista, como la referencia) */
+  .sobre{background:var(--salvia) url(/inv/texturas/lino.jpg) 0 0/384px 384px!important;background-blend-mode:soft-light!important}
+  .solapa{background:var(--salvia-2) url(/inv/texturas/lino.jpg) 0 0/384px 384px!important;background-blend-mode:soft-light!important}
+  .tarjeta::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:url(/inv/texturas/lino.jpg) 0 0/384px 384px;mix-blend-mode:soft-light;opacity:.8}
+  /* sin flores decorativas (no les gustaron) */
+  .decor{display:none!important}
   .toca{background:rgba(40,50,28,.28)}
   .sello-img{background:radial-gradient(circle at 38% 32%,#d9bd8a,#b39261 45%,#684a13 100%)}
   /* fondo de tela (se pinta una vez, abajo) */
