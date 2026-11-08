@@ -7,8 +7,8 @@
   "ciudad": "Pudahuel",
   "titulo": "¡Nos casamos!",
   "mensaje": "Con la bendición de Dios y de nuestras familias, queremos que nos acompañes en el día en que unimos nuestras vidas.",
-  "frase": "El amor es paciente, es bondadoso. Todo lo disculpa, todo lo cree, todo lo espera, todo lo soporta.",
-  "fraseCita": "1 Corintios 13, 4-7",
+  "frase": "",
+  "fraseCita": "",
   "foto": null,
   "fotoTexto": "",
   "lugarNombre": "Capilla Santa Cruz",
@@ -73,5 +73,7 @@
   "regalosLink": "https://milistadenovios.cl/lista/angelesyalejandro",
   "regalosBoton": "Ver lista de regalos",
   "celebracionHora": "19:00",
-  "ceremoniaImagen": "/inv/angeles-y-alejandro/it-ceremonia.png"
+  "ceremoniaImagen": "/inv/angeles-y-alejandro/it-ceremonia.png",
+  "letraNombres": "Mrs Saint Delafield",
+  "notaAdultos": "Con mucho cariño, les contamos que nuestra celebración será solo para adultos. ¡Gracias por comprender!"
 }

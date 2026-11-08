@@ -189,6 +189,20 @@ if (c.ceremoniaImagen) {
   r("</head>", `<style>.cer-img{width:min(230px,60vw);height:auto;margin:-6px auto 2px;display:block}</style>\n</head>`);
 }
 
+// Nombres en letra manuscrita fina (tipo firma), con «y» en vez de «&»
+if (c.letraNombres) {
+  r("</head>", `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(c.letraNombres).replace(/%20/g, "+")}&display=swap" rel="stylesheet">
+<style>
+  .principal .nombres{font-family:"${c.letraNombres}",var(--mano);font-weight:400;text-transform:none;letter-spacing:0;font-size:clamp(70px,20vw,104px);line-height:.92;margin-block:18px 10px}
+  .principal .nombres span{font-size:.55em;margin-block:-.05em .02em}
+</style>\n</head>`);
+}
+// Nota de «solo adultos» en la confirmación (lo lee todo el que responde)
+if (c.notaAdultos) r("</head>", `<style>
+  .nota-adultos{max-width:30ch;margin:4px auto 6px;font-family:"Cormorant Garamond",serif;font-style:italic;font-size:17px;line-height:1.45;color:var(--salvia-osc);display:flex;flex-direction:column;align-items:center;gap:8px}
+  .nota-adultos::before{content:"";width:46px;height:1px;background:currentColor;opacity:.5}
+</style>\n</head>`);
+
 // ── El módulo: sin Firebase; los datos van escritos y la respuesta va al Google Forms ──
 const ini = html.indexOf('  import { initializeApp }'), finDb = html.indexOf("const db = getFirestore(app);");
 if (ini < 0 || finDb < 0) throw new Error("No encontré la conexión a Firebase en invitacion.html");
@@ -228,6 +242,8 @@ html = html.slice(0, corte) + `
   if (cfg.mensaje) $("#mensaje").textContent = cfg.mensaje;
   const sub = $("#limite")?.closest("p");
   if (cfg.limite) $("#limite").textContent = cfg.limite; else if (sub) sub.innerHTML = "Por favor, confirma<br>tu asistencia";
+  if (cfg.notaAdultos && sub) { const n = document.createElement("p"); n.className = "nota-adultos"; n.textContent = cfg.notaAdultos; sub.after(n); }
+  if (cfg.letraNombres) { const y = $("#nombres span"); if (y) y.textContent = "y"; }
   const qCer = encodeURIComponent(cfg.lugarNombre + ", " + cfg.direccion);
   $("#mapa").href = "https://www.google.com/maps/search/?api=1&query=" + qCer;
   // La celebración es en otro lugar: dirección y su propio «Cómo llegar»
