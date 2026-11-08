@@ -58,11 +58,8 @@ const nuevaFecha = `<section class="faltan fc-seccion" aria-labelledby="t-faltan
       <svg class="fc-mes" viewBox="0 0 220 56" aria-hidden="true"><path id="fc-arco" d="M40 52 Q110 8 180 52" fill="none"/><text><textPath href="#fc-arco" startOffset="50%" text-anchor="middle">${MES_CORTO}</textPath></text></svg>
       <div class="fc-fila"><span>${DIA_SEM}</span><b>${D}</b><span id="fc-hora">${c.hora ? horaBonita(c.hora) : "HORA POR<br>CONFIRMAR"}</span></div>
       ${c.noviosImagen ? `<img class="fc-novios-img" src="${esc(c.noviosImagen)}" alt="" aria-hidden="true">` : '<svg class="icono-linea fc-novios" aria-hidden="true"><use href="#i-novios"/></svg>'}
-      <p class="cap fc-que">${esc(c.comoLlegar || "Ceremonia")} &amp; ${esc(c.celebracion || "Celebración").toLowerCase()}</p>
-      <p class="fc-lugar">${esc(c.lugarNombre)}</p>
-      <a class="boton" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(c.lugarNombre + ", " + c.direccion)}"><svg aria-hidden="true"><use href="#i-ubicacion"/></svg>Ver mapa</a>
     </article>
-    <article class="tarjeta crema arco fc-prepara revela">
+    <article class="tarjeta greige arco fc-prepara revela">
       <span class="filete" aria-hidden="true"></span>
       <h2 class="titulo" id="t-faltan">¡Prepárate!</h2>
       <p class="cap fc-sub">Nos vemos dentro de</p>
@@ -186,6 +183,12 @@ if (c.itinerarioVertical?.length) {
 </style>\n</head>`);
 }
 
+// Ceremonia: dibujo propio (la iglesia a lápiz) en vez del arco
+if (c.ceremoniaImagen) {
+  r('<svg class="icono-linea" aria-hidden="true"><use href="#i-arco"/></svg>', `<img class="cer-img" src="${esc(c.ceremoniaImagen)}" alt="" aria-hidden="true">`);
+  r("</head>", `<style>.cer-img{width:min(230px,60vw);height:auto;margin:-6px auto 2px;display:block}</style>\n</head>`);
+}
+
 // ── El módulo: sin Firebase; los datos van escritos y la respuesta va al Google Forms ──
 const ini = html.indexOf('  import { initializeApp }'), finDb = html.indexOf("const db = getFirestore(app);");
 if (ini < 0 || finDb < 0) throw new Error("No encontré la conexión a Firebase en invitacion.html");
@@ -231,6 +234,7 @@ html = html.slice(0, corte) + `
   if (cfg.celebracionLugar) {
     const t = $("#celebra-nota"), a = document.createElement("a");
     t.textContent = cfg.celebracionLugar; t.hidden = false; t.style.display = "";
+    if (cfg.celebracionHora) { const h = document.createElement("p"); h.className = "hora-grande cel-hora"; h.innerHTML = "<span>" + cfg.celebracionHora + "</span> hrs"; $("#celebra").before(h); }
     a.className = "boton"; a.target = "_blank"; a.rel = "noopener"; a.style.marginTop = "8px";
     a.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(cfg.celebracionLugar);
     a.innerHTML = '<svg aria-hidden="true"><use href="#i-ubicacion"/></svg>Cómo llegar'; t.after(a);

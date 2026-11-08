@@ -331,6 +331,7 @@
   .anima-itin.visto .itin-lista li{opacity:1;transform:none}
   @media (prefers-reduced-motion:reduce){.anima-itin .itin-lista li{opacity:1;transform:none}}
 </style>
+<style>.cer-img{width:min(230px,60vw);height:auto;margin:-6px auto 2px;display:block}</style>
 </head><body class="cerrada">
 <script>document.documentElement.classList.add("cerrada");</script>
 
@@ -523,11 +524,8 @@
       <svg class="fc-mes" viewBox="0 0 220 56" aria-hidden="true"><path id="fc-arco" d="M40 52 Q110 8 180 52" fill="none"/><text><textPath href="#fc-arco" startOffset="50%" text-anchor="middle">ENERO</textPath></text></svg>
       <div class="fc-fila"><span>SÁBADO</span><b>16</b><span id="fc-hora">6:00 P.M.</span></div>
       <img class="fc-novios-img" src="/inv/angeles-y-alejandro/novios.png" alt="" aria-hidden="true">
-      <p class="cap fc-que">Ceremonia religiosa &amp; recepción</p>
-      <p class="fc-lugar">Capilla Santa Cruz</p>
-      <a class="boton" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;query=Capilla%20Santa%20Cruz%2C%20La%20Capilla%20115%2C%20Pudahuel"><svg aria-hidden="true"><use href="#i-ubicacion"/></svg>Ver mapa</a>
     </article>
-    <article class="tarjeta crema arco fc-prepara revela">
+    <article class="tarjeta greige arco fc-prepara revela">
       <span class="filete" aria-hidden="true"></span>
       <h2 class="titulo" id="t-faltan">¡Prepárate!</h2>
       <p class="cap fc-sub">Nos vemos dentro de</p>
@@ -542,7 +540,7 @@
   <section class="escena lugar" aria-label="Dónde">
     <article class="tarjeta crema ceremonia revela">
       <span class="filete" aria-hidden="true"></span>
-      <svg class="icono-linea" aria-hidden="true"><use href="#i-arco"/></svg>
+      <img class="cer-img" src="/inv/angeles-y-alejandro/it-ceremonia.png" alt="" aria-hidden="true">
       <h2 class="titulo" style="font-size:27px">Ceremonia</h2>
       <p class="hora-grande"><span id="hora">13:00</span> hrs</p>
       <p class="dir"><span id="lugar-nombre">Parcela en Lampa</span><br><span id="lugar-dir">Lampa, Región Metropolitana</span></p>
@@ -1236,7 +1234,7 @@ window.Grabado = (() => {
 
 
   // ═══ Invitación suelta (scripts/invitaciones/generar.mjs): datos escritos y confirmación por Google Forms ═══
-  const cfg = {"slug":"angeles-y-alejandro","nombre1":"Ángeles","nombre2":"Alejandro","fecha":"2027-01-16","hora":"18:00","ciudad":"Pudahuel","titulo":"¡Nos casamos!","mensaje":"Con la bendición de Dios y de nuestras familias, queremos que nos acompañes en el día en que unimos nuestras vidas.","frase":"El amor es paciente, es bondadoso. Todo lo disculpa, todo lo cree, todo lo espera, todo lo soporta.","fraseCita":"1 Corintios 13, 4-7","foto":null,"fotoTexto":"","lugarNombre":"Capilla Santa Cruz","direccion":"La Capilla 115, Pudahuel","comoLlegar":"Ceremonia religiosa","celebracion":"Recepción","celebracionLugar":"Doña Isabel 745, Lomas de Lo Aguirre, Pudahuel","celebracionNota":"","vestimenta":"Formal","vestimentaTexto":"Ellas: vestido largo o de cóctel. Ellos: traje y corbata.","vestimentaNota":"","regalos":"El mejor regalo será compartir este día tan especial con ustedes.\n\nPero si desean hacernos un obsequio, pueden ayudarnos a cumplir otro de nuestros sueños: vivir una luna de miel inolvidable.\n\nConoce nuestra lista de regalos:","regalosNota":"","limite":null,"programa":[],"paleta":["#6b7a45","#7b8a54","#4f5c2f","#333d1f"],"musicaArchivo":null,"musicaInicio":null,"google":{"accion":null,"campos":null},"monogramaImagen":"/inv/angeles-y-alejandro/monograma.png","noviosImagen":"/inv/angeles-y-alejandro/novios.png","itinerarioVertical":[{"hora":"18:00","actividad":"Ceremonia","imagen":"it-ceremonia"},{"hora":"19:00","actividad":"Cóctel de bienvenida","imagen":"it-coctel"},{"hora":"20:00","actividad":"Primer baile","imagen":"it-baile"},{"hora":"20:30","actividad":"Cena","imagen":"it-cena"},{"hora":"21:30","actividad":"Fiesta","imagen":"it-fiesta"},{"hora":"02:00","actividad":"Fin de la celebración","imagen":"it-fin"}],"regalosLink":"https://milistadenovios.cl/lista/angelesyalejandro","regalosBoton":"Ver lista de regalos"};
+  const cfg = {"slug":"angeles-y-alejandro","nombre1":"Ángeles","nombre2":"Alejandro","fecha":"2027-01-16","hora":"18:00","ciudad":"Pudahuel","titulo":"¡Nos casamos!","mensaje":"Con la bendición de Dios y de nuestras familias, queremos que nos acompañes en el día en que unimos nuestras vidas.","frase":"El amor es paciente, es bondadoso. Todo lo disculpa, todo lo cree, todo lo espera, todo lo soporta.","fraseCita":"1 Corintios 13, 4-7","foto":null,"fotoTexto":"","lugarNombre":"Capilla Santa Cruz","direccion":"La Capilla 115, Pudahuel","comoLlegar":"Ceremonia religiosa","celebracion":"Recepción","celebracionLugar":"Doña Isabel 745, Lomas de Lo Aguirre, Pudahuel","celebracionNota":"","vestimenta":"Formal","vestimentaTexto":"Ellas: vestido largo o de cóctel. Ellos: traje y corbata.","vestimentaNota":"","regalos":"El mejor regalo será compartir este día tan especial con ustedes.\n\nPero si desean hacernos un obsequio, pueden ayudarnos a cumplir otro de nuestros sueños: vivir una luna de miel inolvidable.\n\nConoce nuestra lista de regalos:","regalosNota":"","limite":null,"programa":[],"paleta":["#6b7a45","#7b8a54","#4f5c2f","#333d1f"],"musicaArchivo":null,"musicaInicio":null,"google":{"accion":null,"campos":null},"monogramaImagen":"/inv/angeles-y-alejandro/monograma.png","noviosImagen":"/inv/angeles-y-alejandro/novios.png","itinerarioVertical":[{"hora":"18:00","actividad":"Ceremonia","imagen":"it-ceremonia"},{"hora":"19:00","actividad":"Cóctel de bienvenida","imagen":"it-coctel"},{"hora":"20:00","actividad":"Primer baile","imagen":"it-baile"},{"hora":"20:30","actividad":"Cena","imagen":"it-cena"},{"hora":"21:30","actividad":"Fiesta","imagen":"it-fiesta"},{"hora":"02:00","actividad":"Fin de la celebración","imagen":"it-fin"}],"regalosLink":"https://milistadenovios.cl/lista/angelesyalejandro","regalosBoton":"Ver lista de regalos","celebracionHora":"19:00","ceremoniaImagen":"/inv/angeles-y-alejandro/it-ceremonia.png"};
   P = personalizar({ ...cfg, paleta: null }, false);   // los colores ya vienen puestos arriba (window.__PALETA)
   const I1 = "A", I2 = "A";
   txt("#mono-1", I1); txt("#mono-2", I2);
@@ -1271,6 +1269,7 @@ window.Grabado = (() => {
   if (cfg.celebracionLugar) {
     const t = $("#celebra-nota"), a = document.createElement("a");
     t.textContent = cfg.celebracionLugar; t.hidden = false; t.style.display = "";
+    if (cfg.celebracionHora) { const h = document.createElement("p"); h.className = "hora-grande cel-hora"; h.innerHTML = "<span>" + cfg.celebracionHora + "</span> hrs"; $("#celebra").before(h); }
     a.className = "boton"; a.target = "_blank"; a.rel = "noopener"; a.style.marginTop = "8px";
     a.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(cfg.celebracionLugar);
     a.innerHTML = '<svg aria-hidden="true"><use href="#i-ubicacion"/></svg>Cómo llegar'; t.after(a);
