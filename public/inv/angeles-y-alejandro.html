@@ -270,6 +270,7 @@
   .fc-fila span{font-family:var(--grabado);font-size:clamp(11px,3.2vw,14px);letter-spacing:.14em;line-height:1.35;padding:7px 0;border-top:.75px solid currentColor;border-bottom:.75px solid currentColor;opacity:.9}
   .fc-fila b{font-family:var(--grabado);font-weight:400;font-size:clamp(52px,14vw,68px);line-height:1;font-variant-numeric:lining-nums}
   .fc-novios{width:150px;height:150px;margin:4px 0 2px}
+  .fc-novios-img{width:min(190px,52vw);height:auto;margin:6px 0 4px;opacity:.92}
   .fc-que{letter-spacing:.2em;font-size:13px}
   .fc-lugar{margin:2px 0 8px;font-family:var(--palo);font-size:13px;letter-spacing:.1em}
   .fc-prepara{width:min(440px,96%);margin-top:-40px;padding-bottom:34px;z-index:3}
@@ -308,6 +309,27 @@
   #tela{position:fixed;inset:0;z-index:0;pointer-events:none;background:#f3f1ec url(/inv/texturas/tela.jpg) center/cover no-repeat}
   /* papel moteado tipo piedra para las tarjetas greige */
   .tarjeta.greige,.fc{background-color:#d8d2c3;background-image:url(/inv/texturas/papel.jpg)!important;background-size:512px 512px}
+</style>
+<style>
+  .monograma-sobre.mono-img{display:block;width:min(52vw,280px);height:auto;aspect-ratio:1.068;top:6%;font-size:16px;
+    filter:drop-shadow(-1px -1px 0 rgba(255,255,255,.3)) drop-shadow(2px 3px 2px rgba(25,32,16,.42)) drop-shadow(5px 9px 12px rgba(25,32,16,.25))}
+  .mono-img i,.mono-pie i{display:block;width:100%;height:100%;-webkit-mask:url(/inv/angeles-y-alejandro/monograma.png) center/contain no-repeat;mask:url(/inv/angeles-y-alejandro/monograma.png) center/contain no-repeat}
+  .mono-img i{background:color-mix(in srgb,var(--salvia-2) 50%,#f3efe2 50%)}
+  .mono-pie{width:150px;aspect-ratio:1.068;margin:0 auto}
+  .mono-pie i{background:var(--salvia-osc)}
+</style>
+<style>
+  .itin-tarjeta{padding:54px 18px 46px;display:flex;flex-direction:column;align-items:center;gap:26px}
+  .itin-lista{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-direction:column;gap:26px;position:relative}
+  .itin-lista::before{content:"";position:absolute;left:calc(46% + 8px);top:14px;bottom:30px;width:1px;background:color-mix(in srgb,var(--salvia-osc) 55%,transparent)}
+  .itin-lista li{display:grid;grid-template-columns:46% 17px 1fr;align-items:center;column-gap:12px;text-align:left}
+  .itin-lista img{width:100%;max-width:170px;max-height:112px;object-fit:contain;justify-self:end}
+  .itin-punto{width:7px;height:7px;border-radius:50%;background:var(--salvia-osc);justify-self:center;position:relative;z-index:1}
+  .itin-lista time{display:block;font-family:"Cormorant Garamond",serif;font-weight:600;font-size:clamp(24px,6.6vw,30px);line-height:1.05;color:var(--salvia-osc);font-variant-numeric:lining-nums}
+  .itin-lista span{display:block;font-family:var(--grabado);font-size:clamp(11px,3.1vw,13.5px);letter-spacing:.16em;text-transform:uppercase;line-height:1.4;margin-top:3px}
+  .anima-itin .itin-lista li{opacity:0;transform:translateY(16px);transition:opacity .8s ease calc(var(--i) * .18s),transform .8s cubic-bezier(.2,.7,.2,1) calc(var(--i) * .18s)}
+  .anima-itin.visto .itin-lista li{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){.anima-itin .itin-lista li{opacity:1;transform:none}}
 </style>
 </head><body class="cerrada">
 <script>document.documentElement.classList.add("cerrada");</script>
@@ -459,7 +481,7 @@
   <div class="solapa-sombra"><div class="solapa" id="solapa"></div>
     <svg class="solapa-borde" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 .2 L50 99.6 L100 .2" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>
   </div>
-  <div class="monograma-sobre" aria-hidden="true"><span class="d" id="mono-1">A</span><span class="c" id="mono-2">A</span></div>
+  <div class="monograma-sobre mono-img" aria-hidden="true"><i></i></div>
   <div class="toca">Toca el sello para abrir</div>
   <button class="sello-btn" id="abrir" aria-label="Abrir la invitación"><img class="sello-img" data-sello="crema" alt=""></button>
   <div class="para-sobre"><div class="cap">Para</div><b data-para>&nbsp;</b><div class="cap" id="para-con-sobre" hidden></div></div>
@@ -499,8 +521,8 @@
       <span class="sello-pega"><img class="sello-img" data-sello="crema" alt=""></span>
       <h2 class="titulo fc-titulo">Celebra con nosotros</h2>
       <svg class="fc-mes" viewBox="0 0 220 56" aria-hidden="true"><path id="fc-arco" d="M40 52 Q110 8 180 52" fill="none"/><text><textPath href="#fc-arco" startOffset="50%" text-anchor="middle">ENERO</textPath></text></svg>
-      <div class="fc-fila"><span>SÁBADO</span><b>16</b><span id="fc-hora">HORA POR<br>CONFIRMAR</span></div>
-      <svg class="icono-linea fc-novios" aria-hidden="true"><use href="#i-novios"/></svg>
+      <div class="fc-fila"><span>SÁBADO</span><b>16</b><span id="fc-hora">6:00 P.M.</span></div>
+      <img class="fc-novios-img" src="/inv/angeles-y-alejandro/novios.png" alt="" aria-hidden="true">
       <p class="cap fc-que">Ceremonia religiosa &amp; recepción</p>
       <p class="fc-lugar">Capilla Santa Cruz</p>
       <a class="boton" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;query=Capilla%20Santa%20Cruz%2C%20La%20Capilla%20115%2C%20Pudahuel"><svg aria-hidden="true"><use href="#i-ubicacion"/></svg>Ver mapa</a>
@@ -537,6 +559,20 @@
     <svg class="decor" data-ramo="calas" data-semilla="12" style="left:-34px;bottom:-26px;width:min(130px,30vw);height:250px" aria-hidden="true"></svg>
   </section>
 
+  <section class="itin-v" aria-labelledby="t-itin-v">
+    <article class="tarjeta crema itin-tarjeta revela">
+      <span class="filete" aria-hidden="true"></span>
+      <h2 class="titulo" id="t-itin-v">Itinerario</h2>
+      <ol class="itin-lista">
+        <li style="--i:0"><img src="/inv/angeles-y-alejandro/it-ceremonia.png" alt="" aria-hidden="true"><i class="itin-punto"></i><div><time>18:00</time><span>Ceremonia</span></div></li>
+        <li style="--i:1"><img src="/inv/angeles-y-alejandro/it-coctel.png" alt="" aria-hidden="true"><i class="itin-punto"></i><div><time>19:00</time><span>Cóctel de bienvenida</span></div></li>
+        <li style="--i:2"><img src="/inv/angeles-y-alejandro/it-baile.png" alt="" aria-hidden="true"><i class="itin-punto"></i><div><time>20:00</time><span>Primer baile</span></div></li>
+        <li style="--i:3"><img src="/inv/angeles-y-alejandro/it-cena.png" alt="" aria-hidden="true"><i class="itin-punto"></i><div><time>20:30</time><span>Cena</span></div></li>
+        <li style="--i:4"><img src="/inv/angeles-y-alejandro/it-fiesta.png" alt="" aria-hidden="true"><i class="itin-punto"></i><div><time>21:30</time><span>Fiesta</span></div></li>
+        <li style="--i:5"><img src="/inv/angeles-y-alejandro/it-fin.png" alt="" aria-hidden="true"><i class="itin-punto"></i><div><time>02:00</time><span>Fin de la celebración</span></div></li>
+      </ol>
+    </article>
+  </section>
   <section class="itinerario" id="itinerario" aria-labelledby="t-itin">
     <div class="cinta-sombra"><div class="cinta">
       <h2 id="t-itin">Itinerario</h2>
@@ -625,7 +661,7 @@
   </section>
 
   <footer>
-    <div class="mono" aria-hidden="true" id="pie-mono">D&amp;C</div>
+    <div class="mono mono-pie" aria-hidden="true" id="pie-mono"><i></i></div>
     <p class="cap" id="pie-nombres">Ángeles &amp; Alejandro</p>
     <p class="cap chica" id="pie-fecha">18 · 12 · 2026 · Lampa</p>
   </footer>
@@ -1200,10 +1236,18 @@ window.Grabado = (() => {
 
 
   // ═══ Invitación suelta (scripts/invitaciones/generar.mjs): datos escritos y confirmación por Google Forms ═══
-  const cfg = {"slug":"angeles-y-alejandro","nombre1":"Ángeles","nombre2":"Alejandro","fecha":"2027-01-16","hora":null,"ciudad":"Pudahuel","titulo":"¡Nos casamos!","mensaje":"Con la bendición de Dios y de nuestras familias, queremos que nos acompañes en el día en que unimos nuestras vidas.","frase":"El amor es paciente, es bondadoso. Todo lo disculpa, todo lo cree, todo lo espera, todo lo soporta.","fraseCita":"1 Corintios 13, 4-7","foto":null,"fotoTexto":"","lugarNombre":"Capilla Santa Cruz","direccion":"La Capilla 115, Pudahuel","comoLlegar":"Ceremonia religiosa","celebracion":"Recepción","celebracionLugar":"Doña Isabel 745, Lomas de Lo Aguirre, Pudahuel","celebracionNota":"","vestimenta":"Formal","vestimentaTexto":"Ellas: vestido largo o de cóctel. Ellos: traje y corbata.","vestimentaNota":"","regalos":"Tu presencia es nuestro mejor regalo.","regalosNota":"","limite":null,"programa":[],"paleta":["#6b7a45","#7b8a54","#4f5c2f","#333d1f"],"musicaArchivo":null,"musicaInicio":null,"google":{"accion":null,"campos":null}};
+  const cfg = {"slug":"angeles-y-alejandro","nombre1":"Ángeles","nombre2":"Alejandro","fecha":"2027-01-16","hora":"18:00","ciudad":"Pudahuel","titulo":"¡Nos casamos!","mensaje":"Con la bendición de Dios y de nuestras familias, queremos que nos acompañes en el día en que unimos nuestras vidas.","frase":"El amor es paciente, es bondadoso. Todo lo disculpa, todo lo cree, todo lo espera, todo lo soporta.","fraseCita":"1 Corintios 13, 4-7","foto":null,"fotoTexto":"","lugarNombre":"Capilla Santa Cruz","direccion":"La Capilla 115, Pudahuel","comoLlegar":"Ceremonia religiosa","celebracion":"Recepción","celebracionLugar":"Doña Isabel 745, Lomas de Lo Aguirre, Pudahuel","celebracionNota":"","vestimenta":"Formal","vestimentaTexto":"Ellas: vestido largo o de cóctel. Ellos: traje y corbata.","vestimentaNota":"","regalos":"El mejor regalo será compartir este día tan especial con ustedes.\n\nPero si desean hacernos un obsequio, pueden ayudarnos a cumplir otro de nuestros sueños: vivir una luna de miel inolvidable.\n\nConoce nuestra lista de regalos:","regalosNota":"","limite":null,"programa":[],"paleta":["#6b7a45","#7b8a54","#4f5c2f","#333d1f"],"musicaArchivo":null,"musicaInicio":null,"google":{"accion":null,"campos":null},"monogramaImagen":"/inv/angeles-y-alejandro/monograma.png","noviosImagen":"/inv/angeles-y-alejandro/novios.png","itinerarioVertical":[{"hora":"18:00","actividad":"Ceremonia","imagen":"it-ceremonia"},{"hora":"19:00","actividad":"Cóctel de bienvenida","imagen":"it-coctel"},{"hora":"20:00","actividad":"Primer baile","imagen":"it-baile"},{"hora":"20:30","actividad":"Cena","imagen":"it-cena"},{"hora":"21:30","actividad":"Fiesta","imagen":"it-fiesta"},{"hora":"02:00","actividad":"Fin de la celebración","imagen":"it-fin"}],"regalosLink":"https://milistadenovios.cl/lista/angelesyalejandro","regalosBoton":"Ver lista de regalos"};
   P = personalizar({ ...cfg, paleta: null }, false);   // los colores ya vienen puestos arriba (window.__PALETA)
   const I1 = "A", I2 = "A";
-  txt("#mono-1", I1); txt("#mono-2", I2); txt("#pie-mono", I1 + "&" + I2);
+  txt("#mono-1", I1); txt("#mono-2", I2);
+  if (cfg.monogramaImagen) $("#pie-mono").innerHTML = "<i></i>"; else txt("#pie-mono", I1 + "&" + I2);
+  // Itinerario vertical: los hitos aparecen de a uno al llegar
+  const iv = document.querySelector(".itin-v");
+  if (iv && "IntersectionObserver" in window) { iv.classList.add("anima-itin"); new IntersectionObserver((es, o) => es.forEach((e) => { if (e.isIntersecting) { iv.classList.add("visto"); o.disconnect(); } }), { threshold: .2 }).observe(iv); }
+  // Regalos: texto en párrafos y botón a la lista
+  if (cfg.regalos) { const t = $("#regalos-texto"); t.style.whiteSpace = "pre-line"; t.textContent = cfg.regalos; }
+  if (cfg.regalosLink) { const a = document.createElement("a"); a.className = "boton"; a.href = cfg.regalosLink; a.target = "_blank"; a.rel = "noopener"; a.style.marginTop = "14px";
+    a.innerHTML = '<svg aria-hidden="true"><use href="#i-regalo"/></svg>' + (cfg.regalosBoton || "Ver lista de regalos"); $("#regalos-texto").after(a); }
   // Nombres largos (ALEJANDRO): se achican hasta caber dentro del filete de la tarjeta, en cualquier pantalla
   const ajustarNombres = () => {
     const h = $("#nombres"); if (!h) return; h.style.fontSize = "";

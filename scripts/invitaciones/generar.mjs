@@ -57,7 +57,7 @@ const nuevaFecha = `<section class="faltan fc-seccion" aria-labelledby="t-faltan
       <h2 class="titulo fc-titulo">Celebra con nosotros</h2>
       <svg class="fc-mes" viewBox="0 0 220 56" aria-hidden="true"><path id="fc-arco" d="M40 52 Q110 8 180 52" fill="none"/><text><textPath href="#fc-arco" startOffset="50%" text-anchor="middle">${MES_CORTO}</textPath></text></svg>
       <div class="fc-fila"><span>${DIA_SEM}</span><b>${D}</b><span id="fc-hora">${c.hora ? horaBonita(c.hora) : "HORA POR<br>CONFIRMAR"}</span></div>
-      <svg class="icono-linea fc-novios" aria-hidden="true"><use href="#i-novios"/></svg>
+      ${c.noviosImagen ? `<img class="fc-novios-img" src="${esc(c.noviosImagen)}" alt="" aria-hidden="true">` : '<svg class="icono-linea fc-novios" aria-hidden="true"><use href="#i-novios"/></svg>'}
       <p class="cap fc-que">${esc(c.comoLlegar || "Ceremonia")} &amp; ${esc(c.celebracion || "Celebración").toLowerCase()}</p>
       <p class="fc-lugar">${esc(c.lugarNombre)}</p>
       <a class="boton" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(c.lugarNombre + ", " + c.direccion)}"><svg aria-hidden="true"><use href="#i-ubicacion"/></svg>Ver mapa</a>
@@ -87,6 +87,7 @@ r("</head>", `<style>
   .fc-fila span{font-family:var(--grabado);font-size:clamp(11px,3.2vw,14px);letter-spacing:.14em;line-height:1.35;padding:7px 0;border-top:.75px solid currentColor;border-bottom:.75px solid currentColor;opacity:.9}
   .fc-fila b{font-family:var(--grabado);font-weight:400;font-size:clamp(52px,14vw,68px);line-height:1;font-variant-numeric:lining-nums}
   .fc-novios{width:150px;height:150px;margin:4px 0 2px}
+  .fc-novios-img{width:min(190px,52vw);height:auto;margin:6px 0 4px;opacity:.92}
   .fc-que{letter-spacing:.2em;font-size:13px}
   .fc-lugar{margin:2px 0 8px;font-family:var(--palo);font-size:13px;letter-spacing:.1em}
   .fc-prepara{width:min(440px,96%);margin-top:-40px;padding-bottom:34px;z-index:3}
@@ -143,6 +144,48 @@ r("</head>", `<style>
 </head>`);
 r("</body>", `<div id="tela" aria-hidden="true"></div>\n</body>`);   // fondo de tela (texturas.py)
 
+// ── Monograma propio de la pareja (imagen: tinta = blanco con transparencia), pintado como relieve ──
+if (c.monogramaImagen) {
+  r(`<div class="monograma-sobre" aria-hidden="true"><span class="d" id="mono-1">${esc(inicial(n1))}</span><span class="c" id="mono-2">${esc(inicial(n2))}</span></div>`,
+    `<div class="monograma-sobre mono-img" aria-hidden="true"><i></i></div>`);
+  r('<div class="mono" aria-hidden="true" id="pie-mono">D&amp;C</div>', '<div class="mono mono-pie" aria-hidden="true" id="pie-mono"><i></i></div>');
+  r("</head>", `<style>
+  .monograma-sobre.mono-img{display:block;width:min(52vw,280px);height:auto;aspect-ratio:${c.monogramaProporcion || 1.068};top:6%;font-size:16px;
+    filter:drop-shadow(-1px -1px 0 rgba(255,255,255,.3)) drop-shadow(2px 3px 2px rgba(25,32,16,.42)) drop-shadow(5px 9px 12px rgba(25,32,16,.25))}
+  .mono-img i,.mono-pie i{display:block;width:100%;height:100%;-webkit-mask:url(${c.monogramaImagen}) center/contain no-repeat;mask:url(${c.monogramaImagen}) center/contain no-repeat}
+  .mono-img i{background:color-mix(in srgb,var(--salvia-2) 50%,#f3efe2 50%)}
+  .mono-pie{width:150px;aspect-ratio:${c.monogramaProporcion || 1.068};margin:0 auto}
+  .mono-pie i{background:var(--salvia-osc)}
+</style>\n</head>`);
+}
+// ── Itinerario vertical con dibujos (referencia de la pareja): dibujo | línea con punto | hora y actividad ──
+if (c.itinerarioVertical?.length) {
+  const carpeta = `/inv/${slug}/`;
+  r('<section class="itinerario" id="itinerario"', `<section class="itin-v" aria-labelledby="t-itin-v">
+    <article class="tarjeta crema itin-tarjeta revela">
+      <span class="filete" aria-hidden="true"></span>
+      <h2 class="titulo" id="t-itin-v">Itinerario</h2>
+      <ol class="itin-lista">${c.itinerarioVertical.map((x, i) => `
+        <li style="--i:${i}"><img src="${carpeta}${esc(x.imagen)}.png" alt="" aria-hidden="true"><i class="itin-punto"></i><div><time>${esc(x.hora)}</time><span>${esc(x.actividad)}</span></div></li>`).join("")}
+      </ol>
+    </article>
+  </section>
+  <section class="itinerario" id="itinerario"`);
+  r("</head>", `<style>
+  .itin-tarjeta{padding:54px 18px 46px;display:flex;flex-direction:column;align-items:center;gap:26px}
+  .itin-lista{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-direction:column;gap:26px;position:relative}
+  .itin-lista::before{content:"";position:absolute;left:calc(46% + 8px);top:14px;bottom:30px;width:1px;background:color-mix(in srgb,var(--salvia-osc) 55%,transparent)}
+  .itin-lista li{display:grid;grid-template-columns:46% 17px 1fr;align-items:center;column-gap:12px;text-align:left}
+  .itin-lista img{width:100%;max-width:170px;max-height:112px;object-fit:contain;justify-self:end}
+  .itin-punto{width:7px;height:7px;border-radius:50%;background:var(--salvia-osc);justify-self:center;position:relative;z-index:1}
+  .itin-lista time{display:block;font-family:"Cormorant Garamond",serif;font-weight:600;font-size:clamp(24px,6.6vw,30px);line-height:1.05;color:var(--salvia-osc);font-variant-numeric:lining-nums}
+  .itin-lista span{display:block;font-family:var(--grabado);font-size:clamp(11px,3.1vw,13.5px);letter-spacing:.16em;text-transform:uppercase;line-height:1.4;margin-top:3px}
+  .anima-itin .itin-lista li{opacity:0;transform:translateY(16px);transition:opacity .8s ease calc(var(--i) * .18s),transform .8s cubic-bezier(.2,.7,.2,1) calc(var(--i) * .18s)}
+  .anima-itin.visto .itin-lista li{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){.anima-itin .itin-lista li{opacity:1;transform:none}}
+</style>\n</head>`);
+}
+
 // ── El módulo: sin Firebase; los datos van escritos y la respuesta va al Google Forms ──
 const ini = html.indexOf('  import { initializeApp }'), finDb = html.indexOf("const db = getFirestore(app);");
 if (ini < 0 || finDb < 0) throw new Error("No encontré la conexión a Firebase en invitacion.html");
@@ -156,7 +199,15 @@ html = html.slice(0, corte) + `
   const cfg = ${datos};
   P = personalizar({ ...cfg, paleta: null }, false);   // los colores ya vienen puestos arriba (window.__PALETA)
   const I1 = "${inicial(n1)}", I2 = "${inicial(n2)}";
-  txt("#mono-1", I1); txt("#mono-2", I2); txt("#pie-mono", I1 + "&" + I2);
+  txt("#mono-1", I1); txt("#mono-2", I2);
+  if (cfg.monogramaImagen) $("#pie-mono").innerHTML = "<i></i>"; else txt("#pie-mono", I1 + "&" + I2);
+  // Itinerario vertical: los hitos aparecen de a uno al llegar
+  const iv = document.querySelector(".itin-v");
+  if (iv && "IntersectionObserver" in window) { iv.classList.add("anima-itin"); new IntersectionObserver((es, o) => es.forEach((e) => { if (e.isIntersecting) { iv.classList.add("visto"); o.disconnect(); } }), { threshold: .2 }).observe(iv); }
+  // Regalos: texto en párrafos y botón a la lista
+  if (cfg.regalos) { const t = $("#regalos-texto"); t.style.whiteSpace = "pre-line"; t.textContent = cfg.regalos; }
+  if (cfg.regalosLink) { const a = document.createElement("a"); a.className = "boton"; a.href = cfg.regalosLink; a.target = "_blank"; a.rel = "noopener"; a.style.marginTop = "14px";
+    a.innerHTML = '<svg aria-hidden="true"><use href="#i-regalo"/></svg>' + (cfg.regalosBoton || "Ver lista de regalos"); $("#regalos-texto").after(a); }
   // Nombres largos (ALEJANDRO): se achican hasta caber dentro del filete de la tarjeta, en cualquier pantalla
   const ajustarNombres = () => {
     const h = $("#nombres"); if (!h) return; h.style.fontSize = "";
