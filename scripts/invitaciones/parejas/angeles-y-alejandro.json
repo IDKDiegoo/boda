@@ -3,7 +3,7 @@
   "nombre1": "Ángeles",
   "nombre2": "Alejandro",
   "fecha": "2027-01-16",
-  "hora": null,
+  "hora": "18:00",
   "ciudad": "Pudahuel",
   "titulo": "¡Nos casamos!",
   "mensaje": "Con la bendición de Dios y de nuestras familias, queremos que nos acompañes en el día en que unimos nuestras vidas.",
@@ -20,12 +20,56 @@
   "vestimenta": "Formal",
   "vestimentaTexto": "Ellas: vestido largo o de cóctel. Ellos: traje y corbata.",
   "vestimentaNota": "",
-  "regalos": "Tu presencia es nuestro mejor regalo.",
+  "regalos": "El mejor regalo será compartir este día tan especial con ustedes.\n\nPero si desean hacernos un obsequio, pueden ayudarnos a cumplir otro de nuestros sueños: vivir una luna de miel inolvidable.\n\nConoce nuestra lista de regalos:",
   "regalosNota": "",
   "limite": null,
   "programa": [],
-  "paleta": ["#6b7a45", "#7b8a54", "#4f5c2f", "#333d1f"],
+  "paleta": [
+    "#6b7a45",
+    "#7b8a54",
+    "#4f5c2f",
+    "#333d1f"
+  ],
   "musicaArchivo": null,
   "musicaInicio": null,
-  "google": { "accion": null, "campos": null }
+  "google": {
+    "accion": null,
+    "campos": null
+  },
+  "monogramaImagen": "/inv/angeles-y-alejandro/monograma.png",
+  "noviosImagen": "/inv/angeles-y-alejandro/novios.png",
+  "itinerarioVertical": [
+    {
+      "hora": "18:00",
+      "actividad": "Ceremonia",
+      "imagen": "it-ceremonia"
+    },
+    {
+      "hora": "19:00",
+      "actividad": "Cóctel de bienvenida",
+      "imagen": "it-coctel"
+    },
+    {
+      "hora": "20:00",
+      "actividad": "Primer baile",
+      "imagen": "it-baile"
+    },
+    {
+      "hora": "20:30",
+      "actividad": "Cena",
+      "imagen": "it-cena"
+    },
+    {
+      "hora": "21:30",
+      "actividad": "Fiesta",
+      "imagen": "it-fiesta"
+    },
+    {
+      "hora": "02:00",
+      "actividad": "Fin de la celebración",
+      "imagen": "it-fin"
+    }
+  ],
+  "regalosLink": "https://milistadenovios.cl/lista/angelesyalejandro",
+  "regalosBoton": "Ver lista de regalos"
 }
