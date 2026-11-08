@@ -332,6 +332,15 @@
   @media (prefers-reduced-motion:reduce){.anima-itin .itin-lista li{opacity:1;transform:none}}
 </style>
 <style>.cer-img{width:min(230px,60vw);height:auto;margin:-6px auto 2px;display:block}</style>
+<link href="https://fonts.googleapis.com/css2?family=Mrs+Saint+Delafield&display=swap" rel="stylesheet">
+<style>
+  .principal .nombres{font-family:"Mrs Saint Delafield",var(--mano);font-weight:400;text-transform:none;letter-spacing:0;font-size:clamp(70px,20vw,104px);line-height:.92;margin-block:18px 10px}
+  .principal .nombres span{font-size:.55em;margin-block:-.05em .02em}
+</style>
+<style>
+  .nota-adultos{max-width:30ch;margin:4px auto 6px;font-family:"Cormorant Garamond",serif;font-style:italic;font-size:17px;line-height:1.45;color:var(--salvia-osc);display:flex;flex-direction:column;align-items:center;gap:8px}
+  .nota-adultos::before{content:"";width:46px;height:1px;background:currentColor;opacity:.5}
+</style>
 </head><body class="cerrada">
 <script>document.documentElement.classList.add("cerrada");</script>
 
@@ -1234,7 +1243,7 @@ window.Grabado = (() => {
 
 
   // ═══ Invitación suelta (scripts/invitaciones/generar.mjs): datos escritos y confirmación por Google Forms ═══
-  const cfg = {"slug":"angeles-y-alejandro","nombre1":"Ángeles","nombre2":"Alejandro","fecha":"2027-01-16","hora":"18:00","ciudad":"Pudahuel","titulo":"¡Nos casamos!","mensaje":"Con la bendición de Dios y de nuestras familias, queremos que nos acompañes en el día en que unimos nuestras vidas.","frase":"El amor es paciente, es bondadoso. Todo lo disculpa, todo lo cree, todo lo espera, todo lo soporta.","fraseCita":"1 Corintios 13, 4-7","foto":null,"fotoTexto":"","lugarNombre":"Capilla Santa Cruz","direccion":"La Capilla 115, Pudahuel","comoLlegar":"Ceremonia religiosa","celebracion":"Recepción","celebracionLugar":"Doña Isabel 745, Lomas de Lo Aguirre, Pudahuel","celebracionNota":"","vestimenta":"Formal","vestimentaTexto":"Ellas: vestido largo o de cóctel. Ellos: traje y corbata.","vestimentaNota":"","regalos":"El mejor regalo será compartir este día tan especial con ustedes.\n\nPero si desean hacernos un obsequio, pueden ayudarnos a cumplir otro de nuestros sueños: vivir una luna de miel inolvidable.\n\nConoce nuestra lista de regalos:","regalosNota":"","limite":null,"programa":[],"paleta":["#6b7a45","#7b8a54","#4f5c2f","#333d1f"],"musicaArchivo":null,"musicaInicio":null,"google":{"accion":null,"campos":null},"monogramaImagen":"/inv/angeles-y-alejandro/monograma.png","noviosImagen":"/inv/angeles-y-alejandro/novios.png","itinerarioVertical":[{"hora":"18:00","actividad":"Ceremonia","imagen":"it-ceremonia"},{"hora":"19:00","actividad":"Cóctel de bienvenida","imagen":"it-coctel"},{"hora":"20:00","actividad":"Primer baile","imagen":"it-baile"},{"hora":"21:00","actividad":"Cena","imagen":"it-cena"},{"hora":"22:00","actividad":"Fiesta","imagen":"it-fiesta"},{"hora":"02:00","actividad":"Fin de la celebración","imagen":"it-fin"}],"regalosLink":"https://milistadenovios.cl/lista/angelesyalejandro","regalosBoton":"Ver lista de regalos","celebracionHora":"19:00","ceremoniaImagen":"/inv/angeles-y-alejandro/it-ceremonia.png"};
+  const cfg = {"slug":"angeles-y-alejandro","nombre1":"Ángeles","nombre2":"Alejandro","fecha":"2027-01-16","hora":"18:00","ciudad":"Pudahuel","titulo":"¡Nos casamos!","mensaje":"Con la bendición de Dios y de nuestras familias, queremos que nos acompañes en el día en que unimos nuestras vidas.","frase":"","fraseCita":"","foto":null,"fotoTexto":"","lugarNombre":"Capilla Santa Cruz","direccion":"La Capilla 115, Pudahuel","comoLlegar":"Ceremonia religiosa","celebracion":"Recepción","celebracionLugar":"Doña Isabel 745, Lomas de Lo Aguirre, Pudahuel","celebracionNota":"","vestimenta":"Formal","vestimentaTexto":"Ellas: vestido largo o de cóctel. Ellos: traje y corbata.","vestimentaNota":"","regalos":"El mejor regalo será compartir este día tan especial con ustedes.\n\nPero si desean hacernos un obsequio, pueden ayudarnos a cumplir otro de nuestros sueños: vivir una luna de miel inolvidable.\n\nConoce nuestra lista de regalos:","regalosNota":"","limite":null,"programa":[],"paleta":["#6b7a45","#7b8a54","#4f5c2f","#333d1f"],"musicaArchivo":null,"musicaInicio":null,"google":{"accion":null,"campos":null},"monogramaImagen":"/inv/angeles-y-alejandro/monograma.png","noviosImagen":"/inv/angeles-y-alejandro/novios.png","itinerarioVertical":[{"hora":"18:00","actividad":"Ceremonia","imagen":"it-ceremonia"},{"hora":"19:00","actividad":"Cóctel de bienvenida","imagen":"it-coctel"},{"hora":"20:00","actividad":"Primer baile","imagen":"it-baile"},{"hora":"21:00","actividad":"Cena","imagen":"it-cena"},{"hora":"22:00","actividad":"Fiesta","imagen":"it-fiesta"},{"hora":"02:00","actividad":"Fin de la celebración","imagen":"it-fin"}],"regalosLink":"https://milistadenovios.cl/lista/angelesyalejandro","regalosBoton":"Ver lista de regalos","celebracionHora":"19:00","ceremoniaImagen":"/inv/angeles-y-alejandro/it-ceremonia.png","letraNombres":"Mrs Saint Delafield","notaAdultos":"Con mucho cariño, les contamos que nuestra celebración será solo para adultos. ¡Gracias por comprender!"};
   P = personalizar({ ...cfg, paleta: null }, false);   // los colores ya vienen puestos arriba (window.__PALETA)
   const I1 = "A", I2 = "A";
   txt("#mono-1", I1); txt("#mono-2", I2);
@@ -1263,6 +1272,8 @@ window.Grabado = (() => {
   if (cfg.mensaje) $("#mensaje").textContent = cfg.mensaje;
   const sub = $("#limite")?.closest("p");
   if (cfg.limite) $("#limite").textContent = cfg.limite; else if (sub) sub.innerHTML = "Por favor, confirma<br>tu asistencia";
+  if (cfg.notaAdultos && sub) { const n = document.createElement("p"); n.className = "nota-adultos"; n.textContent = cfg.notaAdultos; sub.after(n); }
+  if (cfg.letraNombres) { const y = $("#nombres span"); if (y) y.textContent = "y"; }
   const qCer = encodeURIComponent(cfg.lugarNombre + ", " + cfg.direccion);
   $("#mapa").href = "https://www.google.com/maps/search/?api=1&query=" + qCer;
   // La celebración es en otro lugar: dirección y su propio «Cómo llegar»
