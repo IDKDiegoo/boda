@@ -194,13 +194,15 @@ if (c.letraNombres) {
   r("</head>", `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(c.letraNombres).replace(/%20/g, "+")}&display=swap" rel="stylesheet">
 <style>
   .principal .nombres{font-family:"${c.letraNombres}",var(--mano);font-weight:400;text-transform:none;letter-spacing:0;font-size:clamp(70px,20vw,104px);line-height:.92;margin-block:18px 10px}
-  .principal .nombres span{font-size:.55em;margin-block:-.05em .02em}
+  .principal .nombres{gap:0}
+  .principal .nombres span{display:block;font-size:.5em;line-height:1;margin-block:.14em .5em}
 </style>\n</head>`);
 }
 // Nota de «solo adultos» en la confirmación (lo lee todo el que responde)
 if (c.notaAdultos) r("</head>", `<style>
-  .nota-adultos{max-width:30ch;margin:4px auto 6px;font-family:"Cormorant Garamond",serif;font-style:italic;font-size:17px;line-height:1.45;color:var(--salvia-osc);display:flex;flex-direction:column;align-items:center;gap:8px}
-  .nota-adultos::before{content:"";width:46px;height:1px;background:currentColor;opacity:.5}
+  .nota-adultos{max-width:320px;margin:10px auto 8px;padding:16px 18px 18px;border:1px solid var(--salvia-osc);border-radius:14px;background:color-mix(in srgb,var(--salvia) 14%,transparent);
+    font-family:"Cormorant Garamond",serif;font-style:italic;font-weight:500;font-size:19px;line-height:1.4;color:var(--bosque);display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+  .nota-adultos b{font-family:var(--grabado);font-style:normal;font-weight:500;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--salvia-osc)}
 </style>\n</head>`);
 
 // ── El módulo: sin Firebase; los datos van escritos y la respuesta va al Google Forms ──
@@ -242,7 +244,7 @@ html = html.slice(0, corte) + `
   if (cfg.mensaje) $("#mensaje").textContent = cfg.mensaje;
   const sub = $("#limite")?.closest("p");
   if (cfg.limite) $("#limite").textContent = cfg.limite; else if (sub) sub.innerHTML = "Por favor, confirma<br>tu asistencia";
-  if (cfg.notaAdultos && sub) { const n = document.createElement("p"); n.className = "nota-adultos"; n.textContent = cfg.notaAdultos; sub.after(n); }
+  if (cfg.notaAdultos && sub) { const n = document.createElement("p"); n.className = "nota-adultos"; const tt = document.createElement("b"); tt.textContent = cfg.notaAdultosTitulo || "Solo adultos"; n.append(tt, cfg.notaAdultos); sub.after(n); }
   if (cfg.letraNombres) { const y = $("#nombres span"); if (y) y.textContent = "y"; }
   const qCer = encodeURIComponent(cfg.lugarNombre + ", " + cfg.direccion);
   $("#mapa").href = "https://www.google.com/maps/search/?api=1&query=" + qCer;
