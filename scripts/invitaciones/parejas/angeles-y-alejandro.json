@@ -33,16 +33,8 @@
   "musicaArchivo": null,
   "musicaInicio": null,
   "google": {
-    "accion": "https://docs.google.com/forms/d/e/1FAIpQLSfk-dAejgcRWoYulJFhF5QumYkrmDOrzqxz5CtjDetvffY44w/formResponse",
-    "campos": {
-      "nombre": "entry.618875296",
-      "asiste": "entry.911094089",
-      "acompanantes": "entry.1275520186",
-      "restriccion": "entry.1838466728",
-      "preferencia": "entry.483007004"
-    },
-    "si": "Confirmo mi asistencia",
-    "no": "No podré asistir, pero los llevo en mi corazón"
+    "accion": null,
+    "campos": null
   },
   "monogramaImagen": "/inv/angeles-y-alejandro/monograma.png",
   "noviosImagen": "/inv/angeles-y-alejandro/novios.png",
@@ -84,5 +76,5 @@
   "ceremoniaImagen": "/inv/angeles-y-alejandro/it-ceremonia.png",
   "letraNombres": "Mrs Saint Delafield",
   "notaAdultos": "Con mucho cariño, les contamos que nuestra celebración será solo para adultos. ¡Gracias por comprender!",
-  "preguntasForm": true
+  "formUrl": "https://forms.gle/RniRmpr5XeCRbJhP7"
 }
