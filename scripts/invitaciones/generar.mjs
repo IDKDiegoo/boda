@@ -205,6 +205,18 @@ if (c.notaAdultos) r("</head>", `<style>
   .nota-adultos b{font-family:var(--grabado);font-style:normal;font-weight:500;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--salvia-osc)}
 </style>\n</head>`);
 
+// Preguntas 3 y 4 al estilo del Google Forms de la pareja (acompañantes y comida de los acompañantes)
+if (c.preguntasForm) {
+  r('<div class="q" id="q-cancion">¿Qué canción te hace salir <em>a bailar</em>?</div>', '<div class="q" id="q-cancion">¿Quiénes vienen <em>contigo</em>?</div>');
+  r('<p class="ayuda">Es a libre elección: escribe la que tú quieras y la ponemos.</p>', '<p class="ayuda">Escribe el nombre completo de quienes te acompañan. Si vienes sin acompañante, déjalo en blanco.</p>');
+  r('placeholder="Canción y artista"', 'placeholder="Nombre y apellido de cada uno"');
+  r('<div class="q">Un deseo o un consejo <em>para los novios</em></div>', '<div class="q">¿Y tus <em>acompañantes</em>?</div>');
+  r('placeholder="Lo leeremos juntos el día después, con un café."', 'placeholder="Si alguno tiene alergia o preferencia de comida, escríbela con su nombre completo."');
+  r('fila("Para bailar", $("#cancion").value || "Sorpréndenos") + ($("#deseo").value ? fila("Tu deseo", "“" + $("#deseo").value.slice(0, 60) + ($("#deseo").value.length > 60 ? "…”" : "”")) : "")',
+    'fila("Te acompañan", $("#cancion").value || "Nadie más") + ($("#deseo").value ? fila("Comida de ellos", $("#deseo").value.slice(0, 60)) : "")');
+  r('fila("Para bailar", rsp.cancion || "Sorpréndenos")', 'fila("Te acompañan", rsp.cancion || "Nadie más")');
+}
+
 // ── El módulo: sin Firebase; los datos van escritos y la respuesta va al Google Forms ──
 const ini = html.indexOf('  import { initializeApp }'), finDb = html.indexOf("const db = getFirestore(app);");
 if (ini < 0 || finDb < 0) throw new Error("No encontré la conexión a Firebase en invitacion.html");
@@ -292,7 +304,14 @@ html = html.slice(0, corte) + `
   window.__inv.guardar = async (rsp) => {
     if (!conectado) { nota("La confirmación se habilita muy pronto. ¡Gracias por tu paciencia!"); return; }
     nota("Enviando tu respuesta…");
-    const v = { nombre: nombre || para || "Sin nombre", asiste: rsp.asiste ? "Sí" : "No", comida: (rsp.comida || []).join(", "), cancion: rsp.cancion || "", deseo: rsp.deseo || "" };
+    // Comida: lo que es restricción (alergias, sin gluten/lactosa) y lo que es preferencia (vegetariano…), como pide el formulario
+    const com = rsp.comida || [], esPref = (x) => /vegetar|vegan|carne/i.test(x);
+    const restr = com.filter((x) => !esPref(x) && !/todo|sin restric/i.test(x)), pref = com.filter(esPref);
+    const v = { nombre: nombre || para || "Sin nombre", asiste: rsp.asiste ? (g.si || "Sí") : (g.no || "No"), comida: com.join(", "), cancion: rsp.cancion || "", deseo: rsp.deseo || "",
+      acompanantes: rsp.asiste ? (rsp.cancion || "") : "",
+      // estas dos son obligatorias en el formulario: nunca van vacías (si no, Google rechaza la respuesta en silencio)
+      restriccion: !rsp.asiste ? "No asiste" : [restr.join(", ") || "Ninguna", rsp.deseo ? "Acompañantes: " + rsp.deseo : ""].filter(Boolean).join(" · "),
+      preferencia: !rsp.asiste ? "No asiste" : (pref.join(", ") || "Ninguna, como de todo") };
     const cuerpo = new URLSearchParams();
     for (const [k, entrada] of Object.entries(g.campos)) if (entrada && v[k] != null) cuerpo.append(entrada, v[k]);
     try {

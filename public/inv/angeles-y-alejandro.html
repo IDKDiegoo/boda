@@ -648,15 +648,15 @@
       </div>
       <div class="pregunta" data-paso="3" hidden>
         <div class="n">Pregunta 3 de 4</div>
-        <div class="q" id="q-cancion">¿Qué canción te hace salir <em>a bailar</em>?</div>
-        <p class="ayuda">Es a libre elección: escribe la que tú quieras y la ponemos.</p>
-        <input class="campo" id="cancion" placeholder="Canción y artista">
+        <div class="q" id="q-cancion">¿Quiénes vienen <em>contigo</em>?</div>
+        <p class="ayuda">Escribe el nombre completo de quienes te acompañan. Si vienes sin acompañante, déjalo en blanco.</p>
+        <input class="campo" id="cancion" placeholder="Nombre y apellido de cada uno">
         <div class="acciones"><button class="btn claro" data-atras>Volver</button><button class="btn" data-sigue>Seguir</button></div>
       </div>
       <div class="pregunta" data-paso="4" hidden>
         <div class="n">Pregunta 4 de 4</div>
-        <div class="q">Un deseo o un consejo <em>para los novios</em></div>
-        <textarea class="campo" id="deseo" placeholder="Lo leeremos juntos el día después, con un café."></textarea>
+        <div class="q">¿Y tus <em>acompañantes</em>?</div>
+        <textarea class="campo" id="deseo" placeholder="Si alguno tiene alergia o preferencia de comida, escríbela con su nombre completo."></textarea>
         <div class="acciones"><button class="btn claro" data-atras>Volver</button><button class="btn" id="enviar">Enviar mi respuesta</button></div>
       </div>
       <div class="pregunta final" data-paso="5" hidden>
@@ -1066,7 +1066,7 @@ window.Grabado = (() => {
     const dietas = chips.filter((x) => x.getAttribute("aria-pressed") === "true").map((x) => x.dataset.v === "Alergia" ? `Alergia${$("#alergia").value ? `: ${$("#alergia").value}` : ""}` : x.textContent);
     $("#final-n").textContent = "Respuesta enviada"; $("#final-q").textContent = "¡Nos vemos ahí!";
     $("#resumen").innerHTML = fila("Asistes", "Sí") + fila("Comida", dietas.join(", ") || "Como de todo")
-      + fila("Para bailar", $("#cancion").value || "Sorpréndenos") + ($("#deseo").value ? fila("Tu deseo", "“" + $("#deseo").value.slice(0, 60) + ($("#deseo").value.length > 60 ? "…”" : "”")) : "");
+      + fila("Te acompañan", $("#cancion").value || "Nadie más") + ($("#deseo").value ? fila("Comida de ellos", $("#deseo").value.slice(0, 60)) : "");
     ir(5); const r = mazo.getBoundingClientRect(); petalos(r.left + r.width / 2, r.top + 120);
     window.__inv.guardar?.({ asiste: true, comida: dietas, cancion: $("#cancion").value.trim(), deseo: $("#deseo").value.trim() });
   });
@@ -1084,7 +1084,7 @@ window.Grabado = (() => {
     (rsp.comida || []).forEach((v) => { const c = chips.find((x) => x.textContent === v || x.dataset.v === v); if (c && c.getAttribute("aria-pressed") !== "true") c.click(); });
     $("#cancion").value = rsp.cancion || ""; $("#deseo").value = rsp.deseo || "";
     $("#final-n").textContent = "Ya nos respondiste"; $("#final-q").textContent = "¡Nos vemos ahí!";
-    $("#resumen").innerHTML = fila("Asistes", "Sí") + fila("Comida", (rsp.comida || []).join(", ") || "Como de todo") + fila("Para bailar", rsp.cancion || "Sorpréndenos");
+    $("#resumen").innerHTML = fila("Asistes", "Sí") + fila("Comida", (rsp.comida || []).join(", ") || "Como de todo") + fila("Te acompañan", rsp.cancion || "Nadie más");
     ir(5);
   };
 
@@ -1245,7 +1245,7 @@ window.Grabado = (() => {
 
 
   // ═══ Invitación suelta (scripts/invitaciones/generar.mjs): datos escritos y confirmación por Google Forms ═══
-  const cfg = {"slug":"angeles-y-alejandro","nombre1":"Ángeles","nombre2":"Alejandro","fecha":"2027-01-16","hora":"18:00","ciudad":"Pudahuel","titulo":"¡Nos casamos!","mensaje":"Con la bendición de Dios y de nuestras familias, queremos que nos acompañes en el día en que unimos nuestras vidas.","frase":"","fraseCita":"","foto":null,"fotoTexto":"","lugarNombre":"Capilla Santa Cruz","direccion":"La Capilla 115, Pudahuel","comoLlegar":"Ceremonia religiosa","celebracion":"Recepción","celebracionLugar":"Doña Isabel 745, Lomas de Lo Aguirre, Pudahuel","celebracionNota":"","vestimenta":"Formal","vestimentaTexto":"Ellas: vestido largo o de cóctel. Ellos: traje y corbata.","vestimentaNota":"","regalos":"El mejor regalo será compartir este día tan especial con ustedes.\n\nPero si desean hacernos un obsequio, pueden ayudarnos a cumplir otro de nuestros sueños: vivir una luna de miel inolvidable.\n\nConoce nuestra lista de regalos:","regalosNota":"","limite":null,"programa":[],"paleta":["#6b7a45","#7b8a54","#4f5c2f","#333d1f"],"musicaArchivo":null,"musicaInicio":null,"google":{"accion":null,"campos":null},"monogramaImagen":"/inv/angeles-y-alejandro/monograma.png","noviosImagen":"/inv/angeles-y-alejandro/novios.png","itinerarioVertical":[{"hora":"18:00","actividad":"Ceremonia","imagen":"it-ceremonia"},{"hora":"19:00","actividad":"Cóctel de bienvenida","imagen":"it-coctel"},{"hora":"20:00","actividad":"Primer baile","imagen":"it-baile"},{"hora":"21:00","actividad":"Cena","imagen":"it-cena"},{"hora":"22:00","actividad":"Fiesta","imagen":"it-fiesta"},{"hora":"02:00","actividad":"Fin de la celebración","imagen":"it-fin"}],"regalosLink":"https://milistadenovios.cl/lista/angelesyalejandro","regalosBoton":"Ver lista de regalos","celebracionHora":"19:00","ceremoniaImagen":"/inv/angeles-y-alejandro/it-ceremonia.png","letraNombres":"Mrs Saint Delafield","notaAdultos":"Con mucho cariño, les contamos que nuestra celebración será solo para adultos. ¡Gracias por comprender!"};
+  const cfg = {"slug":"angeles-y-alejandro","nombre1":"Ángeles","nombre2":"Alejandro","fecha":"2027-01-16","hora":"18:00","ciudad":"Pudahuel","titulo":"¡Nos casamos!","mensaje":"Con la bendición de Dios y de nuestras familias, queremos que nos acompañes en el día en que unimos nuestras vidas.","frase":"","fraseCita":"","foto":null,"fotoTexto":"","lugarNombre":"Capilla Santa Cruz","direccion":"La Capilla 115, Pudahuel","comoLlegar":"Ceremonia religiosa","celebracion":"Recepción","celebracionLugar":"Doña Isabel 745, Lomas de Lo Aguirre, Pudahuel","celebracionNota":"","vestimenta":"Formal","vestimentaTexto":"Ellas: vestido largo o de cóctel. Ellos: traje y corbata.","vestimentaNota":"","regalos":"El mejor regalo será compartir este día tan especial con ustedes.\n\nPero si desean hacernos un obsequio, pueden ayudarnos a cumplir otro de nuestros sueños: vivir una luna de miel inolvidable.\n\nConoce nuestra lista de regalos:","regalosNota":"","limite":"20 de diciembre","programa":[],"paleta":["#6b7a45","#7b8a54","#4f5c2f","#333d1f"],"musicaArchivo":null,"musicaInicio":null,"google":{"accion":"https://docs.google.com/forms/d/e/1FAIpQLSfk-dAejgcRWoYulJFhF5QumYkrmDOrzqxz5CtjDetvffY44w/formResponse","campos":{"nombre":"entry.618875296","asiste":"entry.911094089","acompanantes":"entry.1275520186","restriccion":"entry.1838466728","preferencia":"entry.483007004"},"si":"Confirmo mi asistencia","no":"No podré asistir, pero los llevo en mi corazón"},"monogramaImagen":"/inv/angeles-y-alejandro/monograma.png","noviosImagen":"/inv/angeles-y-alejandro/novios.png","itinerarioVertical":[{"hora":"18:00","actividad":"Ceremonia","imagen":"it-ceremonia"},{"hora":"19:00","actividad":"Cóctel de bienvenida","imagen":"it-coctel"},{"hora":"20:00","actividad":"Primer baile","imagen":"it-baile"},{"hora":"21:00","actividad":"Cena","imagen":"it-cena"},{"hora":"22:00","actividad":"Fiesta","imagen":"it-fiesta"},{"hora":"02:00","actividad":"Fin de la celebración","imagen":"it-fin"}],"regalosLink":"https://milistadenovios.cl/lista/angelesyalejandro","regalosBoton":"Ver lista de regalos","celebracionHora":"19:00","ceremoniaImagen":"/inv/angeles-y-alejandro/it-ceremonia.png","letraNombres":"Mrs Saint Delafield","notaAdultos":"Con mucho cariño, les contamos que nuestra celebración será solo para adultos. ¡Gracias por comprender!","preguntasForm":true};
   P = personalizar({ ...cfg, paleta: null }, false);   // los colores ya vienen puestos arriba (window.__PALETA)
   const I1 = "A", I2 = "A";
   txt("#mono-1", I1); txt("#mono-2", I2);
@@ -1322,7 +1322,14 @@ window.Grabado = (() => {
   window.__inv.guardar = async (rsp) => {
     if (!conectado) { nota("La confirmación se habilita muy pronto. ¡Gracias por tu paciencia!"); return; }
     nota("Enviando tu respuesta…");
-    const v = { nombre: nombre || para || "Sin nombre", asiste: rsp.asiste ? "Sí" : "No", comida: (rsp.comida || []).join(", "), cancion: rsp.cancion || "", deseo: rsp.deseo || "" };
+    // Comida: lo que es restricción (alergias, sin gluten/lactosa) y lo que es preferencia (vegetariano…), como pide el formulario
+    const com = rsp.comida || [], esPref = (x) => /vegetar|vegan|carne/i.test(x);
+    const restr = com.filter((x) => !esPref(x) && !/todo|sin restric/i.test(x)), pref = com.filter(esPref);
+    const v = { nombre: nombre || para || "Sin nombre", asiste: rsp.asiste ? (g.si || "Sí") : (g.no || "No"), comida: com.join(", "), cancion: rsp.cancion || "", deseo: rsp.deseo || "",
+      acompanantes: rsp.asiste ? (rsp.cancion || "") : "",
+      // estas dos son obligatorias en el formulario: nunca van vacías (si no, Google rechaza la respuesta en silencio)
+      restriccion: !rsp.asiste ? "No asiste" : [restr.join(", ") || "Ninguna", rsp.deseo ? "Acompañantes: " + rsp.deseo : ""].filter(Boolean).join(" · "),
+      preferencia: !rsp.asiste ? "No asiste" : (pref.join(", ") || "Ninguna, como de todo") };
     const cuerpo = new URLSearchParams();
     for (const [k, entrada] of Object.entries(g.campos)) if (entrada && v[k] != null) cuerpo.append(entrada, v[k]);
     try {
