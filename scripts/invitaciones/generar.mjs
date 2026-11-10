@@ -280,12 +280,17 @@ html = html.slice(0, corte) + `
   if (cfg.musicaArchivo) prepararAudio(cfg.musicaArchivo, cfg.musicaInicio);
 
   // Para quién es: ?para=Familia Pérez (si no viene, se pregunta el nombre antes de confirmar)
+  // Confirmación con el Google Forms de la pareja: el botón abre el formulario y nada más
+  // (la invitación no recibe ni guarda respuestas; la pareja las ve en su planilla).
+  if (cfg.formUrl) { const b0 = $("#confirmar"), l = document.createElement("a");
+    l.className = b0.className; l.id = "confirmar"; l.href = cfg.formUrl; l.target = "_blank"; l.rel = "noopener"; l.textContent = "Confirmar asistencia"; l.style.cssText = b0.getAttribute("style") || "";
+    b0.replaceWith(l); }
   const para = (new URLSearchParams(location.search).get("para") || "").trim().slice(0, 80);
   const ponerNombre = (t) => document.querySelectorAll("[data-para]").forEach((e) => { e.textContent = t; });
   ponerNombre(para || "ti");
   const g = cfg.google || {}, conectado = !!(g.accion && g.campos);
   let nombre = para;
-  if (!para) {
+  if (!para && !cfg.formUrl) {
     const caja = document.createElement("input");
     caja.className = "campo"; caja.id = "tu-nombre"; caja.placeholder = "Tu nombre y apellido"; caja.autocomplete = "name";
     caja.style.cssText = "margin:10px auto 0;max-width:260px;text-align:center";
