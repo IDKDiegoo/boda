@@ -264,6 +264,7 @@
   .fc{width:min(420px,100%);padding:58px 26px 70px;border-radius:26px;display:flex;flex-direction:column;align-items:center;gap:6px}
   .fc .sello-pega{left:50%;top:-30px;width:64px;height:64px;margin-left:-32px;transform:rotate(-8deg)}
   .fc-titulo{font-size:clamp(17px,4.6vw,21px);letter-spacing:.22em}
+  #vest-texto{white-space:pre-line}
   .fc-mes{width:150px;height:40px;margin:4px 0 -10px;overflow:visible}
   .fc-mes text{font-family:var(--grabado);font-size:17px;letter-spacing:.18em;fill:var(--tinta)}
   .fc-fila{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;width:100%}
@@ -532,8 +533,8 @@
       <span class="filete" aria-hidden="true"></span>
       <span class="sello-pega"><img class="sello-img" data-sello="crema" alt=""></span>
       <h2 class="titulo fc-titulo">Celebra con nosotros</h2>
-      <svg class="fc-mes" viewBox="0 0 220 56" aria-hidden="true"><path id="fc-arco" d="M40 52 Q110 8 180 52" fill="none"/><text><textPath href="#fc-arco" startOffset="50%" text-anchor="middle">ENERO</textPath></text></svg>
-      <div class="fc-fila"><span>SÁBADO</span><b>16</b><span id="fc-hora">6:00 P.M.</span></div>
+      
+      <div class="fc-fila"><span>SÁBADO</span><b>16</b><span id="fc-hora">ENERO</span></div>
       <img class="fc-novios-img" src="/inv/angeles-y-alejandro/novios.png" alt="" aria-hidden="true">
     </article>
     <article class="tarjeta greige arco fc-prepara revela">
@@ -1245,7 +1246,7 @@ window.Grabado = (() => {
 
 
   // ═══ Invitación suelta (scripts/invitaciones/generar.mjs): datos escritos y confirmación por Google Forms ═══
-  const cfg = {"slug":"angeles-y-alejandro","nombre1":"Ángeles","nombre2":"Alejandro","fecha":"2027-01-16","hora":"18:00","ciudad":"Pudahuel","titulo":"¡Nos casamos!","mensaje":"Con la bendición de Dios y de nuestras familias, queremos que nos acompañes en el día en que unimos nuestras vidas.","frase":"","fraseCita":"","foto":null,"fotoTexto":"","lugarNombre":"Capilla Santa Cruz","direccion":"La Capilla 115, Pudahuel","comoLlegar":"Ceremonia religiosa","celebracion":"Recepción","celebracionLugar":"Doña Isabel 745, Lomas de Lo Aguirre, Pudahuel","celebracionNota":"","vestimenta":"Formal","vestimentaTexto":"Ellas: vestido largo o de cóctel. Ellos: traje y corbata.","vestimentaNota":"","regalos":"El mejor regalo será compartir este día tan especial con ustedes.\n\nPero si desean hacernos un obsequio, pueden ayudarnos a cumplir otro de nuestros sueños: vivir una luna de miel inolvidable.\n\nConoce nuestra lista de regalos:","regalosNota":"","limite":"20 de diciembre","programa":[],"paleta":["#6b7a45","#7b8a54","#4f5c2f","#333d1f"],"musicaArchivo":null,"musicaInicio":null,"google":{"accion":null,"campos":null},"monogramaImagen":"/inv/angeles-y-alejandro/monograma.png","noviosImagen":"/inv/angeles-y-alejandro/novios.png","itinerarioVertical":[{"hora":"18:00","actividad":"Ceremonia","imagen":"it-ceremonia"},{"hora":"19:00","actividad":"Cóctel de bienvenida","imagen":"it-coctel"},{"hora":"20:00","actividad":"Primer baile","imagen":"it-baile"},{"hora":"21:00","actividad":"Cena","imagen":"it-cena"},{"hora":"22:00","actividad":"Fiesta","imagen":"it-fiesta"},{"hora":"02:00","actividad":"Fin de la celebración","imagen":"it-fin"}],"regalosLink":"https://milistadenovios.cl/lista/angelesyalejandro","regalosBoton":"Ver lista de regalos","celebracionHora":"19:00","ceremoniaImagen":"/inv/angeles-y-alejandro/it-ceremonia.png","letraNombres":"Mrs Saint Delafield","notaAdultos":"Con mucho cariño, les contamos que nuestra celebración será solo para adultos. ¡Gracias por comprender!","formUrl":"https://forms.gle/RniRmpr5XeCRbJhP7"};
+  const cfg = {"slug":"angeles-y-alejandro","nombre1":"Ángeles","nombre2":"Alejandro","fecha":"2027-01-16","hora":"18:00","ciudad":"Pudahuel","titulo":"¡Nos casamos!","mensaje":"Con la bendición de Dios y el amor de nuestras familias, queremos invitarte a compartir con nosotros el día en que uniremos nuestras vidas.","frase":"","fraseCita":"","foto":null,"fotoTexto":"","lugarNombre":"Capilla Santa Cruz","direccion":"La Capilla 115, Pudahuel","comoLlegar":"Ceremonia religiosa","celebracion":"Recepción","celebracionLugar":"Doña Isabel 745, Lomas de Lo Aguirre, Pudahuel","celebracionNota":"","vestimenta":"Formal","vestimentaTexto":"Ellas: vestido largo o de cóctel.\nEllos: traje y corbata.","vestimentaNota":"","regalos":"El mejor regalo será compartir este día tan especial con ustedes.\n\nPero si desean hacernos un obsequio, pueden ayudarnos a cumplir otro de nuestros sueños: vivir una luna de miel inolvidable.\n\nConoce nuestra lista de regalos:","regalosNota":"","limite":"20 de diciembre","programa":[],"paleta":["#6b7a45","#7b8a54","#4f5c2f","#333d1f"],"musicaArchivo":null,"musicaInicio":null,"google":{"accion":null,"campos":null},"monogramaImagen":"/inv/angeles-y-alejandro/monograma.png","noviosImagen":"/inv/angeles-y-alejandro/novios.png","itinerarioVertical":[{"hora":"18:00","actividad":"Ceremonia","imagen":"it-ceremonia"},{"hora":"19:00","actividad":"Cóctel de bienvenida","imagen":"it-coctel"},{"hora":"20:00","actividad":"Primer baile","imagen":"it-baile"},{"hora":"21:00","actividad":"Cena","imagen":"it-cena"},{"hora":"22:00","actividad":"Fiesta","imagen":"it-fiesta"},{"hora":"02:00","actividad":"Fin de la celebración","imagen":"it-fin"}],"regalosLink":"https://milistadenovios.cl/lista/angelesyalejandro","regalosBoton":"Ver lista de regalos","celebracionHora":"19:00","ceremoniaImagen":"/inv/angeles-y-alejandro/it-ceremonia.png","letraNombres":"Mrs Saint Delafield","notaAdultos":"Con mucho cariño, les contamos que nuestra celebración será sin niños. Agradecemos de corazón su comprensión y compañía en este día tan especial.","formUrl":"https://forms.gle/RniRmpr5XeCRbJhP7","rsvpTexto":"Por favor, confirma tu asistencia antes del 20 de diciembre de 2026.","notaAdultosTitulo":"Celebración solo para adultos","celebracionMapa":"https://maps.app.goo.gl/ChR5pT2RKEkfhkyR9","mesEnFila":true};
   P = personalizar({ ...cfg, paleta: null }, false);   // los colores ya vienen puestos arriba (window.__PALETA)
   const I1 = "A", I2 = "A";
   txt("#mono-1", I1); txt("#mono-2", I2);
@@ -1273,7 +1274,8 @@ window.Grabado = (() => {
   if (cfg.comoLlegar) $("#como-llegar").textContent = cfg.comoLlegar; else ocultar("#como-llegar", true);
   if (cfg.mensaje) $("#mensaje").textContent = cfg.mensaje;
   const sub = $("#limite")?.closest("p");
-  if (cfg.limite) $("#limite").textContent = cfg.limite; else if (sub) sub.innerHTML = "Por favor, confirma<br>tu asistencia";
+  if (cfg.rsvpTexto && sub) { sub.textContent = cfg.rsvpTexto; sub.style.textWrap = "balance"; }
+  else if (cfg.limite) $("#limite").textContent = cfg.limite; else if (sub) sub.innerHTML = "Por favor, confirma<br>tu asistencia";
   if (cfg.notaAdultos && sub) { const n = document.createElement("p"); n.className = "nota-adultos"; const tt = document.createElement("b"); tt.textContent = cfg.notaAdultosTitulo || "Solo adultos"; n.append(tt, cfg.notaAdultos); sub.after(n); }
   if (cfg.letraNombres) { const y = $("#nombres span"); if (y) y.textContent = "y"; }
   const qCer = encodeURIComponent(cfg.lugarNombre + ", " + cfg.direccion);
@@ -1284,7 +1286,7 @@ window.Grabado = (() => {
     t.textContent = cfg.celebracionLugar; t.hidden = false; t.style.display = "";
     if (cfg.celebracionHora) { const h = document.createElement("p"); h.className = "hora-grande cel-hora"; h.innerHTML = "<span>" + cfg.celebracionHora + "</span> hrs"; $("#celebra").before(h); }
     a.className = "boton"; a.target = "_blank"; a.rel = "noopener"; a.style.marginTop = "8px";
-    a.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(cfg.celebracionLugar);
+    a.href = cfg.celebracionMapa || "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(cfg.celebracionLugar);
     a.innerHTML = '<svg aria-hidden="true"><use href="#i-ubicacion"/></svg>Cómo llegar'; t.after(a);
   }
   // Calendario: con hora, el evento; sin hora, el día completo

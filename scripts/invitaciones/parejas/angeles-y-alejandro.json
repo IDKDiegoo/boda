@@ -6,7 +6,7 @@
   "hora": "18:00",
   "ciudad": "Pudahuel",
   "titulo": "¡Nos casamos!",
-  "mensaje": "Con la bendición de Dios y de nuestras familias, queremos que nos acompañes en el día en que unimos nuestras vidas.",
+  "mensaje": "Con la bendición de Dios y el amor de nuestras familias, queremos invitarte a compartir con nosotros el día en que uniremos nuestras vidas.",
   "frase": "",
   "fraseCita": "",
   "foto": null,
@@ -18,7 +18,7 @@
   "celebracionLugar": "Doña Isabel 745, Lomas de Lo Aguirre, Pudahuel",
   "celebracionNota": "",
   "vestimenta": "Formal",
-  "vestimentaTexto": "Ellas: vestido largo o de cóctel. Ellos: traje y corbata.",
+  "vestimentaTexto": "Ellas: vestido largo o de cóctel.\nEllos: traje y corbata.",
   "vestimentaNota": "",
   "regalos": "El mejor regalo será compartir este día tan especial con ustedes.\n\nPero si desean hacernos un obsequio, pueden ayudarnos a cumplir otro de nuestros sueños: vivir una luna de miel inolvidable.\n\nConoce nuestra lista de regalos:",
   "regalosNota": "",
@@ -75,6 +75,10 @@
   "celebracionHora": "19:00",
   "ceremoniaImagen": "/inv/angeles-y-alejandro/it-ceremonia.png",
   "letraNombres": "Mrs Saint Delafield",
-  "notaAdultos": "Con mucho cariño, les contamos que nuestra celebración será solo para adultos. ¡Gracias por comprender!",
-  "formUrl": "https://forms.gle/RniRmpr5XeCRbJhP7"
+  "notaAdultos": "Con mucho cariño, les contamos que nuestra celebración será sin niños. Agradecemos de corazón su comprensión y compañía en este día tan especial.",
+  "formUrl": "https://forms.gle/RniRmpr5XeCRbJhP7",
+  "rsvpTexto": "Por favor, confirma tu asistencia antes del 20 de diciembre de 2026.",
+  "notaAdultosTitulo": "Celebración solo para adultos",
+  "celebracionMapa": "https://maps.app.goo.gl/ChR5pT2RKEkfhkyR9",
+  "mesEnFila": true
 }
