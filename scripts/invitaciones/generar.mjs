@@ -55,8 +55,8 @@ const nuevaFecha = `<section class="faltan fc-seccion" aria-labelledby="t-faltan
       <span class="filete" aria-hidden="true"></span>
       <span class="sello-pega"><img class="sello-img" data-sello="crema" alt=""></span>
       <h2 class="titulo fc-titulo">Celebra con nosotros</h2>
-      <svg class="fc-mes" viewBox="0 0 220 56" aria-hidden="true"><path id="fc-arco" d="M40 52 Q110 8 180 52" fill="none"/><text><textPath href="#fc-arco" startOffset="50%" text-anchor="middle">${MES_CORTO}</textPath></text></svg>
-      <div class="fc-fila"><span>${DIA_SEM}</span><b>${D}</b><span id="fc-hora">${c.hora ? horaBonita(c.hora) : "HORA POR<br>CONFIRMAR"}</span></div>
+      ${c.mesEnFila ? "" : `<svg class="fc-mes" viewBox="0 0 220 56" aria-hidden="true"><path id="fc-arco" d="M40 52 Q110 8 180 52" fill="none"/><text><textPath href="#fc-arco" startOffset="50%" text-anchor="middle">${MES_CORTO}</textPath></text></svg>`}
+      <div class="fc-fila"><span>${DIA_SEM}</span><b>${D}</b><span id="fc-hora">${c.mesEnFila ? MES_CORTO : c.hora ? horaBonita(c.hora) : "HORA POR<br>CONFIRMAR"}</span></div>
       ${c.noviosImagen ? `<img class="fc-novios-img" src="${esc(c.noviosImagen)}" alt="" aria-hidden="true">` : '<svg class="icono-linea fc-novios" aria-hidden="true"><use href="#i-novios"/></svg>'}
     </article>
     <article class="tarjeta greige arco fc-prepara revela">
@@ -78,6 +78,7 @@ r("</head>", `<style>
   .fc{width:min(420px,100%);padding:58px 26px 70px;border-radius:26px;display:flex;flex-direction:column;align-items:center;gap:6px}
   .fc .sello-pega{left:50%;top:-30px;width:64px;height:64px;margin-left:-32px;transform:rotate(-8deg)}
   .fc-titulo{font-size:clamp(17px,4.6vw,21px);letter-spacing:.22em}
+  #vest-texto{white-space:pre-line}
   .fc-mes{width:150px;height:40px;margin:4px 0 -10px;overflow:visible}
   .fc-mes text{font-family:var(--grabado);font-size:17px;letter-spacing:.18em;fill:var(--tinta)}
   .fc-fila{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;width:100%}
@@ -255,7 +256,8 @@ html = html.slice(0, corte) + `
   if (cfg.comoLlegar) $("#como-llegar").textContent = cfg.comoLlegar; else ocultar("#como-llegar", true);
   if (cfg.mensaje) $("#mensaje").textContent = cfg.mensaje;
   const sub = $("#limite")?.closest("p");
-  if (cfg.limite) $("#limite").textContent = cfg.limite; else if (sub) sub.innerHTML = "Por favor, confirma<br>tu asistencia";
+  if (cfg.rsvpTexto && sub) { sub.textContent = cfg.rsvpTexto; sub.style.textWrap = "balance"; }
+  else if (cfg.limite) $("#limite").textContent = cfg.limite; else if (sub) sub.innerHTML = "Por favor, confirma<br>tu asistencia";
   if (cfg.notaAdultos && sub) { const n = document.createElement("p"); n.className = "nota-adultos"; const tt = document.createElement("b"); tt.textContent = cfg.notaAdultosTitulo || "Solo adultos"; n.append(tt, cfg.notaAdultos); sub.after(n); }
   if (cfg.letraNombres) { const y = $("#nombres span"); if (y) y.textContent = "y"; }
   const qCer = encodeURIComponent(cfg.lugarNombre + ", " + cfg.direccion);
@@ -266,7 +268,7 @@ html = html.slice(0, corte) + `
     t.textContent = cfg.celebracionLugar; t.hidden = false; t.style.display = "";
     if (cfg.celebracionHora) { const h = document.createElement("p"); h.className = "hora-grande cel-hora"; h.innerHTML = "<span>" + cfg.celebracionHora + "</span> hrs"; $("#celebra").before(h); }
     a.className = "boton"; a.target = "_blank"; a.rel = "noopener"; a.style.marginTop = "8px";
-    a.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(cfg.celebracionLugar);
+    a.href = cfg.celebracionMapa || "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(cfg.celebracionLugar);
     a.innerHTML = '<svg aria-hidden="true"><use href="#i-ubicacion"/></svg>Cómo llegar'; t.after(a);
   }
   // Calendario: con hora, el evento; sin hora, el día completo
