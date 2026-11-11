@@ -1,16 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "(?<pareja>[a-z0-9-]+-y-[a-z0-9-]+)\\.vercel\\.app"
-        }
-      ],
-      "destination": "/inv/:pareja.html"
-    },
-    {
       "source": "/i/:codigo",
       "destination": "/api/inv?codigo=:codigo"
     },
