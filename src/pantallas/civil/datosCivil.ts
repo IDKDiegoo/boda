@@ -11,7 +11,7 @@ export type CivilGasto    = { id:number; categoria:string; descripcion:string; c
 export type CivilItem     = { id:number; texto:string; listo:boolean; fotos?:string[] };    // decoración y tips
 export type CivilHora     = { id:number; hora:string; actividad:string };                  // cronograma del día
 export type CivilTarea    = { id:number; cuando:string; texto:string; listo:boolean; fotos?:string[] };  // checklist por plazo
-export type CivilData     = { invitados:CivilInvitado[]; gastos:CivilGasto[]; deco?:CivilItem[]; cronograma?:CivilHora[]; tips?:CivilItem[]; tareas?:CivilTarea[]; lunaHechos?:string[] };
+export type CivilData     = { invitados:CivilInvitado[]; gastos:CivilGasto[]; deco?:CivilItem[]; cronograma?:CivilHora[]; tips?:CivilItem[]; tareas?:CivilTarea[]; lunaHechos?:string[]; lunaPropios?:{ id:string; cat:string; texto:string }[] };
 // Total de un ítem: si tiene monto, manda el monto; si no, cantidad × precio unitario.
 export const totalGasto = (g:CivilGasto) => (g.monto != null && g.monto > 0) ? g.monto : (Number(g.cantidad)||0)*(Number(g.precioPorUnidad)||0);
 // Comprime una imagen antes de subirla (las fotos del celular pesan varios MB).

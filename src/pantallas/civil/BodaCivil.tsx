@@ -537,7 +537,8 @@ export function BodaCivil() {
 
       {subTab==="luna" && (
         <LunaCivil hechos={data.lunaHechos||[]}
-          onToggle={id=>{ const h=data.lunaHechos||[]; guardar({ ...data, lunaHechos: h.includes(id) ? h.filter(x=>x!==id) : [...h,id] }); }}/>
+          onToggle={id=>{ const h=data.lunaHechos||[]; guardar({ ...data, lunaHechos: h.includes(id) ? h.filter(x=>x!==id) : [...h,id] }); }}
+          propios={data.lunaPropios||[]} onPropios={l=>guardar({ ...data, lunaPropios:l })}/>
       )}
     </div>
   );
