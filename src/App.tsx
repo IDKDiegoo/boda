@@ -13,6 +13,7 @@ import { Cancion, DecoItem, GastoExtra, Invitado, LunaItem, MesaPos, Proveedor, 
 import { Cargando, Logo, S } from "./ui/base";
 import { Icono } from "./ui/iconos";
 import { rutaDe, tabDeRuta } from "./base/rutas";
+import { AvisoGuardado } from "./ui/AvisoGuardado";
 
 // Carga diferida: cada pantalla se descarga recién cuando se abre (antes bajaba todo de una).
 const CheckList = lazy(() => import("./pantallas/CheckList").then(m => ({ default: m.CheckList })));
@@ -115,7 +116,7 @@ export default function App() {
   if (ses.rol==="superadmin" && !boda) return <Suspense fallback={<Cargando/>}><PanelAdmin usuario={ses.usuario} onSalir={salir}
     onEntrar={async id => { const i = await abrirBoda(id); if (i) setBoda(i); }}/></Suspense>;
   if (!boda) return <Bienvenida/>;
-  return <Panel key={boda.id} soporte={ses.rol==="superadmin"} onSalir={ses.rol==="superadmin" ? () => { fijarBoda(""); setBoda(null); } : salir}/>;
+  return <><AvisoGuardado/><Panel key={boda.id} soporte={ses.rol==="superadmin"} onSalir={ses.rol==="superadmin" ? () => { fijarBoda(""); setBoda(null); } : salir}/></>;
 }
 
 // El panel de los novios. Va aparte para que sus datos se pidan recién con la sesión abierta

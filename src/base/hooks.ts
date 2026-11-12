@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { onSnapshot } from "firebase/firestore";
-import { guardarFusionando } from "./guardar";
+import { encolarGuardado } from "./guardar";
 import { BODA_FECHA } from "./config";
 import { dref } from "./firebase";
 
@@ -38,23 +38,43 @@ export function useCuentaRegresiva() {
   return tiempo;
 }
 
-export function useData<T>(coleccion: string, inicial: T) {
+/**
+ * Un documento en vivo que se puede editar. Mientras este teléfono tenga cambios por guardar, lo que llega
+ * del servidor NO reemplaza la pantalla (si no, se borraban letras al escribir); cuando todo quedó
+ * guardado se muestra lo último del servidor, que ya trae lo de este teléfono y lo de los demás.
+ */
+export function useDocVivo<T>(coleccion: string, inicial: T, siNoExiste?: T) {
   const [data, setDataLocal] = useState<T>(inicial);
   const actual = useRef<T>(inicial);   // lo que este teléfono tiene a la vista (base del cambio)
+  const porGuardar = useRef(0);
+  const guardado = useRef<{ v: T } | null>(null);   // lo último del servidor que llegó mientras se guardaba
   const setData = useCallback((d: T) => { actual.current = d; setDataLocal(d); }, []);
 
   useEffect(() => {
     const unsub = onSnapshot(dref(coleccion), snap => {
-      if (snap.exists()) setData(snap.data() as T);
-    });
+      const v = snap.exists() ? (snap.data() as T) : siNoExiste;
+      if (v === undefined) return;
+      if (porGuardar.current > 0) { guardado.current = { v }; return; }
+      setData(v);
+    }, e => console.warn("Sin conexión en vivo con", coleccion, e?.code));
     return unsub;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coleccion, setData]);
 
   const guardar = async (nuevo: T) => {
     const antes = actual.current;
     setData(nuevo);
-    await guardarFusionando(dref(coleccion), antes as object, nuevo as object);
+    porGuardar.current++;
+    try { await encolarGuardado(dref(coleccion), antes as object, nuevo as object); }
+    finally {
+      porGuardar.current--;
+      if (porGuardar.current === 0 && guardado.current) { const g = guardado.current.v; guardado.current = null; setData(g); }
+    }
   };
 
   return [data, guardar] as const;
+}
+
+export function useData<T>(coleccion: string, inicial: T) {
+  return useDocVivo<T>(coleccion, inicial);
 }

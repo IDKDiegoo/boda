@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { onSnapshot } from "firebase/firestore";
-import { guardarFusionando } from "../../base/guardar";
+import React, { useState, useRef } from "react";
+import { useDocVivo } from "../../base/hooks";
 import { uploadBytes, getDownloadURL } from "firebase/storage";
 import { fmt } from "../../base/config";
-import { dref, infoBoda, sref } from "../../base/firebase";
+import { infoBoda, sref } from "../../base/firebase";
 import { InvitacionCivil } from "./InvitacionCivil";
 import { LunaCivil } from "./LunaCivil";
 import { CATS_CIVIL, CAT_ICON_CIVIL, CivilData, CivilGasto, CivilInvitado, PLAZOS_CIVIL, SUG_CRONO_CIVIL, SUG_DECO_CIVIL, SUG_GASTOS_CIVIL, SUG_TAREAS_CIVIL, SUG_TIPS_CIVIL, UNIDS_CIVIL, comprimirImg, totalGasto } from "./datosCivil";
@@ -11,17 +10,7 @@ import { Btn, Card, Inp, Sel, Title } from "../../ui/base";
 import { Icono } from "../../ui/iconos";
 
 export function useCivil() {
-  const [data, setLocalEstado] = useState<CivilData>({ invitados:[], gastos:[] });
-  const actual = useRef<CivilData>({ invitados:[], gastos:[] });   // base del cambio (ver base/fusionar.js)
-  const setLocal = useCallback((d:CivilData) => { actual.current = d; setLocalEstado(d); }, []);
-  useEffect(()=>{
-    const unsub = onSnapshot(dref("civil"), snap=>{
-      if (snap.exists()) setLocal(snap.data() as CivilData);
-      else setLocal({ invitados:[], gastos:[] });
-    });
-    return unsub;
-  },[setLocal]);
-  const guardar = async (d:CivilData) => { const antes = actual.current; setLocal(d); await guardarFusionando(dref("civil"), antes, d); };
+  const [data, guardar] = useDocVivo<CivilData>("civil", { invitados:[], gastos:[] }, { invitados:[], gastos:[] });
   return { data, guardar };
 }
 
@@ -388,7 +377,7 @@ export function BodaCivil() {
             <div style={{ height:8, background:"#fff", borderRadius:5, overflow:"hidden", marginTop:8 }}>
               <div style={{ height:"100%", width:`${tareas.length?Math.round(hechas/tareas.length*100):0}%`, background:"#c9956a", borderRadius:5, transition:"width .3s ease" }}/>
             </div>
-            <div style={{ fontSize:10, color:"#a07855", marginTop:6 }}>Tocá cada tarea para marcarla lista</div>
+            <div style={{ fontSize:10, color:"#a07855", marginTop:6 }}>Toca cada tarea para marcarla lista</div>
           </Card>
 
           {PLAZOS_CIVIL.filter(pl=>tareas.some(t=>t.cuando===pl)).map(pl=>{
@@ -463,7 +452,7 @@ export function BodaCivil() {
         <div>
           <Card style={{ marginBottom:12 }}>
             <div style={{ fontSize:12, fontWeight:800, color:"#8c4820", marginBottom:4 }}>🕐 Cronograma del día</div>
-            <div style={{ fontSize:10.5, color:"#a07855", marginBottom:10 }}>Tocá la hora o el texto para editarlos.</div>
+            <div style={{ fontSize:10.5, color:"#a07855", marginBottom:10 }}>Toca la hora o el texto para editarlos.</div>
             {[...crono].sort((a,b)=>String(a.hora).localeCompare(String(b.hora))).map(c=>(
               <div key={c.id} style={{ display:"flex", alignItems:"center", gap:9, padding:"9px 0", borderTop:"1px solid #f4e6d8" }}>
                 <input value={c.hora} onChange={e=>guardar({ ...data, cronograma:crono.map(x=>x.id===c.id?{...x,hora:e.target.value}:x) })}
