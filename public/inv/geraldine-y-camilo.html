@@ -42,14 +42,14 @@ a{color:inherit}
    linear-gradient(180deg,#4f1d17 0%,#481a14 45%,#3c140f 100%)}
 .sobre .grano{position:absolute;inset:0;opacity:.22;mix-blend-mode:overlay;pointer-events:none}
 /* solapa en V que baja desde los costados hasta el sello */
-.sobre{--alto-solapa:clamp(310px,44vh,480px)}
+.sobre{--alto-solapa:clamp(370px,60vh,700px)}
 .sobre .solapa{position:absolute;left:-2%;right:-2%;top:0;height:var(--alto-solapa);transform-origin:50% 0;transition:transform 1.1s cubic-bezier(.6,.05,.3,1) .25s;z-index:3;
   filter:drop-shadow(0 10px 18px rgba(0,0,0,.35))}
 .sobre.abierto .solapa{transform:rotateX(178deg)}
 .sobre .solapa svg{width:100%;height:100%}
 .sobre .bolsillo{position:absolute;inset:auto 0 0 0;height:56%;z-index:2}
 .sobre .bolsillo svg{width:100%;height:100%}
-.sobre .portada{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;padding:clamp(34px,6vh,80px) 14px 0;pointer-events:none;
+.sobre .portada{position:absolute;left:0;right:0;top:0;height:calc(var(--alto-solapa) - 58px);z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:13vh 14px 0;pointer-events:none;
   transition:transform 1s cubic-bezier(.6,.05,.3,1),opacity .6s}
 .sobre.abierto .portada{transform:translateY(-12vh);opacity:0}
 .para{font:500 13px/1.3 var(--caps);letter-spacing:.32em;color:var(--oro-claro);opacity:.85;text-align:center;min-height:1.3em}
@@ -60,13 +60,13 @@ a{color:inherit}
 .nombres-sobre .n{display:block;width:max-content;max-width:none;margin:0 auto;padding:.08em .32em .14em;font-size:clamp(64px,19vw,112px);white-space:nowrap}
 .nombres-sobre .y{display:block;font:500 clamp(34px,9vw,52px)/1 var(--serif);margin:.05em 0 .02em;-webkit-text-fill-color:#e9cba6}
 @keyframes brillo{0%,100%{background-position:0 0}50%{background-position:100% 0}}
-.sello{position:absolute;left:50%;top:calc(var(--alto-solapa) - 4px);width:clamp(122px,33vw,160px);aspect-ratio:1;transform:translate(-50%,-50%);z-index:6;
+.sello{position:absolute;left:50%;top:calc(var(--alto-solapa) + 6px);width:clamp(128px,35vw,170px);aspect-ratio:1;transform:translate(-50%,-50%);z-index:6;
   border-radius:50%;transition:transform .7s cubic-bezier(.5,-0.4,.4,1.4),opacity .5s ease .15s;-webkit-tap-highlight-color:transparent}
 .sello img{width:100%;height:100%;filter:drop-shadow(0 10px 14px rgba(0,0,0,.5)) drop-shadow(0 2px 3px rgba(0,0,0,.35))}
 .sello .latido{animation:latido 2.2s ease-in-out infinite;transform-origin:50% 50%}
 @keyframes latido{0%,100%{transform:scale(1)}8%{transform:scale(1.06)}16%{transform:scale(.99)}24%{transform:scale(1.04)}36%{transform:scale(1)}}
 .sobre.abierto .sello{transform:translate(-50%,-50%) scale(1.25) rotate(-18deg);opacity:0}
-.pista{position:absolute;left:0;right:0;bottom:calc(14vh + env(safe-area-inset-bottom,0px));z-index:6;text-align:center;font:500 12px var(--caps);letter-spacing:.34em;color:var(--oro-claro);opacity:.8;animation:pista 2.4s ease-in-out infinite}
+.pista{position:absolute;left:0;right:0;bottom:calc(7vh + env(safe-area-inset-bottom,0px));z-index:6;text-align:center;font:500 12px var(--caps);letter-spacing:.34em;color:var(--oro-claro);opacity:.8;animation:pista 2.4s ease-in-out infinite}
 @keyframes pista{0%,100%{opacity:.45;transform:translateY(0)}50%{opacity:.95;transform:translateY(-4px)}}
 .sobre.abierto .pista{opacity:0;animation:none}
 .chispas{position:absolute;inset:0;z-index:5;pointer-events:none}
@@ -129,6 +129,17 @@ section{position:relative;overflow:hidden;padding:clamp(70px,12vh,110px) 24px;te
 /* ceremonia */
 .icono{width:110px;height:110px;margin:0 auto;color:var(--vino)}
 .icono.regalo{width:150px;height:120px}
+.itinerario{list-style:none;padding:0;margin:30px auto 0;max-width:380px;position:relative;text-align:left}
+.itinerario::before{content:"";position:absolute;left:96px;top:24px;bottom:24px;width:1.5px;background:linear-gradient(#d9b77a,#c7a45d)}
+.itinerario li{display:grid;grid-template-columns:70px 52px 1fr;align-items:center;gap:0 18px;padding:12px 0}
+.it-hora{font:600 20px var(--caps);color:var(--vino);text-align:right;font-variant-numeric:tabular-nums}
+.it-ico{width:52px;height:52px;background:var(--crema);border:1.5px solid #d9b77a;border-radius:50%;padding:9px;color:var(--vino);fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;position:relative;z-index:1}
+.it-que{font:500 clamp(19px,5.2vw,23px) var(--serif);color:#2b2220;letter-spacing:.02em}
+.vestimenta{width:min(230px,64%);margin:22px auto 0;color:#2b2220}
+.llevar{margin:26px auto 0;max-width:360px;border-top:1px solid rgba(199,164,93,.6);border-bottom:1px solid rgba(199,164,93,.6);padding:16px 10px}
+.cap-llevar{font:600 14px var(--caps);letter-spacing:.28em;color:var(--oro-texto);text-transform:uppercase}
+.llevar ul{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-wrap:wrap;justify-content:center;gap:8px 10px}
+.llevar li{font:500 18px var(--serif);color:var(--vino);border:1px solid rgba(116,29,30,.35);border-radius:999px;padding:4px 14px;background:#fffdf8}
 .script-titulo{font-family:var(--script);font-size:clamp(56px,16vw,84px);color:var(--vino);line-height:1.1;margin-top:6px}
 .hora{font:500 clamp(24px,6.6vw,30px) var(--caps);letter-spacing:.14em;color:#3a302c;margin-top:6px}
 .lugar{font:600 clamp(24px,6.6vw,32px)/1.25 var(--caps);letter-spacing:.06em;color:#211a18;margin-top:6px}
@@ -223,7 +234,6 @@ canvas.destellos{position:absolute;inset:0;width:100%;height:100%;pointer-events
     </svg>
   </div>
     <div class="portada">
-    <p class="para" id="para"></p>
     <h1 class="nombres-sobre"><span class="n">Geraldine</span><span class="y">&amp;</span><span class="n">Camilo</span></h1>
   </div>
   <button class="sello" id="abrir" aria-label="Abrir la invitación">
@@ -307,6 +317,36 @@ canvas.destellos{position:absolute;inset:0;width:100%;height:100%;pointer-events
         </div>
       </fieldset>
       <a class="cal sube" id="calendario-link" target="_blank" rel="noopener" href="#"><svg><use href="#i-cal"/></svg>Guardar en mi calendario</a>
+    </div>
+  </section>
+
+  <!-- Itinerario -->
+  <section class="crema-textura" id="s-itinerario" style="padding-top:clamp(50px,12vw,80px)">
+    <div class="ancho">
+      <h2 class="script-titulo escribe">Itinerario</h2>
+      <ol class="itinerario">
+        <li class="sube"><span class="it-hora">10:00</span><svg class="it-ico dibuja" viewBox="0 0 64 64"><circle cx="26" cy="38" r="13"/><circle cx="40" cy="38" r="13"/><path d="M35 22l5-8 5 8-5 4z"/></svg><span class="it-que">Ceremonia</span></li>
+        <li class="sube"><span class="it-hora">11:00</span><svg class="it-ico dibuja" viewBox="0 0 64 64"><path d="M18 10h12l-1 14a5 5 0 0 1-10 0zM24 29v20M18 50h12"/><path d="M36 14h12l-1 14a5 5 0 0 1-10 0zM42 33v18M36 52h12"/><path d="M30 8l2-4M33 10l4-2"/></svg><span class="it-que">Cóctel</span></li>
+        <li class="sube"><span class="it-hora">14:00</span><svg class="it-ico dibuja" viewBox="0 0 64 64"><circle cx="32" cy="34" r="16"/><circle cx="32" cy="34" r="10"/><path d="M8 18v12a3 3 0 0 0 3 3v20M14 18v10M56 18c-4 2-5 8-5 14h5v21"/></svg><span class="it-que">Almuerzo</span></li>
+        <li class="sube"><span class="it-hora">16:00</span><svg class="it-ico dibuja" viewBox="0 0 64 64"><circle cx="22" cy="40" r="11"/><path d="M14 33c4 3 12 3 16 0M22 29v22"/><path d="M38 12c6 0 12 5 12 12 0 8-8 12-12 22-4-10-12-14-12-22 0-7 6-12 12-12z"/><path d="M38 46v10"/></svg><span class="it-que">Actividades</span></li>
+        <li class="sube"><span class="it-hora">18:00</span><svg class="it-ico dibuja" viewBox="0 0 64 64"><path d="M12 28h34v6a17 17 0 0 1-34 0z"/><path d="M46 31h4a6 6 0 0 1 0 12h-6"/><path d="M8 54h46"/><path d="M22 22c-2-4 2-6 0-10M30 22c-2-4 2-6 0-10M38 22c-2-4 2-6 0-10"/></svg><span class="it-que">Once</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Código de vestimenta -->
+  <section class="crema-textura" id="s-vestimenta" style="padding-top:clamp(40px,10vw,70px)">
+    <div class="ancho">
+      <h2 class="script-titulo escribe" style="font-size:clamp(46px,13vw,70px)">Código de vestimenta</h2>
+      <p class="lugar sube" style="margin-top:8px">Semi formal</p>
+      <svg class="vestimenta dibuja" viewBox="0 0 220 120" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M58 18l-22 8-10 40 12 2 2 44h52l2-44 12-2-10-40-22-8-8 22z"/><path d="M58 18l8 22 8-22M66 40v40M58 30l-6 14 14 8M74 30l6 14-14 8"/>
+        <path d="M150 16c4 10 4 16 0 24h26c-4-8-4-14 0-24M150 40l-22 72h70l-22-72M152 18c4 4 8 8 11 10 3-2 7-6 11-10"/><path d="M146 60l-10 52M163 50v62M180 60l10 52"/>
+      </svg>
+      <div class="llevar sube">
+        <p class="cap-llevar">No olviden traer</p>
+        <ul><li>Mantita</li><li>Traje de baño</li><li>Toalla</li><li>Bloqueador solar</li></ul>
+      </div>
     </div>
   </section>
 
