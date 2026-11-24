@@ -5,6 +5,8 @@ import { fmt } from "../../base/config";
 import { infoBoda, sref } from "../../base/firebase";
 import { InvitacionCivil } from "./InvitacionCivil";
 import { LunaCivil } from "./LunaCivil";
+import { MesasCivil } from "./MesasCivil";
+import { quitarInvitado } from "./plano";
 import { CATS_CIVIL, CAT_ICON_CIVIL, CivilData, CivilGasto, CivilInvitado, PLAZOS_CIVIL, SUG_CRONO_CIVIL, SUG_DECO_CIVIL, SUG_GASTOS_CIVIL, SUG_TAREAS_CIVIL, SUG_TIPS_CIVIL, UNIDS_CIVIL, comprimirImg, totalGasto } from "./datosCivil";
 import { Btn, Card, Inp, Sel, Title } from "../../ui/base";
 import { Icono } from "../../ui/iconos";
@@ -22,7 +24,7 @@ export function BodaCivil() {
   // Las bodas nuevas (My Wedding) ven acá solo sus invitados y la invitación: el resto de este
   // planificador (presupuesto, checklist, programa y la luna de miel en Florianópolis) es de la boda original.
   const legado = !!infoBoda().legado;
-  const [subTab, setSubTab] = useState<"presupuesto"|"checklist"|"programa"|"invitados"|"luna"|"invitacion">(legado ? "presupuesto" : "invitacion");
+  const [subTab, setSubTab] = useState<"presupuesto"|"checklist"|"programa"|"invitados"|"mesas"|"luna"|"invitacion">(legado ? "presupuesto" : "invitacion");
 
   // ── Invitados ────────────────────────────────────────────────
   const [showFInv, setShowFInv] = useState(false);
@@ -46,7 +48,7 @@ export function BodaCivil() {
   const toggleInv = (id:number) =>
     guardar({ ...data, invitados:invitados.map(i=>i.id===id?{...i,confirmado:!i.confirmado}:i) });
   const delInv = (id:number) =>
-    guardar({ ...data, invitados:invitados.filter(i=>i.id!==id) });
+    guardar({ ...data, invitados:invitados.filter(i=>i.id!==id), ...(data.plano ? { plano:quitarInvitado(data.plano, id) } : {}) });
 
   // ── Gastos ───────────────────────────────────────────────────
   const [showFG,   setShowFG]   = useState(false);
@@ -177,7 +179,7 @@ export function BodaCivil() {
   const precioArriendo = 8000;
   const sugerenciaLugar = (confirmados || invitados.length || 37) * precioArriendo;
 
-  const SUB = (id:"presupuesto"|"checklist"|"programa"|"invitados"|"luna"|"invitacion", label:string, icon:string) => (
+  const SUB = (id:"presupuesto"|"checklist"|"programa"|"invitados"|"mesas"|"luna"|"invitacion", label:string, icon:string) => (
     <button onClick={()=>setSubTab(id)} style={{ flex:1, background:subTab===id?"#c9956a":"#fdf8f3", border:`1.5px solid ${subTab===id?"#c9956a":"#e8d5c4"}`, color:subTab===id?"#fff":"#a07855", borderRadius:9, padding:"8px 4px", fontSize:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", flexDirection:"column" as const, alignItems:"center", gap:2 }}>
       <span style={{ fontSize:15 }}>{icon}</span>{label}
     </button>
@@ -203,11 +205,12 @@ export function BodaCivil() {
         {legado && SUB("programa","Programa","🕐")}
         {SUB("invitados","Invitados","👥")}
         {SUB("invitacion","Invitación","💌")}
+        {legado && SUB("mesas","Mesas","🪑")}
         {legado && SUB("luna","Luna de miel","🌴")}
       </div>
 
       {/* ══ PRESUPUESTO ══ */}
-      {(gastos.length===0 && deco.length===0 && tareas.length===0 && subTab!=="luna" && subTab!=="invitacion") && (
+      {(gastos.length===0 && deco.length===0 && tareas.length===0 && subTab!=="luna" && subTab!=="invitacion" && subTab!=="mesas") && (
         <Card style={{ background:"#fff8f0", marginBottom:14, border:"1px dashed #e8c8a0" }}>
           <div style={{ fontSize:12, fontWeight:800, color:"#c9956a", marginBottom:4 }}>✨ Empezar con una base</div>
           <div style={{ fontSize:11, color:"#a07855", lineHeight:1.5, marginBottom:10 }}>
@@ -534,6 +537,8 @@ export function BodaCivil() {
       )}
 
       {subTab==="invitacion" && <InvitacionCivil data={data} guardar={guardar}/>}
+
+      {subTab==="mesas" && <MesasCivil data={data} guardar={guardar}/>}
 
       {subTab==="luna" && (
         <LunaCivil hechos={data.lunaHechos||[]}
