@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#4a1b15">
 <title>Geraldine &amp; Camilo</title>
 <meta property="og:title" content="Geraldine &amp; Camilo · ¡Nos casamos!">
-<meta property="og:description" content="Sábado 13 de febrero de 2027 · 10:30 hrs. Abre tu invitación.">
+<meta property="og:description" content="Sábado 13 de febrero de 2027 · 10:00 hrs. Abre tu invitación.">
 <meta property="og:image" content="https://boda-eight-psi.vercel.app/inv/geraldine-y-camilo.jpg">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,6 +98,7 @@ section{position:relative;overflow:hidden;padding:clamp(70px,12vh,110px) 24px;te
 /* reproductor */
 .musica{margin-top:30px;display:flex;flex-direction:column;align-items:center;gap:14px}
 .musica[hidden]{display:none}
+.cancion-nombre{font:italic 500 18px var(--serif);color:var(--vino);margin-top:-6px}
 .musica .cap{font:500 15px var(--caps);letter-spacing:.4em;color:#3a302c}
 .barra-mus{width:min(300px,78%);height:4px;border-radius:4px;background:#e2d6cc;position:relative}
 .barra-mus i{position:absolute;inset:0 auto 0 0;width:0;border-radius:4px;background:var(--vino)}
@@ -381,6 +382,7 @@ canvas.destellos{position:absolute;inset:0;width:100%;height:100%;pointer-events
       <svg class="adorno dibuja" viewBox="0 0 330 20" fill="none" stroke-width="1.2" aria-hidden="true"><path d="M2 10H120"/><path d="M210 10H328"/><path d="M120 10c8-6 16-6 22 0-6 6-14 6-22 0z"/><path d="M188 10c8-6 16-6 22 0-6 6-14 6-22 0z"/><path d="M165 2l7 8-7 8-7-8z" fill="#d9b77a"/><circle cx="150" cy="10" r="2.2" fill="#d9b77a"/><circle cx="180" cy="10" r="2.2" fill="#d9b77a"/></svg>
       <div class="musica sube" id="reproductor" hidden>
         <p class="cap">Dale play</p>
+        <p class="cancion-nombre">«Te amaré» · Mario Guerrero</p>
         <div class="barra-mus"><i id="mus-prog"></i><b id="mus-pto"></b></div>
         <div class="controles">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h3l9 10h6M3 17h3l3-3.4M14 9.6 15 7h6M18 4l3 3-3 3M18 14l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -419,7 +421,7 @@ canvas.destellos{position:absolute;inset:0;width:100%;height:100%;pointer-events
         <path d="M30 22l3 6M90 22l-3 6M60 12v7"/><path d="M22 40l6 2M98 40l-6 2"/>
       </svg>
       <h2 class="script-titulo escribe">Ceremonia</h2>
-      <p class="hora sube">10:30 hrs</p>
+      <p class="hora sube">10:00 hrs</p>
       <p class="lugar sube retraso-1">Las Alondras 7425</p>
       <a class="boton sube retraso-2" href="https://maps.app.goo.gl/vThftkoaAvJmmh2x6" target="_blank" rel="noopener"><svg><use href="#i-pin"/></svg>Ver ubicación</a>
 
@@ -572,8 +574,8 @@ canvas.destellos{position:absolute;inset:0;width:100%;height:100%;pointer-events
     var o = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { it.classList.add("visto"); o.disconnect(); } }, { threshold: .35 }); o.observe(it.querySelector(".cinta")); })();
 
   // ── Datos ──
-  var CANCION = "";                          // p. ej. "/inv/geraldine-y-camilo/cancion.mp3" (sin canción: no aparece el reproductor)
-  var FECHA = new Date("2027-02-13T10:30:00-03:00");
+  var CANCION = "/inv/geraldine-y-camilo/te-amare.m4a";   // «Te amaré», Mario Guerrero (pedida por la novia, 23-nov)
+  var FECHA = new Date("2027-02-13T10:00:00-03:00");
   var reducido = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // ── «Para: …» desde ?para= ──
@@ -600,7 +602,7 @@ canvas.destellos{position:absolute;inset:0;width:100%;height:100%;pointer-events
 
   // ── Calendario de Google ──
   document.getElementById("calendario-link").href = "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent("Matrimonio Geraldine & Camilo") +
-    "&dates=20270213T133000Z/20270213T163000Z&location=" + encodeURIComponent("Las Alondras 7425") + "&details=" + encodeURIComponent("https://maps.app.goo.gl/vThftkoaAvJmmh2x6");
+    "&dates=20270213T130000Z/20270213T220000Z&location=" + encodeURIComponent("Las Alondras 7425") + "&details=" + encodeURIComponent("https://maps.app.goo.gl/vThftkoaAvJmmh2x6");
 
   // ── Rosas (dibujadas: capas de pétalos con degradé) ──
   var uid = 0;
